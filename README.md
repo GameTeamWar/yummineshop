@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Yummine - E-Ticaret Platformu
 
-## Getting Started
+Yummine, mağazalar, müşteriler ve kuryeler için kapsamlı bir e-ticaret platformudur. Next.js, Tailwind CSS, Firebase ve Google servisleri ile geliştirilmiştir.
 
-First, run the development server:
+## Özellikler
 
+- **Güvenli Kimlik Doğrulama**: Firebase Authentication ile rol tabanlı erişim
+- **Mağaza Yönetimi**: Ürün ekleme, stok kontrolü, sipariş yönetimi
+- **Müşteri Alışverişi**: Kolay ürün arama, sepet ve ödeme
+- **Kurye Hizmeti**: Harita entegrasyonu ile teslimat yönetimi
+- **Admin Paneli**: Kullanıcı ve sistem yönetimi
+- **Mobil Uygulamalar**: React Native ile kurye, mağaza ve müşteri uygulamaları
+- **Gerçek Zamanlı Bildirimler**: Firebase Cloud Messaging
+- **Socket.io Entegrasyonu**: Gerçek zamanlı güncellemeler
+
+## Teknoloji Stack
+
+- **Frontend**: Next.js 15, Tailwind CSS, TypeScript
+- **Backend**: Firebase (Firestore, Auth, Storage, Messaging)
+- **Haritalar**: Google Maps API
+- **Mobil**: React Native / Expo
+- **Gerçek Zamanlı**: Socket.io, Firestore onSnapshot
+
+## Kurulum
+
+1. Bağımlılıkları yükleyin:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Firebase konfigürasyonunu ayarlayın (.env.local dosyası mevcut)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+3. **VAPID Key Alın** (Bildirimler için gerekli):
+   - Firebase Console'a gidin
+   - Proje ayarları > Cloud Messaging
+   - Web Push certificates bölümünde "Generate Key Pair" tıklayın
+   - Oluşan key'i `.env.local`'da `NEXT_PUBLIC_FIREBASE_VAPID_KEY` olarak ayarlayın
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+4. Geliştirme sunucusunu başlatın:
+```bash
+npm run dev
+```
 
-## Learn More
+5. Mobil uygulamalar için:
+```bash
+cd YummineCourier
+npx expo start
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Roller
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Admin (0)**: Sistem yönetimi
+- **Mağaza (1)**: Ürün ve sipariş yönetimi
+- **Müşteri (2)**: Alışveriş
+- **Kurye (3)**: Teslimat
+- **Alt Kullanıcı (5)**: Mağaza alt rolleri
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## API Anahtarları
 
-## Deploy on Vercel
+- Firebase: Gerçek projeye bağlı
+- Google Maps: Places, Maps JavaScript, Geocoding API'leri aktif
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Dağıtım
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Vercel, Netlify veya kendi sunucunuzda dağıtabilirsiniz. Firebase hosting önerilir.
+
+## Lisans
+
+Bu proje özel kullanım içindir.

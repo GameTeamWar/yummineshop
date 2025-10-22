@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Upload Locations</title>
+</head>
+<body>
+    <h1>Konum Verilerini Yükle</h1>
+    <button onclick="uploadLocations()">Konum Verilerini Firebase'e Yükle</button>
+    <div id="result"></div>
+
+    <script>
+        async function uploadLocations() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Yükleniyor...';
+
+            try {
+                const response = await fetch('/api/upload-locations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <h2 style="color: green;">Başarılı!</h2>
+                        <p>${data.message}</p>
+                        <p>Yüklenen şehirler: ${data.cities.join(', ')}</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2 style="color: red;">Hata!</h2>
+                        <p>${data.message}</p>
+                        <p>Hata detayı: ${data.error}</p>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <h2 style="color: red;">Bağlantı Hatası!</h2>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
