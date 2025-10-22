@@ -1,0 +1,1607 @@
+'use client';
+
+import React from 'react';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
+
+async function sendPasswordEmail({ to, password, additionalData }: { to: string; password: string; additionalData?: any }) {
+  const res = await fetch('/api/send-email', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      email: to,
+      additionalData: { generatedPassword: password, ...additionalData },
+    }),
+  });
+  if (!res.ok) {
+    throw new Error('E-posta gönderilemedi');
+  }
+}
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Bike, Store, Upload, X, Mail, Lock, Building, Phone, FileText, Users, Camera, CreditCard, Calendar, Car, MapPin, IdCard, GraduationCap, User, Building2, Home } from 'lucide-react';
+import { FaMotorcycle } from 'react-icons/fa';
+import { BsShop } from 'react-icons/bs';
+import { GoogleMap, useLoadScript, Marker, Autocomplete } from '@react-google-maps/api';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { getAuth, fetchSignInMethodsForEmail } from 'firebase/auth';
+
+const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
+
+export default function RegisterPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState<number | null>(null);
+  const [error, setError] = useState('');
+  const [isCourier, setIsCourier] = useState<boolean | null>(null);
+  const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
+  const { register } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const type = searchParams.get('type');
+
+  // Form validation states
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Google Maps
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries: GOOGLE_MAPS_LIBRARIES,
+  });
+
+  // Firebase'den çekilen location verileri
+  const [cities, setCities] = useState<string[]>([]);
+  const [districts, setDistricts] = useState<any[]>([]);
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
+  const [loadingLocations, setLoadingLocations] = useState(false);
+
+  // Stepper states
+  const [step, setStep] = useState(0);
+  const [person, setPerson] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    email: "",
+    iban: "",
+    birthDate: "",
+    kepAddress: "",
+  });
+  const [storeInfo, setStoreInfo] = useState({
+    storeName: "",
+    taxId: "",
+    companyName: "",
+    storeType: "",
+    branchCount: 1,
+    isMainBranch: false,
+    branchReferenceCode: "",
+    corporateType: "",
+    hasBranches: false,
+    hasAuthorizedPersons: false,
+    logo: null as File | null,
+  });
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [authorizedPersons, setAuthorizedPersons] = useState<Array<{ firstName: string; lastName: string; phone: string; email: string; role: string; idCard: File | null }>>([]);
+  const [documents, setDocuments] = useState({
+    idCard: null as File | null,
+    driversLicense: null as File | null,
+    taxCertificate: null as File | null,
+  });
+  const [address, setAddress] = useState({
+    province: "",
+    district: "",
+    neighborhood: "",
+    street: "",
+    detailedAddress: "",
+    latitude: 0,
+    longitude: 0,
+  });
+
+  // Firebase'den şehir, ilçe, mahalle verilerini çek
+  useEffect(() => {
+    const locationsRef = collection(db, 'locations');
+    const unsubscribe = onSnapshot(locationsRef, (querySnapshot) => {
+      const citiesData: string[] = [];
+      querySnapshot.forEach((doc) => {
+        citiesData.push(doc.id);
+      });
+      setCities(citiesData.sort());
+      setLoadingLocations(false);
+    }, (error) => {
+      console.error('Konum verileri çekilirken hata:', error);
+      setLoadingLocations(false);
+    });
+
+    return () => unsubscribe(); // Cleanup on unmount
+  }, []);
+
+  // Şehir seçildiğinde ilçeleri çek
+  const fetchDistricts = async (city: string) => {
+    try {
+      const cityDoc = await getDoc(doc(db, 'locations', city));
+      if (cityDoc.exists()) {
+        const data = cityDoc.data();
+        let districtsData = data.districts || [];
+        
+        const uniqueDistrictsMap = new Map();
+        districtsData.forEach((district: any) => {
+          if (!uniqueDistrictsMap.has(district.name)) {
+            uniqueDistrictsMap.set(district.name, district);
+          }
+        });
+        const uniqueDistricts = Array.from(uniqueDistrictsMap.values());
+        
+        setDistricts(uniqueDistricts.sort((a: any, b: any) => a.name.localeCompare(b.name)));
+      }
+    } catch (error) {
+      console.error('Error fetching districts:', error);
+    }
+  };
+
+  // İlçe seçildiğinde mahalleleri çek
+  const fetchNeighborhoods = async (city: string, districtName: string) => {
+    try {
+      const cityDoc = await getDoc(doc(db, 'locations', city));
+      if (cityDoc.exists()) {
+        const data = cityDoc.data();
+        const districtsData = data.districts || [];
+        const selectedDistrict = districtsData.find((d: any) => d.name === districtName);
+        
+        if (selectedDistrict && selectedDistrict.neighborhoods) {
+          const neighborhoodsData = selectedDistrict.neighborhoods;
+          const uniqueNeighborhoods = [...new Set(neighborhoodsData)].sort();
+          setNeighborhoods(uniqueNeighborhoods as string[]);
+        } else {
+          setNeighborhoods([]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching neighborhoods:', error);
+      setNeighborhoods([]);
+    }
+  };
+
+  const steps = isCourier ? [
+    { title: "Kişi Bilgileri" },
+    { title: "Evrak Bilgileri" },
+    { title: "Adres Bilgileri" },
+  ] : [
+    { title: "Kişi Bilgileri" },
+    { title: "Mağaza Bilgileri" },
+    ...(storeInfo.hasAuthorizedPersons ? [{ title: "Yetkili Kişiler" }] : []),
+    { title: "Evrak Bilgileri" },
+    { title: "Adres Bilgileri" },
+    { title: "Onay" },
+  ];
+
+  // Form validation functions
+  const validatePersonInfo = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!person.firstName.trim()) errors.firstName = "Ad alanı zorunludur";
+    if (!person.lastName.trim()) errors.lastName = "Soyad alanı zorunludur";
+    if (!person.phone.trim()) errors.phone = "Telefon alanı zorunludur";
+    if (!person.email.trim()) errors.email = "E-posta alanı zorunludur";
+    if (!isCourier && !person.iban.trim()) errors.iban = "IBAN alanı zorunludur";
+    if (!isCourier && !person.birthDate) errors.birthDate = "Doğum tarihi alanı zorunludur";
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (person.email && !emailRegex.test(person.email)) {
+      errors.email = "Geçerli bir e-posta adresi giriniz";
+    }
+    
+    // Phone validation
+    const phoneRegex = /^[0-9+\-\s()]{10,}$/;
+    if (person.phone && !phoneRegex.test(person.phone.replace(/\s/g, ''))) {
+      errors.phone = "Geçerli bir telefon numarası giriniz";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateStoreInfo = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!storeInfo.storeName.trim()) errors.storeName = "Mağaza adı zorunludur";
+    if (!storeInfo.corporateType) errors.corporateType = "Şirket türü zorunludur";
+    if (!storeInfo.taxId.trim()) errors.taxId = `${storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası" : "Vergi Kimlik Numarası"} zorunludur`;
+    if (!storeInfo.storeType) errors.storeType = "Mağaza tipi zorunludur";
+    if (storeInfo.corporateType !== "PRIVATE" && !storeInfo.companyName.trim()) {
+      errors.companyName = "Şirket adı zorunludur";
+    }
+    if (storeInfo.hasBranches && storeInfo.branchCount < 2) {
+      errors.branchCount = "Şube sayısı en az 2 olmalıdır";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAuthorizedPersons = () => {
+    const errors: {[key: string]: string} = {};
+    
+    authorizedPersons.forEach((person, index) => {
+      if (!person.firstName.trim()) errors[`authFirstName_${index}`] = `Yetkili kişi ${index + 1} adı zorunludur`;
+      if (!person.lastName.trim()) errors[`authLastName_${index}`] = `Yetkili kişi ${index + 1} soyadı zorunludur`;
+      if (!person.phone.trim()) errors[`authPhone_${index}`] = `Yetkili kişi ${index + 1} telefonu zorunludur`;
+      if (!person.email.trim()) errors[`authEmail_${index}`] = `Yetkili kişi ${index + 1} e-posta adresi zorunludur`;
+      if (!person.role) errors[`authRole_${index}`] = `Yetkili kişi ${index + 1} rolü zorunludur`;
+      if (!person.idCard) errors[`authIdCard_${index}`] = `Yetkili kişi ${index + 1} kimlik fotokopisi zorunludur`;
+      
+      // Email validation for authorized persons
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (person.email && !emailRegex.test(person.email)) {
+        errors[`authEmail_${index}`] = `Yetkili kişi ${index + 1} için geçerli bir e-posta adresi giriniz`;
+      }
+    });
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateAddress = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!address.province) errors.province = "İl seçimi zorunludur";
+    if (!address.district) errors.district = "İlçe seçimi zorunludur";
+    if (!address.neighborhood) errors.neighborhood = "Mahalle seçimi zorunludur";
+    if (!address.street.trim()) errors.street = "Sokak/Cadde alanı zorunludur";
+    if (!address.detailedAddress.trim()) errors.detailedAddress = "Açık adres alanı zorunludur";
+    if (!address.latitude || !address.longitude) errors.location = "Harita üzerinden konum seçimi zorunludur";
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const validateDocuments = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!documents.idCard) errors.idCard = "Kimlik fotoğrafı zorunludur";
+    if (!isCourier && !documents.taxCertificate) errors.taxCertificate = "Vergi levhası zorunludur";
+    if (isCourier && !documents.driversLicense) errors.driversLicense = "Ehliyet fotoğrafı zorunludur";
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const nextStep = () => {
+    const currentStepTitle = steps[step]?.title;
+    let isValid = true;
+
+    switch (currentStepTitle) {
+      case "Kişi Bilgileri":
+        isValid = validatePersonInfo();
+        break;
+      case "Mağaza Bilgileri":
+        isValid = validateStoreInfo();
+        break;
+      case "Yetkili Kişiler":
+        isValid = validateAuthorizedPersons();
+        break;
+      case "Evrak Bilgileri":
+        isValid = validateDocuments();
+        break;
+      case "Adres Bilgileri":
+        isValid = validateAddress();
+        break;
+    }
+
+    if (isValid) {
+      setStep((s) => Math.min(s + 1, steps.length - 1));
+      setFormErrors({});
+    }
+  };
+
+  const prevStep = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    setFormErrors({});
+  };
+
+  // URL parametresine göre isCourier state'ini ayarla
+  useEffect(() => {
+    if (type === 'courier') {
+      setIsCourier(true);
+    } else {
+      setIsCourier(false);
+    }
+  }, [type]);
+
+  // Logo preview cleanup
+  useEffect(() => {
+    return () => {
+      if (logoPreview) {
+        URL.revokeObjectURL(logoPreview);
+      }
+    };
+  }, [logoPreview]);
+
+  // 8 haneli harf ve rakam içeren güçlü şifre oluşturucu
+  function generateRandomPassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < 8; i++) {
+      result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+  }
+
+  // Cari ID oluşturucu (6 haneli benzersiz sayı)
+  function generateBranchReferenceCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // E-posta kontrolü fonksiyonu
+  const checkEmailExists = async (email: string, isAuthorizedPerson: boolean = false, personIndex?: number) => {
+    if (!email || !email.includes('@')) return;
+    
+    // Ana e-posta ile yetkili kişi e-postasının aynı olup olmadığını kontrol et
+    if (isAuthorizedPerson && person?.email && email.toLowerCase() === person.email.toLowerCase()) {
+      const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
+      setFormErrors(prev => ({ 
+        ...prev, 
+        [errorKey]: 'Yetkili kişi e-posta adresi ana e-posta ile aynı olamaz.' 
+      }));
+      return;
+    }
+    
+    try {
+      const auth = getAuth();
+      const signInMethods = await fetchSignInMethodsForEmail(auth, email);
+      if (signInMethods.length > 0) {
+        const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
+        setFormErrors(prev => ({ 
+          ...prev, 
+          [errorKey]: 'Bu e-posta adresi zaten kayıtlı. Lütfen farklı bir e-posta adresi kullanın.' 
+        }));
+      } else {
+        const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
+        setFormErrors(prev => ({ ...prev, [errorKey]: '' }));
+      }
+    } catch (error) {
+      console.error('E-posta kontrolü hatası:', error);
+      // Hata durumunda sessizce geç
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateAddress()) {
+      setError("Lütfen tüm adres bilgilerini eksiksiz doldurun.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    
+    // Rastgele şifre oluştur
+    const randomPassword = generateRandomPassword();
+
+    // Cari ID (mağaza için)
+    const branchReferenceCode = isCourier ? undefined : storeInfo.branchReferenceCode;
+
+    // Kayıt işlemi
+    try {
+      await register(person.email, randomPassword, isCourier ? 3 : 1, {
+        firstName: person.firstName,
+        lastName: person.lastName,
+        phone: person.phone,
+        ...(isCourier ? {} : {
+          storeName: storeInfo.storeName,
+          taxId: storeInfo.taxId,
+          companyName: storeInfo.companyName,
+          iban: person.iban,
+          ibanOwnerBirthDate: person.birthDate,
+          kepAddress: person.kepAddress,
+          storeType: storeInfo.storeType,
+          branchCount: storeInfo.branchCount,
+          isMainBranch: storeInfo.isMainBranch,
+          corporateType: storeInfo.corporateType,
+          branchReferenceCode,
+          logo: storeInfo.logo,
+          authorizedPersons: authorizedPersons,
+        }),
+        ...address,
+        ...documents,
+      });
+    } catch (err) {
+      setError('Kayıt işlemi başarısız.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Şifreyi e-posta ile gönder
+    try {
+      await sendPasswordEmail({ to: person.email, password: randomPassword });
+    } catch (err) {
+      setError('Şifre e-posta ile gönderilemedi. Lütfen tekrar deneyin.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    // Yetkili kişilere şifre ve yetkilendirme maili gönder
+    if (!isCourier && storeInfo.hasAuthorizedPersons) {
+      for (const authPerson of authorizedPersons) {
+        if (authPerson.email) {
+          const authPassword = generateRandomPassword();
+          try {
+            await sendPasswordEmail({ 
+              to: authPerson.email, 
+              password: authPassword,
+              additionalData: {
+                role: authPerson.role,
+                storeName: storeInfo.storeName,
+                isAuthorized: true
+              }
+            });
+          } catch (err) {
+            console.error(`Yetkili kişiye mail gönderilemedi: ${authPerson.email}`, err);
+          }
+        }
+      }
+    }
+
+    setIsSubmitting(false);
+
+    // Başarılı kayıt sonrası yönlendirme
+    if (isCourier) {
+      router.push("/partner");
+    } else {
+      router.push(`/partner/${branchReferenceCode}`);
+    }
+  };
+
+  const renderStepContent = () => {
+    const currentStepTitle = steps[step]?.title;
+    
+    switch (currentStepTitle) {
+      case "Kişi Bilgileri":
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold mb-4">Kişi Bilgileri</h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium mb-1">Ad *</label>
+                <input
+                  type="text"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.firstName ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.firstName || ""}
+                  onChange={e => setPerson(f => ({ ...f, firstName: e.target.value }))}
+                  required
+                />
+                {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Soyad *</label>
+                <input
+                  type="text"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.lastName ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.lastName || ""}
+                  onChange={e => setPerson(f => ({ ...f, lastName: e.target.value }))}
+                  required
+                />
+                {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Telefon *</label>
+                <input
+                  type="tel"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.phone ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.phone || ""}
+                  onChange={e => setPerson(f => ({ ...f, phone: e.target.value }))}
+                  required
+                />
+                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">E-posta *</label>
+                <input
+                  type="email"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.email ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.email || ""}
+                  onChange={e => setPerson(f => ({ ...f, email: e.target.value }))}
+                  onBlur={e => checkEmailExists(e.target.value, false)}
+                  required
+                />
+                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  IBAN {!isCourier && '*'}
+                </label>
+                <input
+                  type="text"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.iban ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.iban || ""}
+                  onChange={e => setPerson(f => ({ ...f, iban: e.target.value }))}
+                  required={!isCourier}
+                />
+                {formErrors.iban && <p className="text-red-500 text-xs mt-1">{formErrors.iban}</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  Doğum Tarihi {!isCourier && '*'}
+                </label>
+                <input
+                  type="date"
+                  className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    formErrors.birthDate ? 'border-red-500' : 'border-gray-700'
+                  }`}
+                  value={person?.birthDate || ""}
+                  onChange={e => setPerson(f => ({ ...f, birthDate: e.target.value }))}
+                  required={!isCourier}
+                />
+                {formErrors.birthDate && <p className="text-red-500 text-xs mt-1">{formErrors.birthDate}</p>}
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium mb-1">KEP Adresi</label>
+                <input
+                  type="email"
+                  className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  value={person?.kepAddress || ""}
+                  onChange={e => setPerson(f => ({ ...f, kepAddress: e.target.value }))}
+                />
+              </div>
+
+               {!isCourier && storeInfo.hasBranches && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Şube Sayısı *</label>
+                  <input
+                    type="number"
+                    min="2"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.branchCount ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    value={storeInfo.branchCount || 2}
+                    onChange={e => setStoreInfo(f => ({ ...f, branchCount: parseInt(e.target.value) || 2 }))}
+                    required
+                  />
+                  {formErrors.branchCount && <p className="text-red-500 text-xs mt-1">{formErrors.branchCount}</p>}
+                </div>
+              )}
+              {!isCourier && storeInfo.hasBranches && (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Şube Türü *</label>
+                  <select
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    value={storeInfo.isMainBranch ? "main" : "branch"}
+                    onChange={e => setStoreInfo(f => ({ ...f, isMainBranch: e.target.value === "main" }))}
+                    required
+                  >
+                    <option value="main">Bu Ana Şube</option>
+                    <option value="branch">Bu Alt Şube</option>
+                  </select>
+                </div>
+              )}
+              {!isCourier && (
+                <div className="flex flex-col space-y-4 items-start">
+                  <div className="flex items-center space-x-3">
+                    <label className="group flex items-center cursor-pointer">
+                      <input
+                        className="hidden peer"
+                        type="checkbox"
+                        checked={storeInfo.hasBranches}
+                        onChange={e => setStoreInfo(f => ({ ...f, hasBranches: e.target.checked, branchCount: e.target.checked ? f.branchCount : 1 }))}
+                      />
+
+                      <span
+                        className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                      >
+                        <span
+                          className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"
+                        ></span>
+
+                        <svg
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          className="hidden w-5 h-5 text-white peer-checked:block transition-transform duration-500 transform scale-50 peer-checked:scale-100"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                            fill-rule="evenodd"
+                          ></path>
+                        </svg>
+                      </span>
+
+                      <span
+                        className="ml-3 text-gray-300 group-hover:text-blue-400 font-medium transition-colors duration-300"
+                      >
+                        Şubeleriniz var mı?
+                      </span>
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-3">
+                    <label className="group flex items-center cursor-pointer">
+                      <input
+                        className="hidden peer"
+                        type="checkbox"
+                        checked={storeInfo.hasAuthorizedPersons}
+                        onChange={e => setStoreInfo(f => ({ ...f, hasAuthorizedPersons: e.target.checked }))}
+                      />
+
+                      <span
+                        className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                      >
+                        <span
+                          className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"
+                        ></span>
+
+                        <svg
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                          className="hidden w-5 h-5 text-white peer-checked:block transition-transform duration-500 transform scale-50 peer-checked:scale-100"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <path
+                            clip-rule="evenodd"
+                            d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                            fill-rule="evenodd"
+                          ></path>
+                        </svg>
+                      </span>
+
+                      <span
+                        className="ml-3 text-gray-300 group-hover:text-blue-400 font-medium transition-colors duration-300"
+                      >
+                        Yetkili kişileriniz var mı?
+                      </span>
+                    </label>
+                  </div>
+                </div>
+              )}
+             
+            </div>
+          </div>
+        );
+      case "Mağaza Bilgileri":
+        if (isCourier) {
+          // Kurye için evrak bilgileri
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Evrak Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kimlik Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.idCard ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.idCard && <p className="text-red-500 text-xs mt-1">{formErrors.idCard}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ehliyet Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.driversLicense ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, driversLicense: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.driversLicense && <p className="text-red-500 text-xs mt-1">{formErrors.driversLicense}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Vergi Levhası *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.taxCertificate ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.taxCertificate && <p className="text-red-500 text-xs mt-1">{formErrors.taxCertificate}</p>}
+                </div>
+              </div>
+            </div>
+          );
+        } else {
+          // Mağaza için mağaza bilgileri
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Mağaza Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Mağaza Adı *</label>
+                  <input
+                    type="text"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.storeName ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    value={storeInfo?.storeName || ""}
+                    onChange={e => setStoreInfo(f => ({ ...f, storeName: e.target.value }))}
+                    required
+                  />
+                  {formErrors.storeName && <p className="text-red-500 text-xs mt-1">{formErrors.storeName}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Şirket Türü *</label>
+                  <select
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.corporateType ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    value={storeInfo.corporateType || ""}
+                    onChange={e => {
+                      const value = e.target.value;
+                      setStoreInfo(f => ({ 
+                        ...f, 
+                        corporateType: value,
+                        branchReferenceCode: value && !f.branchReferenceCode ? generateBranchReferenceCode() : f.branchReferenceCode
+                      }));
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Seçim yapınız</option>
+                    <option value="PRIVATE">Şahıs</option>
+                    <option value="UNINCORPORATED">Adi Ortaklık</option>
+                    <option value="UNLIMITED_COMPANY">Kollektif Şirket</option>
+                    <option value="UNINCORPORATED_COMMANDITE">Adi Komandit Şirket</option>
+                    <option value="ESH_COMMANDITE">Sermayesi Paylara Bölünmüş Komandit Şirket</option>
+                    <option value="LIMITED">Limited Şirketi</option>
+                    <option value="ANONYMOUS">Anonim Şirket</option>
+                    <option value="COOPERATIVE">Kooperatif Şirket</option>
+                    <option value="OTHER">Diğer</option>
+                    <option value="BUSINESS_PARTNERSHIP">İş Ortaklığı</option>
+                    <option value="ASSOCIATION">Dernek İşletmesi</option>
+                    <option value="FOUNDATION">Vakıf İşletmesi</option>
+                  </select>
+                  {formErrors.corporateType && <p className="text-red-500 text-xs mt-1">{formErrors.corporateType}</p>}
+                </div>
+                {storeInfo.corporateType && storeInfo.corporateType !== "PRIVATE" && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Şirket Adı *</label>
+                    <input
+                      type="text"
+                      className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.companyName ? 'border-red-500' : 'border-gray-700'
+                      }`}
+                      value={storeInfo.companyName || ""}
+                      onChange={e => setStoreInfo(f => ({ ...f, companyName: e.target.value }))}
+                      required
+                    />
+                    {formErrors.companyName && <p className="text-red-500 text-xs mt-1">{formErrors.companyName}</p>}
+                  </div>
+                )}
+                {storeInfo.corporateType && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">
+                      {storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası *" : "Vergi Kimlik Numarası *"}
+                    </label>
+                    <input
+                      type="text"
+                      className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.taxId ? 'border-red-500' : 'border-gray-700'
+                      }`}
+                      value={storeInfo.taxId || ""}
+                      onChange={e => setStoreInfo(f => ({ ...f, taxId: e.target.value }))}
+                      required
+                    />
+                    {formErrors.taxId && <p className="text-red-500 text-xs mt-1">{formErrors.taxId}</p>}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Mağaza Tipi *</label>
+                  <select
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.storeType ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    value={storeInfo.storeType || ""}
+                    onChange={e => setStoreInfo(f => ({ ...f, storeType: e.target.value }))}
+                    required
+                  >
+                    <option value="" disabled>Seçin...</option>
+                    <option value="kozmetik">Kozmetik</option>
+                    <option value="tekstil">Tekstil</option>
+                    <option value="elektronik">Elektronik</option>
+                    <option value="gida">Gıda</option>
+                    <option value="market">Market</option>
+                    <option value="diger">Diğer</option>
+                  </select>
+                  {formErrors.storeType && <p className="text-red-500 text-xs mt-1">{formErrors.storeType}</p>}
+                </div>
+
+                {storeInfo.hasBranches && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Şube Sayısı *</label>
+                    <input
+                      type="number"
+                      min="2"
+                      className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        formErrors.branchCount ? 'border-red-500' : 'border-gray-700'
+                      }`}
+                      value={storeInfo.branchCount || 2}
+                      onChange={e => setStoreInfo(f => ({ ...f, branchCount: parseInt(e.target.value) || 2 }))}
+                      required
+                    />
+                    {formErrors.branchCount && <p className="text-red-500 text-xs mt-1">{formErrors.branchCount}</p>}
+                  </div>
+                )}
+                {storeInfo.hasBranches && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Şube Türü *</label>
+                    <select
+                      className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      value={storeInfo.isMainBranch ? "main" : "branch"}
+                      onChange={e => setStoreInfo(f => ({ ...f, isMainBranch: e.target.value === "main" }))}
+                      required
+                    >
+                      <option value="main">Bu Ana Şube</option>
+                      <option value="branch">Bu Alt Şube</option>
+                    </select>
+                  </div>
+                )}
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium mb-1">Mağaza Logosu</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={e => {
+                      const file = e.target.files?.[0] || null;
+                      setStoreInfo(f => ({ ...f, logo: file }));
+                      if (file) {
+                        const previewUrl = URL.createObjectURL(file);
+                        setLogoPreview(previewUrl);
+                      } else {
+                        setLogoPreview(null);
+                      }
+                    }}
+                  />
+                  {logoPreview && (
+                    <div className="mt-3">
+                      <p className="text-sm text-gray-400 mb-2">Logo Önizlemesi:</p>
+                      <img
+                        src={logoPreview}
+                        alt="Mağaza Logo Önizlemesi"
+                        className="max-w-32 max-h-32 object-contain border border-gray-600 rounded-lg bg-gray-800 p-2"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }
+      case "Yetkili Kişiler":
+        if (isCourier) {
+          // Kurye için adres bilgileri
+          return renderAddressStep();
+        } else if (storeInfo.hasAuthorizedPersons) {
+          // Mağaza için yetkili kişiler
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Yetkili Kişiler</h3>
+              <p className="text-sm text-gray-300 mb-4">Mağazanızda çalışan yetkili kişileri ekleyin. Her kişiye rolüne göre yetkilendirme maili gönderilecektir.<span className="text-red-500 font-bold"> Panel içi yetkilendirme sağlayacaksınız ve paneli yönetme yetkisine sahip olacaklardır.</span></p>
+              {authorizedPersons.map((person, index) => (
+                <div key={index} className="bg-gray-700 rounded-lg p-4">
+                  <h4 className="text-lg font-semibold mb-2">Yetkili Kişi {index + 1}</h4>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Ad *</label>
+                      <input
+                        type="text"
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authFirstName_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        value={person.firstName || ""}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].firstName = e.target.value;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        required
+                      />
+                      {formErrors[`authFirstName_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authFirstName_${index}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Soyad *</label>
+                      <input
+                        type="text"
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authLastName_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        value={person.lastName || ""}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].lastName = e.target.value;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        required
+                      />
+                      {formErrors[`authLastName_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authLastName_${index}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Telefon *</label>
+                      <input
+                        type="tel"
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authPhone_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        value={person.phone || ""}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].phone = e.target.value;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        required
+                      />
+                      {formErrors[`authPhone_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authPhone_${index}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">E-posta *</label>
+                      <input
+                        type="email"
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authEmail_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        value={person.email || ""}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].email = e.target.value;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        onBlur={e => checkEmailExists(e.target.value, true, index)}
+                        required
+                      />
+                      {formErrors[`authEmail_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authEmail_${index}`]}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Mağazadaki Rolü *</label>
+                      <select
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authRole_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        value={person.role || ""}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].role = e.target.value;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        required
+                      >
+                        <option value="" disabled>Rol seçin...</option>
+                        <option value="manager">Mağaza Müdürü</option>
+                        <option value="assistant_manager">Müdür Yardımcısı</option>
+                        <option value="cashier">Kasiyer</option>
+                        <option value="sales_assistant">Satış Görevlisi</option>
+                        <option value="warehouse_staff">Depo Görevlisi</option>
+                        <option value="accountant">Muhasebeci</option>
+                        <option value="other">Diğer</option>
+                      </select>
+                      {formErrors[`authRole_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authRole_${index}`]}</p>}
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium mb-1">Kimlik Fotokopisi *</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          formErrors[`authIdCard_${index}`] ? 'border-red-500' : 'border-gray-700'
+                        }`}
+                        onChange={e => {
+                          const newPersons = [...authorizedPersons];
+                          newPersons[index].idCard = e.target.files?.[0] || null;
+                          setAuthorizedPersons(newPersons);
+                        }}
+                        required
+                      />
+                      {formErrors[`authIdCard_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authIdCard_${index}`]}</p>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => setAuthorizedPersons([...authorizedPersons, { firstName: "", lastName: "", phone: "", email: "", role: "", idCard: null }])}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                + Kişi Ekle
+              </button>
+            </div>
+          );
+        } else {
+          // Mağaza için evrak bilgileri (yetkili kişiler yoksa)
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Evrak Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kimlik Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.idCard ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.idCard && <p className="text-red-500 text-xs mt-1">{formErrors.idCard}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Vergi Levhası *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.taxCertificate ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.taxCertificate && <p className="text-red-500 text-xs mt-1">{formErrors.taxCertificate}</p>}
+                </div>
+              </div>
+            </div>
+          );
+        }
+      case "Evrak Bilgileri":
+        if (isCourier) {
+          // Kurye için evrak bilgileri
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Evrak Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kimlik Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.idCard ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.idCard && <p className="text-red-500 text-xs mt-1">{formErrors.idCard}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Ehliyet Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.driversLicense ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, driversLicense: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.driversLicense && <p className="text-red-500 text-xs mt-1">{formErrors.driversLicense}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Vergi Levhası *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.taxCertificate ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.taxCertificate && <p className="text-red-500 text-xs mt-1">{formErrors.taxCertificate}</p>}
+                </div>
+              </div>
+            </div>
+          );
+        } else {
+          // Mağaza için evrak bilgileri
+          return (
+            <div className="space-y-6">
+              <h3 className="text-xl font-semibold mb-4">Evrak Bilgileri</h3>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Kimlik Fotoğrafı *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.idCard ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.idCard && <p className="text-red-500 text-xs mt-1">{formErrors.idCard}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Vergi Levhası *</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      formErrors.taxCertificate ? 'border-red-500' : 'border-gray-700'
+                    }`}
+                    onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
+                    required
+                  />
+                  {formErrors.taxCertificate && <p className="text-red-500 text-xs mt-1">{formErrors.taxCertificate}</p>}
+                </div>
+              </div>
+            </div>
+          );
+        }
+      case "Adres Bilgileri":
+        return renderAddressStep();
+      case "Onay":
+        // Mağaza için onay bilgileri
+        return (
+          <div className="space-y-6">
+            <h3 className="text-xl font-semibold mb-4">Kayıt Onayı</h3>
+            <div className="bg-gray-800 rounded-lg p-4">
+              <p className="text-gray-300 mb-4">Kayıt işleminiz tamamlanmak üzere. Aşağıdaki bilgileri kontrol edin:</p>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Mağaza Adı:</span>
+                  <span className="text-white">{storeInfo.storeName}</span>
+                </div>
+                {storeInfo.corporateType !== "PRIVATE" && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Şirket Türü:</span>
+                    <span className="text-white">{storeInfo.corporateType}</span>
+                  </div>
+                )}
+                {storeInfo.corporateType !== "PRIVATE" && storeInfo.companyName && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Şirket Adı:</span>
+                    <span className="text-white">{storeInfo.companyName}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-400">{storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası:" : "VKN/TCKN:"}</span>
+                  <span className="text-white">{storeInfo.taxId}</span>
+                </div>
+                {storeInfo.hasBranches && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Şube Sayısı:</span>
+                    <span className="text-white">{storeInfo.branchCount}</span>
+                  </div>
+                )}
+                {storeInfo.hasBranches && (
+                  <div className="flex justify-between">
+                    <span className="text-gray-400">Bu Oluşturulan Hesap Şube Türü:</span>
+                    <span className="text-white">{storeInfo.isMainBranch ? "Bu Ana Şube" : "Bu Alt Şube"}</span>
+                  </div>
+                )}
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Cari ID:</span>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="text"
+                      readOnly
+                      className="px-2 py-1 rounded bg-gray-700 text-white text-sm"
+                      value={storeInfo.branchReferenceCode}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => navigator.clipboard.writeText(storeInfo.branchReferenceCode)}
+                      className="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    >
+                      Kopyala
+                    </button>
+                  </div>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Yetkili Kişi Sayısı:</span>
+                  <span className="text-white">{authorizedPersons.length}</span>
+                </div>
+                {authorizedPersons.map((person, index) => (
+                  <div key={index} className="mt-2 p-2 bg-gray-700 rounded">
+                    <div className="text-sm text-gray-400">Yetkili Kişi {index + 1}:</div>
+                    <div className="text-white">{person.firstName} {person.lastName} - {person.email} ({person.role})</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const testPassword = generateRandomPassword();
+                try {
+                  await sendPasswordEmail({ to: person.email, password: testPassword });
+                  alert('Test şifresi gönderildi: ' + testPassword);
+                } catch (err) {
+                  alert('Şifre gönderilemedi');
+                }
+              }}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              Test: Şifre Gönder
+            </button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderAddressStep = () => {
+
+    return (
+      <div className="space-y-6">
+        <h3 className="text-xl font-semibold mb-4">Adres Bilgileri</h3>
+        <p className="text-sm text-gray-300 mb-4">Harita üzerinden DOĞRU konumunuzu seçin [ÖNERİLEN MANUEL KONUM SEÇİMİDİR ] ve adres bilgilerinizi doldurun.</p>
+
+        {/* Google Maps */}
+        <div className="w-full h-64 rounded-lg overflow-hidden border border-gray-700 relative">
+          {isLoaded ? (
+            <>
+              <GoogleMap
+                mapContainerStyle={{ width: '100%', height: '100%' }}
+                center={{
+                  lat: address.latitude || 39.9334,
+                  lng: address.longitude || 32.8597
+                }}
+                zoom={address.latitude ? 15 : 6}
+                onClick={(e) => {
+                  if (e.latLng) {
+                    const lat = e.latLng.lat?.();
+                    const lng = e.latLng.lng?.();
+                    if (typeof lat === 'number' && typeof lng === 'number') {
+                      setAddress(f => ({
+                        ...f,
+                        latitude: lat,
+                        longitude: lng,
+                      }));
+                    }
+                  }
+                }}
+                options={{
+                  disableDefaultUI: true,
+                  clickableIcons: false,
+                }}
+              >
+                {address.latitude && address.longitude && (
+                  <Marker
+                    position={{
+                      lat: address.latitude,
+                      lng: address.longitude
+                    }}
+                  />
+                )}
+              </GoogleMap>
+              {/* Sadece Konumumu Bul butonu */}
+              <button
+                type="button"
+                className="absolute top-4 right-4 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow"
+                onClick={async () => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        setAddress(f => ({
+                          ...f,
+                          latitude: position.coords.latitude,
+                          longitude: position.coords.longitude,
+                        }));
+                        // Başarılı konum alma sonrası kullanıcıya bilgi ver
+                        console.log('Konum başarıyla alındı:', position.coords.latitude, position.coords.longitude);
+                      },
+                      (error) => {
+                        console.error('Konum alma hatası:', error);
+                        let errorMessage = 'Konum alınamadı. Lütfen harita üzerinden manuel olarak konum seçin.';
+                        
+                        if (error && error.code) {
+                          switch (error.code) {
+                            case error.PERMISSION_DENIED:
+                              errorMessage = 'Konum izni reddedildi. Lütfen tarayıcı ayarlarından konum iznini etkinleştirin.';
+                              break;
+                            case error.POSITION_UNAVAILABLE:
+                              errorMessage = 'Konum bilgisi mevcut değil. Lütfen GPS\'inizi açın.';
+                              break;
+                            case error.TIMEOUT:
+                              errorMessage = 'Konum alma işlemi zaman aşımına uğradı. Lütfen tekrar deneyin.';
+                              break;
+                            default:
+                              errorMessage = 'Bilinmeyen konum hatası. Lütfen manuel olarak konum seçin.';
+                              break;
+                          }
+                        }
+                        
+                        alert(errorMessage);
+                      },
+                      { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
+                    );
+                  } else {
+                    alert('Tarayıcınız konum özelliğini desteklemiyor.');
+                  }
+                }}
+              >
+                Konumumu Bul
+              </button>
+            </>
+          ) : (
+            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+              <div className="text-gray-400">Harita yükleniyor...</div>
+            </div>
+          )}
+        </div>
+
+        {formErrors.location && <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>}
+
+        {/* Adres Formu */}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium mb-1">İl *</label>
+            <select
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.province ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={address.province || ""}
+              onChange={e => setAddress(f => ({ ...f, province: e.target.value }))}
+              required
+            >
+              <option value="" disabled>İl seçin</option>
+              {cities.map(city => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+            {formErrors.province && <p className="text-red-500 text-xs mt-1">{formErrors.province}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">İlçe *</label>
+            <input
+              type="text"
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.district ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={address.district || ""}
+              onChange={e => setAddress(f => ({ ...f, district: e.target.value }))}
+              placeholder="İlçe adını girin"
+              required
+            />
+            {formErrors.district && <p className="text-red-500 text-xs mt-1">{formErrors.district}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Mahalle *</label>
+            <input
+              type="text"
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.neighborhood ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={address.neighborhood || ""}
+              onChange={e => setAddress(f => ({ ...f, neighborhood: e.target.value }))}
+              placeholder="Mahalle adını girin"
+              required
+            />
+            {formErrors.neighborhood && <p className="text-red-500 text-xs mt-1">{formErrors.neighborhood}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Sokak/Cadde *</label>
+            <input
+              type="text"
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.street ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={address.street || ""}
+              onChange={e => setAddress(f => ({ ...f, street: e.target.value }))}
+              placeholder="Örnek: Atatürk Caddesi"
+              required
+            />
+            {formErrors.street && <p className="text-red-500 text-xs mt-1">{formErrors.street}</p>}
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium mb-1">Açık Adres *</label>
+            <textarea
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.detailedAddress ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={address.detailedAddress || ""}
+              onChange={e => setAddress(f => ({ ...f, detailedAddress: e.target.value }))}
+              placeholder="Bina no, daire no, kat bilgisi vb."
+              rows={2}
+              required
+            />
+            {formErrors.detailedAddress && <p className="text-red-500 text-xs mt-1">{formErrors.detailedAddress}</p>}
+          </div>
+        </div>
+
+        {/* Konum Bilgileri */}
+        {address.latitude && address.longitude && (
+          <div className="bg-gray-800 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-gray-200 mb-2">Seçilen Konum:</h4>
+            <div className="text-xs text-gray-400">
+              Enlem: {address.latitude.toFixed(6)}, Boylam: {address.longitude.toFixed(6)}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStepper = () => (
+    <div className="flex items-center justify-center mb-8">
+      {steps.map((s, idx) => (
+        <React.Fragment key={s.title}>
+          <div className={`flex flex-col items-center ${idx === step ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
+            <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${idx === step ? "border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-900" : "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"}`}>
+              {idx + 1}
+            </div>
+            <span className="mt-2 text-xs font-medium">{s.title}</span>
+          </div>
+          {idx < steps.length - 1 && (
+            <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700 mx-2" />
+          )}
+        </React.Fragment>
+      ))}
+    </div>
+  );
+
+  // Loading state göster
+  if (isCourier === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Yükleniyor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
+      {/* Sol: SVG ve tanıtım */}
+      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white" suppressHydrationWarning>
+        <img src={isCourier ? '/graphic1.svg' : '/graphic5.svg'} alt="Kayıt Görseli" className="w-3/4 max-w-lg mx-auto" />
+        <div className="mt-8 text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isCourier ? 'Yummine Kurye Kayıt' : 'Yummine Mağaza Kayıt'}</h2>
+          <p className="text-gray-600 mb-6">Adım adım kolay kayıt süreciyle hemen başla!</p>
+          <div className="group relative">
+            <button
+              type="button"
+              onClick={() => {
+                setIsCourier(!isCourier);
+                setStep(0);
+                setFormErrors({});
+              }}
+              className="ml-8 cursor-pointer"
+            >
+              {isCourier ? (
+                <FaMotorcycle className="mr-12 w-12 h-12 hover:scale-125 duration-200 hover:text-blue-500" />
+              ) : (
+                <BsShop className="mr-12 w-12 h-12 hover:scale-125 duration-200  hover:text-green-500" />
+              )}
+            </button>
+            <span className={`absolute -top-6 left-1/2 -translate-y-1/2 z-20 origin-left scale-0 px-3 rounded-lg border py-2 text-sm font-bold shadow-md transition-all duration-300 ease-in-out group-hover:scale-100 ${
+              isCourier 
+                ? 'border-blue-400 bg-blue-500 text-white' 
+                : 'border-green-400 bg-green-500 text-white'
+            }`}>
+              {isCourier ? 'Kurye Kaydı' : 'Mağaza Kaydı'}
+            </span>
+          </div>
+        </div>
+      </div>
+      {/* Sağ: Form */}
+      <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-gray-900 dark:bg-gray-900 text-white transition-colors duration-300">
+        <div className="max-w-lg w-full mx-auto">
+          {/* Mobil için sabit icon */}
+          <div className="md:hidden flex justify-center mb-6">
+            <div className="group relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsCourier(!isCourier);
+                  setStep(0);
+                  setFormErrors({});
+                }}
+                className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer"
+              >
+                {isCourier ? (
+                  <FaMotorcycle className="w-8 h-8 text-blue-500" />
+                ) : (
+                  <BsShop className="w-8 h-8 text-green-500" />
+                )}
+              </button>
+              <span className={`absolute -top-12 left-1/2 -translate-x-1/2 z-20 origin-bottom scale-0 px-3 rounded-lg border py-2 text-sm font-bold shadow-md transition-all duration-300 ease-in-out group-hover:scale-100 ${
+                isCourier 
+                  ? 'border-blue-400 bg-blue-500 text-white' 
+                  : 'border-green-400 bg-green-500 text-white'
+              }`}>
+                {isCourier ? 'KURYE' : 'MAĞAZA'}
+              </span>
+            </div>
+          </div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-white mb-2">{isCourier ? 'Kurye Kayıt' : 'Mağaza Kayıt'}</h1>
+            <p className="text-gray-300">Aşağıdaki adımları tamamlayarak kaydınızı oluşturun.</p>
+          </div>
+          {renderStepper()}
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {renderStepContent()}
+            {/* Gizlilik politikası ve hata mesajı sadece son adımda */}
+            {step === steps.length - 1 && (
+              <div className="bg-gray-800 rounded-lg p-4 flex items-start">
+                <input
+                  id="privacy-policy"
+                  name="privacy-policy"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1"
+                  checked={privacyPolicyAccepted}
+                  onChange={e => setPrivacyPolicyAccepted(e.target.checked)}
+                />
+                <label htmlFor="privacy-policy" className="ml-3 text-sm text-gray-200">
+                  Gizlilik Politikasını kabul ediyorum.
+                </label>
+              </div>
+            )}
+            {!privacyPolicyAccepted && step === steps.length - 1 && (
+              <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
+                <X className="h-5 w-5 mr-2" />
+                <span>Gizlilik politikasını kabul etmeniz gerekmektedir.</span>
+              </div>
+            )}
+            {error && (
+              <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
+                <X className="h-5 w-5 mr-2" />
+                <span>{error}</span>
+              </div>
+            )}
+            {/* Butonlar */}
+            <div className="flex justify-between items-center">
+              {step > 0 && (
+                <button
+                  type="button"
+                  onClick={prevStep}
+                  className="px-6 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition cursor-pointer"
+                >
+                  Geri
+                </button>
+              )}
+              {step < steps.length - 1 ? (
+                <button
+                  type="button"
+                  onClick={nextStep}
+                  className="ml-auto px-8 py-2 rounded-lg bg-linear-to-r from-blue-600 to-indigo-600 text-white font-semibold hover:from-blue-700 hover:to-indigo-700 transition cursor-pointer"
+                >
+                  İleri
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="ml-auto px-8 py-2 rounded-lg bg-linear-to-r from-green-600 to-emerald-600 text-white font-semibold hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isSubmitting ? 'Kaydediliyor...' : 'Kayıt Ol'}
+                </button>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
+      <style jsx global>{`
+        .input {
+          @apply w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500;
+        }
+        body {
+          background: #f3f4f6;
+        }
+        @media (prefers-color-scheme: dark) {
+          body {
+            background: #111827;
+          }
+        }
+      `}</style>
+    </div>
+  );
+}

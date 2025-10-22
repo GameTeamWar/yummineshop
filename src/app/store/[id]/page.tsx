@@ -152,7 +152,7 @@ export default function StorePage() {
                       <div className="mt-4 flex items-center space-x-2">
                         <button
                           onClick={() => removeFromCart(product.id)}
-                          className="px-3 py-1 bg-gray-200 text-gray-700 rounded"
+                          className="px-3 py-1 bg-gray-200 text-gray-700 rounded cursor-pointer"
                           disabled={!cart[product.id]}
                         >
                           -
@@ -160,7 +160,7 @@ export default function StorePage() {
                         <span>{cart[product.id] || 0}</span>
                         <button
                           onClick={() => addToCart(product.id)}
-                          className="px-3 py-1 bg-indigo-600 text-white rounded"
+                          className="px-3 py-1 bg-indigo-600 text-white rounded cursor-pointer"
                           disabled={product.stock <= (cart[product.id] || 0)}
                         >
                           +
@@ -200,7 +200,7 @@ export default function StorePage() {
                   </div>
                   <button
                     onClick={placeOrder}
-                    className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700"
+                    className="mt-4 w-full bg-indigo-600 text-white py-2 px-4 rounded hover:bg-indigo-700 cursor-pointer"
                   >
                     Sipariş Ver
                   </button>

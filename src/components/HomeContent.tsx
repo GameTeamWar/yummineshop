@@ -53,7 +53,7 @@ function HomeContent() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => setMode(mode === 'store' ? 'courier' : 'store')}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 cursor-pointer"
               >
                 {mode === 'store' ? 'Kurye Hizmeti' : 'Mağaza'}
               </button>
@@ -64,7 +64,7 @@ function HomeContent() {
                   {role === 0 && <Link href="/admin" className="text-red-600 hover:text-red-900">Admin</Link>}
                   {role === 1 && <Link href="/store" className="text-green-600 hover:text-green-900">Mağaza</Link>}
                   {role === 3 && <Link href="/courier" className="text-blue-600 hover:text-blue-900">Kurye</Link>}
-                  <button onClick={() => window.location.href = '/auth/login'} className="text-gray-600 hover:text-gray-900">Çıkış</button>
+                  <button onClick={() => window.location.href = '/auth/login'} className="text-gray-600 hover:text-gray-900 cursor-pointer">Çıkış</button>
                 </>
               ) : (
                 <>
@@ -184,7 +184,7 @@ function CourierService() {
           <div id="map" className="w-full h-96 bg-gray-200 rounded-lg"></div>
           <button
             onClick={calculateDistance}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            className="mt-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
           >
             Mesafe Hesapla
           </button>
@@ -240,7 +240,7 @@ function CourierService() {
             <button
               type="button"
               onClick={submitCourierRequest}
-              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700"
+              className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 cursor-pointer"
             >
               Kurye Talebi Oluştur
             </button>

@@ -21,7 +21,6 @@ export const useNotifications = () => {
           const token = await getToken(messaging, {
             vapidKey,
           });
-          console.log('FCM Token:', token);
           // Token'ı Firestore'a kaydet
         }
       } catch (error) {

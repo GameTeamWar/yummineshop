@@ -6,6 +6,16 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { useNotifications } from '@/hooks/useNotifications';
 
+// Güçlü şifre oluşturma fonksiyonu
+const generateStrongPassword = (): string => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+};
+
 interface AuthContextType {
   user: User | null;
   role: number | null;
@@ -113,11 +123,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, role: number, additionalData?: any) => {
     try {
-      // Kurye için otomatik 6-digit şifre oluştur
-      const finalPassword = role === 3 ? Math.floor(100000 + Math.random() * 900000).toString() : password;
+      console.log('Registering user:', { email, passwordLength: password.length, role });
+
+      // Kurye için otomatik 8-digit güçlü şifre oluştur
+      const finalPassword = role === 3 ? generateStrongPassword() : password;
+
+      console.log('Final password length:', finalPassword.length);
 
       const userCredential = await createUserWithEmailAndPassword(auth, email, finalPassword);
       const user = userCredential.user;
+
+      console.log('User created successfully:', user.uid);
 
       // Kullanıcı verilerini Firestore'a kaydet
       await setDoc(doc(db, 'users', user.uid), {
@@ -126,6 +142,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         ...additionalData,
         createdAt: new Date(),
       });
+
+      console.log('User data saved to Firestore');
 
       // Mağaza ise şube izin sistemi için giriş oluştur
       if (role === 1 && additionalData?.branchReferenceCode) {
@@ -138,6 +156,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           approvedBranches: [],
           createdAt: new Date(),
         });
+        console.log('Branch permissions created');
       }
 
       // Kayıt sonrası email gönderme (partner için)
@@ -145,6 +164,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         await sendRegistrationEmail(email, { ...additionalData, generatedPassword: role === 3 ? finalPassword : undefined });
       }
     } catch (error: any) {
+      console.error('Registration error:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+
       // Firebase hata kodlarını kullanıcı dostu mesajlara dönüştür
       let errorMessage = 'Kayıt olurken bir hata oluştu.';
 
@@ -164,8 +187,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         case 'auth/operation-not-allowed':
           errorMessage = 'Kayıt işlemi şu anda devre dışı. Lütfen destek ile iletişime geçin.';
           break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Çok fazla kayıt denemesi. Lütfen bir süre bekleyin ve tekrar deneyin.';
+          break;
         default:
-          errorMessage = error.message || 'Bilinmeyen bir hata oluştu.';
+          console.error('Unknown Firebase Auth error:', error);
+          errorMessage = `Kayıt hatası: ${error.message || 'Bilinmeyen hata'}`;
       }
 
       throw new Error(errorMessage);

@@ -1,124 +1,590 @@
-'use client';
+'use client';'use client';'use client';'use client';
+
+
 
 import Link from 'next/link';
+
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+
+import { useRouter } from 'next/navigation';import Link from 'next/link';
+
 import { useEffect } from 'react';
 
+import { useAuth } from '@/context/AuthContext';
+
 export default function PartnerPage() {
-  const { user, role } = useAuth();
+
+  const { user, role } = useAuth();import { useRouter } from 'next/navigation';import Link from 'next/link';import Link from 'next/link';
+
   const router = useRouter();
 
+import { useEffect } from 'react';
+
   useEffect(() => {
-    // Müşteri kullanıcıları ana sayfaya yönlendir
-    if (user && role === 2) {
+
+    if (user && role === 2) {import { useAuth } from '@/context/AuthContext';import { useAuth } from '@/context/AuthContext';
+
       router.push('/');
-    }
+
+    }export default function PartnerPage() {
+
   }, [user, role, router]);
 
-  // Giriş yapmış partner kullanıcıları için dashboard benzeri sayfa
+  const { user, role } = useAuth();import { useRouter } from 'next/navigation';import { useRouter } from 'next/navigation';
+
   if (user && (role === 1 || role === 3)) {
-    // Partner ID'sini al (şimdilik user.uid'nin son 6 hanesi)
-    const partnerId = user.uid.slice(-6);
+
+    const partnerId = user.uid.slice(-6);  const router = useRouter();
+
+
+
+    if (role === 1) {import { useEffect } from 'react';import { useEffect } from 'react';
+
+      router.push(`/partner/${partnerId}`);
+
+      return null;  useEffect(() => {
+
+    }
+
+    // Müşteri kullanıcıları ana sayfaya yönlendir
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white">
+
+      <div className="min-h-screen bg-gray-900 text-white">    if (user && role === 2) {
+
         <header className="bg-gray-800 shadow">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">      router.push('/');export default function PartnerPage() {export default function PartnerPage() {
+
             <div className="flex justify-between items-center py-6">
-              <div className="flex items-center">
+
+              <div className="flex items-center">    }
+
                 <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>
-              </div>
+
+              </div>  }, [user, role, router]);  const { user, role } = useAuth();  const { user, role } = useAuth();
+
               <div className="flex items-center space-x-4">
+
                 <span className="text-sm text-gray-300">Hoş geldiniz, {user.email}</span>
+
                 <Link href={`/partner/${partnerId}/dashboard`} className="text-green-400 hover:text-green-300">Dashboard</Link>
-                {role === 1 && <Link href={`/partner/${partnerId}/shop`} className="text-blue-400 hover:text-blue-300">Mağaza</Link>}
-                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="text-purple-400 hover:text-purple-300">Kurye</Link>
+
+                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="text-purple-400 hover:text-purple-300">Kurye</Link>  // Giriş yapmış partner kullanıcıları için dashboard benzeri sayfa  const router = useRouter();  const router = useRouter();
+
                 <button onClick={() => window.location.href = '/auth/login'} className="text-gray-300 hover:text-white">Çıkış</button>
-              </div>
+
+              </div>  if (user && (role === 1 || role === 3)) {
+
             </div>
-          </div>
+
+          </div>    // Partner ID'sini al (şimdilik user.uid'nin son 6 hanesi)
+
         </header>
 
+    const partnerId = user.uid.slice(-6);
+
         <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-          <div className="px-4 py-6 sm:px-0">
+
+          <div className="px-4 py-6 sm:px-0">  useEffect(() => {  useEffect(() => {
+
             <h2 className="text-3xl font-extrabold text-white mb-6">
-              {role === 1 ? 'Mağaza Paneli' : 'Kurye Paneli'}
+
+              Kurye Paneli    // Kuryeler için genel partner sayfası, mağazalar için cari ID ile yönlendirme
+
             </h2>
-            <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
+
+            <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">    if (role === 1) {    // Müşteri kullanıcıları ana sayfaya yönlendir    // Müşteri kullanıcıları ana sayfaya yönlendir
+
               <p className="text-gray-300 mb-4">
-                {role === 1
-                  ? 'Mağaza panelinize hoş geldiniz. Aşağıdaki bağlantılardan işlemlerinizi yönetebilirsiniz.'
-                  : 'Kurye panelinize hoş geldiniz. Aşağıdaki bağlantılardan teslimatlarınızı yönetebilirsiniz.'
-                }
+
+                Kurye panelinize hoş geldiniz.      // Mağaza sahipleri için cari ID'yi bulup yönlendir
+
               </p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <Link
-                  href={`/partner/${partnerId}/dashboard`}
-                  className="bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg text-center font-medium transition-colors duration-200"
-                >
-                  📊 Dashboard
-                </Link>
-                {role === 1 && (
-                  <Link
-                    href={`/partner/${partnerId}/shop`}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg text-center font-medium transition-colors duration-200"
-                  >
-                    🏪 Mağaza Yönetimi
-                  </Link>
-                )}
-                <Link
-                  href={`/partner/${partnerId}/kuryemaaskısmı`}
-                  className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-3 rounded-lg text-center font-medium transition-colors duration-200"
-                >
-                  🏍️ Kurye Bölümü
-                </Link>
-              </div>
-            </div>
+
+            </div>      // Şimdilik user.uid'den türet, gerçek uygulamada veritabanından çekilmeli    if (user && role === 2) {    if (user && role === 2) {
+
           </div>
-        </main>
+
+        </main>      router.push(`/partner/${partnerId}`);
+
       </div>
-    );
+
+    );      return null;      router.push('/');      router.push('/');
+
   }
 
-  // Giriş yapmamış kullanıcılar için tanıtım sayfası
+    }
+
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {/* Header */}
+
+    <div className="min-h-screen bg-gray-900 text-white">    }    }
+
       <header className="bg-gray-800 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">    return (
+
           <div className="flex justify-between items-center py-6">
-            <div className="flex items-center">
+
+            <div className="flex items-center">      <div className="min-h-screen bg-gray-900 text-white">  }, [user, role, router]);  }, [user, role, router]);
+
               <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>
-            </div>
+
+            </div>        <header className="bg-gray-800 shadow">
+
             <div className="flex space-x-4">
-              <Link
+
+              <Link          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
                 href="/auth/login?type=partner"
-                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"            <div className="flex justify-between items-center py-6">
+
               >
-                Giriş Yap
+
+                Giriş Yap              <div className="flex items-center">  // Giriş yapmış partner kullanıcıları için dashboard benzeri sayfa  // Giriş yapmış partner kullanıcıları için dashboard benzeri sayfa
+
               </Link>
-              <Link
+
+              <Link                <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>
+
                 href="/auth/register?type=partner"
-                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"              </div>  if (user && (role === 1 || role === 3)) {  if (user && (role === 1 || role === 3)) {
+
               >
-                Kayıt Ol
+
+                Kayıt Ol              <div className="flex items-center space-x-4">
+
               </Link>
-            </div>
+
+            </div>                <span className="text-sm text-gray-300">Hoş geldiniz, {user.email}</span>    // Partner ID'sini al (şimdilik user.uid'nin son 6 hanesi)    // Partner ID'sini al (şimdilik user.uid'nin son 6 hanesi)
+
           </div>
-        </div>
+
+        </div>                <Link href={`/partner/${partnerId}/dashboard`} className="text-green-400 hover:text-green-300">Dashboard</Link>
+
       </header>
 
-      {/* Hero Section */}
+                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="text-purple-400 hover:text-purple-300">Kurye</Link>    const partnerId = user.uid.slice(-6);    const partnerId = user.uid.slice(-6);
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center">
+
+        <div className="text-center">                <button onClick={() => window.location.href = '/auth/login'} className="text-gray-300 hover:text-white">Çıkış</button>
+
           <h2 className="text-4xl font-extrabold text-white sm:text-5xl">
-            Yummine Partner Programı'na Katılın
+
+            Yummine Partner Programı'na Katılın              </div>
+
           </h2>
-          <p className="mt-4 text-xl text-gray-300 max-w-3xl mx-auto">
+
+          <p className="mt-4 text-xl text-gray-300 max-w-3xl mx-auto">            </div>
+
             Mağaza sahibi veya kurye olarak Yummine ailesine katılın.
+
+          </p>          </div>    // Kuryeler için genel partner sayfası, mağazalar için cari ID ile yönlendirme    // Kuryeler için genel partner sayfası, mağazalar için cari ID ile yönlendirme
+
+        </div>
+
+      </main>        </header>
+
+    </div>
+
+  );    if (role === 1) {    if (role === 1) {
+
+}
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+
+          <div className="px-4 py-6 sm:px-0">      // Mağaza sahipleri için cari ID'yi bulup yönlendir      // Mağaza sahipleri için cari ID'yi bulup yönlendir
+
+            <h2 className="text-3xl font-extrabold text-white mb-6">
+
+              Kurye Paneli      // Şimdilik user.uid'den türet, gerçek uygulamada veritabanından çekilmeli      // Şimdilik user.uid'den türet, gerçek uygulamada veritabanından çekilmeli
+
+            </h2>
+
+            <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">      router.push(`/partner/${partnerId}`);      router.push(`/partner/${partnerId}`);
+
+              <p className="text-gray-300 mb-4">
+
+                Kurye panelinize hoş geldiniz. Aşağıdaki bağlantılardan işlemlerinizi yönetebilirsiniz.      return null;      return null;
+
+              </p>
+
+    }    }
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                <Link href={`/partner/${partnerId}/dashboard`} className="block">
+
+                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">
+
+                    <h3 className="text-lg font-semibold text-white mb-2">📊 Dashboard</h3>    return (    return (
+
+                    <p className="text-gray-300 text-sm">Genel istatistiklerinizi görüntüleyin</p>
+
+                  </div>      <div className="min-h-screen bg-gray-900 text-white">      <div className="min-h-screen bg-gray-900 text-white">
+
+                </Link>
+
+        <header className="bg-gray-800 shadow">        <header className="bg-gray-800 shadow">
+
+                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="block">
+
+                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+                    <h3 className="text-lg font-semibold text-white mb-2">🏍️ Kurye Yönetimi</h3>
+
+                    <p className="text-gray-300 text-sm">Kurye işlemlerinizi takip edin</p>            <div className="flex justify-between items-center py-6">            <div className="flex justify-between items-center py-6">
+
+                  </div>
+
+                </Link>              <div className="flex items-center">              <div className="flex items-center">
+
+              </div>
+
+            </div>                <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>                <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>
+
+          </div>
+
+        </main>              </div>              </div>
+
+      </div>
+
+    );              <div className="flex items-center space-x-4">              <div className="flex items-center space-x-4">
+
+  }
+
+                <span className="text-sm text-gray-300">Hoş geldiniz, {user.email}</span>                <span className="text-sm text-gray-300">Hoş geldiniz, {user.email}</span>
+
+  // Giriş yapmamış kullanıcılar için tanıtım sayfası
+
+  return (                <Link href={`/partner/${partnerId}/dashboard`} className="text-green-400 hover:text-green-300">Dashboard</Link>                <Link href={`/partner/${partnerId}/dashboard`} className="text-green-400 hover:text-green-300">Dashboard</Link>
+
+    <div className="min-h-screen bg-gray-900 text-white">
+
+      <header className="bg-gray-800 shadow-sm">                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="text-purple-400 hover:text-purple-300">Kurye</Link>                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="text-purple-400 hover:text-purple-300">Kurye</Link>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="flex justify-between items-center py-6">                <button onClick={() => window.location.href = '/auth/login'} className="text-gray-300 hover:text-white">Çıkış</button>                <button onClick={() => window.location.href = '/auth/login'} className="text-gray-300 hover:text-white">Çıkış</button>
+
+            <div className="flex items-center">
+
+              <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>              </div>              </div>
+
+            </div>
+
+            <div className="flex space-x-4">            </div>            </div>
+
+              <Link
+
+                href="/auth/login?type=partner"          </div>          </div>
+
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+
+              >        </header>        </header>
+
+                Giriş Yap
+
+              </Link>
+
+              <Link
+
+                href="/auth/register?type=partner"        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+
+              >          <div className="px-4 py-6 sm:px-0">          <div className="px-4 py-6 sm:px-0">
+
+                Kayıt Ol
+
+              </Link>            <h2 className="text-3xl font-extrabold text-white mb-6">            <h2 className="text-3xl font-extrabold text-white mb-6">
+
+            </div>
+
+          </div>              Kurye Paneli              Kurye Paneli
+
+        </div>
+
+      </header>            </h2>            </h2>
+
+
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">            <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">            <div className="bg-gray-800 shadow rounded-lg p-6 border border-gray-700">
+
+        <div className="text-center">
+
+          <h2 className="text-4xl font-extrabold text-white sm:text-5xl">              <p className="text-gray-300 mb-4">              <p className="text-gray-300 mb-4">
+
+            Yummine Partner Programı'na Katılın
+
+          </h2>                Kurye panelinize hoş geldiniz. Aşağıdaki bağlantılardan işlemlerinizi yönetebilirsiniz.                Kurye panelinize hoş geldiniz. Aşağıdaki bağlantılardan işlemlerinizi yönetebilirsiniz.
+
+          <p className="mt-4 text-xl text-gray-300 max-w-3xl mx-auto">
+
+            Mağaza sahibi veya kurye olarak Yummine ailesine katılın.              </p>              </p>
+
             Binlerce müşteriyle buluşun ve gelirinizi artırın.
+
           </p>
+
+          <div className="mt-8 flex justify-center space-x-4">
+
+            <Link              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+              href="/auth/register?type=partner"
+
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"                <Link href={`/partner/${partnerId}/dashboard`} className="block">                <Link href={`/partner/${partnerId}/dashboard`} className="block">
+
+            >
+
+              Hemen Başla                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">
+
+            </Link>
+
+            <Link                    <h3 className="text-lg font-semibold text-white mb-2">📊 Dashboard</h3>                    <h3 className="text-lg font-semibold text-white mb-2">📊 Dashboard</h3>
+
+              href="/auth/login?type=partner"
+
+              className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"                    <p className="text-gray-300 text-sm">Genel istatistiklerinizi görüntüleyin</p>                    <p className="text-gray-300 text-sm">Genel istatistiklerinizi görüntüleyin</p>
+
+            >
+
+              Giriş Yap                  </div>                  </div>
+
+            </Link>
+
+          </div>                </Link>                </Link>
+
+        </div>
+
+
+
+        <div className="mt-20">
+
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="block">                <Link href={`/partner/${partnerId}/kuryemaaskısmı`} className="block">
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+
+              <div className="text-3xl mb-4">🏪</div>                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">                  <div className="bg-gray-700 hover:bg-gray-600 p-6 rounded-lg border border-gray-600 transition-colors">
+
+              <h3 className="text-xl font-semibold text-white mb-2">Mağaza Sahibi</h3>
+
+              <p className="text-gray-300">                    <h3 className="text-lg font-semibold text-white mb-2">🏍️ Kurye Yönetimi</h3>                    <h3 className="text-lg font-semibold text-white mb-2">🏍️ Kurye Yönetimi</h3>
+
+                Ürünlerinizi binlerce müşteriye ulaştırın. Kolay yönetim paneli ile satışlarınızı takip edin.
+
+              </p>                    <p className="text-gray-300 text-sm">Kurye işlemlerinizi takip edin</p>                    <p className="text-gray-300 text-sm">Kurye işlemlerinizi takip edin</p>
+
+            </div>
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">                  </div>                  </div>
+
+              <div className="text-3xl mb-4">🏍️</div>
+
+              <h3 className="text-xl font-semibold text-white mb-2">Kurye</h3>                </Link>                </Link>
+
+              <p className="text-gray-300">
+
+                Esnek çalışma saatleri ile teslimat yaparak gelir elde edin. Kendi zamanınızı yönetin.              </div>              </div>
+
+              </p>
+
+            </div>            </div>            </div>
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+
+              <div className="text-3xl mb-4">📈</div>          </div>          </div>
+
+              <h3 className="text-xl font-semibold text-white mb-2">Büyüme</h3>
+
+              <p className="text-gray-300">        </main>        </main>
+
+                Sürekli büyüyen müşteri tabanımızla işinizi geliştirin ve gelirinizi artırın.
+
+              </p>      </div>      </div>
+
+            </div>
+
+          </div>    );    );
+
+        </div>
+
+      </main>  }  }
+
+    </div>
+
+  );
+
+}
+  // Giriş yapmamış kullanıcılar için tanıtım sayfası  // Giriş yapmamış kullanıcılar için tanıtım sayfası
+
+  return (  return (
+
+    <div className="min-h-screen bg-gray-900 text-white">    <div className="min-h-screen bg-gray-900 text-white">
+
+      {/* Header */}      {/* Header */}
+
+      <header className="bg-gray-800 shadow-sm">      <header className="bg-gray-800 shadow-sm">
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+          <div className="flex justify-between items-center py-6">          <div className="flex justify-between items-center py-6">
+
+            <div className="flex items-center">            <div className="flex items-center">
+
+              <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>              <h1 className="text-2xl font-bold text-white">Yummine Partner</h1>
+
+            </div>            </div>
+
+            <div className="flex space-x-4">            <div className="flex space-x-4">
+
+              <Link              <Link
+
+                href="/auth/login?type=partner"                href="/auth/login?type=partner"
+
+                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"                className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium"
+
+              >              >
+
+                Giriş Yap                Giriş Yap
+
+              </Link>              </Link>
+
+              <Link              <Link
+
+                href="/auth/register?type=partner"                href="/auth/register?type=partner"
+
+                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"                className="bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-green-700"
+
+              >              >
+
+                Kayıt Ol                Kayıt Ol
+
+              </Link>              </Link>
+
+            </div>            </div>
+
+          </div>          </div>
+
+        </div>        </div>
+
+      </header>      </header>
+
+
+
+      {/* Hero Section */}      {/* Hero Section */}
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+        <div className="text-center">        <div className="text-center">
+
+          <h2 className="text-4xl font-extrabold text-white sm:text-5xl">          <h2 className="text-4xl font-extrabold text-white sm:text-5xl">
+
+            Yummine Partner Programı'na Katılın            Yummine Partner Programı'na Katılın
+
+          </h2>          </h2>
+
+          <p className="mt-4 text-xl text-gray-300 max-w-3xl mx-auto">          <p className="mt-4 text-xl text-gray-300 max-w-3xl mx-auto">
+
+            Mağaza sahibi veya kurye olarak Yummine ailesine katılın.            Mağaza sahibi veya kurye olarak Yummine ailesine katılın.
+
+            Binlerce müşteriyle buluşun ve gelirinizi artırın.            Binlerce müşteriyle buluşun ve gelirinizi artırın.
+
+          </p>          </p>
+
+          <div className="mt-8 flex justify-center space-x-4">          <div className="mt-8 flex justify-center space-x-4">
+
+            <Link            <Link
+
+              href="/auth/register?type=partner"              href="/auth/register?type=partner"
+
+              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"              className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+
+            >            >
+
+              Hemen Başla              Hemen Başla
+
+            </Link>            </Link>
+
+            <Link            <Link
+
+              href="/auth/login?type=partner"              href="/auth/login?type=partner"
+
+              className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"              className="bg-gray-700 hover:bg-gray-600 text-white px-8 py-4 rounded-lg text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200"
+
+            >            >
+
+              Giriş Yap              Giriş Yap
+
+            </Link>            </Link>
+
+          </div>          </div>
+
+        </div>        </div>
+
+
+
+        {/* Features */}        {/* Features */}
+
+        <div className="mt-20">        <div className="mt-20">
+
+          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+
+              <div className="text-3xl mb-4">🏪</div>              <div className="text-3xl mb-4">🏪</div>
+
+              <h3 className="text-xl font-semibold text-white mb-2">Mağaza Sahibi</h3>              <h3 className="text-xl font-semibold text-white mb-2">Mağaza Sahibi</h3>
+
+              <p className="text-gray-300">              <p className="text-gray-300">
+
+                Ürünlerinizi binlerce müşteriye ulaştırın. Kolay yönetim paneli ile satışlarınızı takip edin.                Ürünlerinizi binlerce müşteriye ulaştırın. Kolay yönetim paneli ile satışlarınızı takip edin.
+
+              </p>              </p>
+
+            </div>            </div>
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+
+              <div className="text-3xl mb-4">🏍️</div>              <div className="text-3xl mb-4">🏍️</div>
+
+              <h3 className="text-xl font-semibold text-white mb-2">Kurye</h3>              <h3 className="text-xl font-semibold text-white mb-2">Kurye</h3>
+
+              <p className="text-gray-300">              <p className="text-gray-300">
+
+                Esnek çalışma saatleri ile teslimat yaparak gelir elde edin. Kendi zamanınızı yönetin.                Esnek çalışma saatleri ile teslimat yaparak gelir elde edin. Kendi zamanınızı yönetin.
+
+              </p>              </p>
+
+            </div>            </div>
+
+            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">            <div className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+
+              <div className="text-3xl mb-4">📈</div>              <div className="text-3xl mb-4">📈</div>
+
+              <h3 className="text-xl font-semibold text-white mb-2">Büyüme</h3>              <h3 className="text-xl font-semibold text-white mb-2">Büyüme</h3>
+
+              <p className="text-gray-300">              <p className="text-gray-300">
+
+                Sürekli büyüyen müşteri tabanımızla işinizi geliştirin ve gelirinizi artırın.                Sürekli büyüyen müşteri tabanımızla işinizi geliştirin ve gelirinizi artırın.
+
+              </p>              </p>
+
+            </div>            </div>
+
+          </div>          </div>
+
+        </div>        </div>
+
+      </main>      </main>
+
+    </div>    </div>
+
+  );  );
+
+}}
         </div>
 
         {/* Hizmet Türü Seçimi */}

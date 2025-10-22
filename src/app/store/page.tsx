@@ -261,7 +261,7 @@ export default function StorePanel() {
             <h1 className="text-2xl font-bold text-gray-900">Mağaza Paneli</h1>
             <button
               onClick={() => router.push('/')}
-              className="text-indigo-600 hover:text-indigo-900"
+              className="text-indigo-600 hover:text-indigo-900 cursor-pointer"
             >
               Ana Sayfa
             </button>
@@ -275,7 +275,7 @@ export default function StorePanel() {
             <nav className="-mb-px flex">
               <button
                 onClick={() => setActiveTab('products')}
-                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                className={`py-2 px-4 border-b-2 font-medium text-sm cursor-pointer ${
                   activeTab === 'products'
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -285,7 +285,7 @@ export default function StorePanel() {
               </button>
               <button
                 onClick={() => setActiveTab('orders')}
-                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                className={`py-2 px-4 border-b-2 font-medium text-sm cursor-pointer ${
                   activeTab === 'orders'
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -295,7 +295,7 @@ export default function StorePanel() {
               </button>
               <button
                 onClick={() => setActiveTab('branches')}
-                className={`py-2 px-4 border-b-2 font-medium text-sm ${
+                className={`py-2 px-4 border-b-2 font-medium text-sm cursor-pointer ${
                   activeTab === 'branches'
                     ? 'border-indigo-500 text-indigo-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -313,7 +313,7 @@ export default function StorePanel() {
                   <h2 className="text-lg font-medium text-gray-900">Ürün Yönetimi</h2>
                   <button
                     onClick={() => setShowAddProduct(true)}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+                    className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 cursor-pointer"
                   >
                     Ürün Ekle
                   </button>
@@ -369,13 +369,13 @@ export default function StorePanel() {
                     <div className="mt-4 flex space-x-2">
                       <button
                         onClick={addProduct}
-                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer"
                       >
                         Ekle
                       </button>
                       <button
                         onClick={() => setShowAddProduct(false)}
-                        className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                        className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 cursor-pointer"
                       >
                         İptal
                       </button>
@@ -415,13 +415,13 @@ export default function StorePanel() {
                             <>
                               <button
                                 onClick={() => updateOrderStatus(order.id, 'confirmed')}
-                                className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                                className="bg-green-600 text-white px-3 py-1 rounded text-sm cursor-pointer"
                               >
                                 Onayla
                               </button>
                               <button
                                 onClick={() => updateOrderStatus(order.id, 'cancelled')}
-                                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                                className="bg-red-600 text-white px-3 py-1 rounded text-sm cursor-pointer"
                               >
                                 İptal
                               </button>
@@ -430,7 +430,7 @@ export default function StorePanel() {
                           {order.status === 'confirmed' && (
                             <button
                               onClick={() => updateOrderStatus(order.id, 'ready')}
-                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+                              className="bg-blue-600 text-white px-3 py-1 rounded text-sm cursor-pointer"
                             >
                               Hazır
                             </button>
@@ -449,7 +449,7 @@ export default function StorePanel() {
                   <h2 className="text-lg font-medium text-gray-900">Şube Yönetimi</h2>
                   <button
                     onClick={() => setShowAddBranch(true)}
-                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+                    className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 cursor-pointer"
                   >
                     Şube Ekle
                   </button>
@@ -464,7 +464,7 @@ export default function StorePanel() {
                       </p>
                       <button
                         onClick={copyBranchCode}
-                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors duration-200"
+                        className="inline-flex items-center px-3 py-1 text-xs font-medium text-blue-700 bg-blue-100 hover:bg-blue-200 rounded-md transition-colors duration-200 cursor-pointer"
                         title="Referans kodunu kopyala"
                       >
                         {copySuccess ? (
@@ -515,13 +515,13 @@ export default function StorePanel() {
                       <div className="flex space-x-2">
                         <button
                           onClick={requestBranchAccess}
-                          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+                          className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 cursor-pointer"
                         >
                           İzin Talebi Gönder
                         </button>
                         <button
                           onClick={() => setShowAddBranch(false)}
-                          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
+                          className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 cursor-pointer"
                         >
                           İptal
                         </button>
@@ -550,13 +550,13 @@ export default function StorePanel() {
                                 <>
                                   <button
                                     onClick={() => approveBranchRequest(request.id)}
-                                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 cursor-pointer"
                                   >
                                     Onayla
                                   </button>
                                   <button
                                     onClick={() => rejectBranchRequest(request.id)}
-                                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700"
+                                    className="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700 cursor-pointer"
                                   >
                                     Reddet
                                   </button>
