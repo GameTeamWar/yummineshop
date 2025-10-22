@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { FaMotorcycle } from 'react-icons/fa';
 import { BsShop } from 'react-icons/bs';
 import { Mail, Lock, X, EyeClosed, Eye } from 'lucide-react';
+import { FcGoogle } from 'react-icons/fc';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -88,86 +89,118 @@ export default function LoginPage() {
   const isCourier = type === 'courier';
 
   if (isCustomer) {
-    // Müşteri girişi için eski basit tasarım
+    // Müşteri girişi için yeni tasarım
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-              Müşteri Girişi
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
-              Yummine hesabınıza giriş yapın
-            </p>
+      <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
+        {/* Sol: SVG ve tanıtım */}
+        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
+          <img src="/graphic3.svg" alt="Müşteri Giriş Görseli" className="w-3/4 max-w-lg mx-auto" />
+          <div className="mt-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Yummine Müşteri Girişi</h2>
+            <p className="text-gray-300 mb-6">Hesabınıza giriş yaparak siparişlerinizi takip edin</p>
           </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
+        </div>
+
+        {/* Sağ: Form */}
+        <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
+          <div className="max-w-lg w-full mx-auto">
+            {/* Mobil için logo */}
+            <div className="md:hidden flex justify-center mb-6">
+              <div className="text-2xl font-bold text-blue-600">Yummine</div>
+            </div>
+
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hesabınıza Giriş Yapın</h1>
+              <p className="text-gray-600">Tasarım ve web endüstrisinin en güçlü aracına erişin.</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="email" className="sr-only">E-posta</label>
                 <input
-                  id="email"
-                  name="email"
                   type="email"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-t-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                  placeholder="E-posta adresi"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="E-posta Adresi"
+                  required
                 />
               </div>
+
               <div>
-                <label htmlFor="password" className="sr-only">Şifre</label>
                 <div className="relative">
                   <input
-                    id="password"
-                    name="password"
                     type={showPassword ? "text" : "password"}
-                    required
-                    className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-b-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                    placeholder="Şifre"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    className="w-full px-3 py-2 pr-10 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Şifre"
+                    required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                   >
                     {showPassword ? (
-                      <Eye className="h-4 w-4" />
+                      <Eye className="h-5 w-5" />
                     ) : (
-                      <EyeClosed className="h-4 w-4" />
+                      <EyeClosed className="h-5 w-5" />
                     )}
                   </button>
                 </div>
               </div>
-            </div>
-            {error && <p className="text-red-500 text-sm">{error}</p>}
-            <div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-              </button>
-            </div>
-            <div className="text-center space-y-2">
-              <a
-                href="/auth/register?type=customer"
-                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 block"
-              >
-                Hesabınız yok mu? Kayıt olun
-              </a>
-              <a
-                href="/auth/forgot-password?type=customer"
-                className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 block"
-              >
-                Şifremi unuttum
-              </a>
-            </div>
-          </form>
+
+              {error && (
+                <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
+                  <X className="h-5 w-5 mr-2" />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                </button>
+                <Link href="/auth/forgot-password?type=customer" className="ml-4 text-blue-600 hover:text-blue-800 text-sm">
+                  Şifremi Unuttum?
+                </Link>
+              </div>
+
+              <div className="other-links social-with-title">
+                <div className="text-center mb-4">
+                  <span className="text-gray-500">Veya şununla giriş yapın</span>
+                </div>
+                <div className="flex justify-center">
+                  <a href="#" className="w-12 h-12 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition shadow-sm">
+                    <FcGoogle className="w-6 h-6" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <span className="text-gray-500">Yeni hesap mı? </span>
+                <Link href="/auth/register?type=customer" className="text-blue-600 hover:text-blue-800">
+                  Yeni hesap oluşturun
+                </Link>
+              </div>
+            </form>
+          </div>
         </div>
+
+        <style jsx global>{`
+          body {
+            background: #f3f4f6;
+          }
+          @media (prefers-color-scheme: dark) {
+            body {
+              background: #111827;
+            }
+          }
+        `}</style>
       </div>
     );
   }

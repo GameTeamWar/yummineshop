@@ -266,6 +266,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const userData = {
         email,
         role,
+        userId: additionalData?.userId, // Benzersiz kullanıcı ID'si
         ...processedDocuments,
         logoURL, // File objesi yerine download URL
         authorizedPersons: processedAuthorizedPersons, // İşlenmiş yetkili kişiler
