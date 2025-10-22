@@ -28,8 +28,8 @@ const Documents: React.FC<DocumentsProps> = ({
           <input
             type="file"
             accept="image/*"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.idCard ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.idCard ? 'border-red-500' : 'border-gray-300'
             }`}
             onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
             required
@@ -47,7 +47,7 @@ const Documents: React.FC<DocumentsProps> = ({
             <input
               type="file"
               accept="image/*"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 formErrors.taxCertificate ? 'border-red-500' : 'border-gray-700'
               }`}
               onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
@@ -67,8 +67,8 @@ const Documents: React.FC<DocumentsProps> = ({
             <input
               type="file"
               accept="image/*"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formErrors.driversLicense ? 'border-red-500' : 'border-gray-700'
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.driversLicense ? 'border-red-500' : 'border-gray-300'
               }`}
               onChange={e => setDocuments(f => ({ ...f, driversLicense: e.target.files?.[0] || null }))}
               required

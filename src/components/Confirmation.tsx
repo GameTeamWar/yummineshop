@@ -32,48 +32,48 @@ const Confirmation: React.FC<ConfirmationProps> = ({
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold mb-4">Kayıt Onayı</h3>
-      <div className="bg-gray-800 rounded-lg p-4">
-        <p className="text-gray-300 mb-4">Kayıt işleminiz tamamlanmak üzere. Aşağıdaki bilgileri kontrol edin:</p>
+      <div className="bg-gray-50 rounded-lg p-4">
+        <p className="text-gray-700 mb-4">Kayıt işleminiz tamamlanmak üzere. Aşağıdaki bilgileri kontrol edin:</p>
         <div className="space-y-2">
           <div className="flex justify-between">
-            <span className="text-gray-400">Mağaza Adı:</span>
-            <span className="text-white">{storeInfo.storeName}</span>
+            <span className="text-gray-600">Mağaza Adı:</span>
+            <span className="text-gray-900">{storeInfo.storeName}</span>
           </div>
           {storeInfo.corporateType !== "PRIVATE" && (
             <div className="flex justify-between">
-              <span className="text-gray-400">Şirket Türü:</span>
-              <span className="text-white">{storeInfo.corporateType}</span>
+              <span className="text-gray-600">Şirket Türü:</span>
+              <span className="text-gray-900">{storeInfo.corporateType}</span>
             </div>
           )}
           {storeInfo.corporateType !== "PRIVATE" && storeInfo.companyName && (
             <div className="flex justify-between">
-              <span className="text-gray-400">Şirket Adı:</span>
-              <span className="text-white">{storeInfo.companyName}</span>
+              <span className="text-gray-600">Şirket Adı:</span>
+              <span className="text-gray-900">{storeInfo.companyName}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400">{storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası:" : "VKN/TCKN:"}</span>
-            <span className="text-white">{storeInfo.taxId}</span>
+            <span className="text-gray-600">{storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası:" : "VKN/TCKN:"}</span>
+            <span className="text-gray-900">{storeInfo.taxId}</span>
           </div>
           {storeInfo.hasBranches && (
             <div className="flex justify-between">
-              <span className="text-gray-400">Şube Sayısı:</span>
-              <span className="text-white">{storeInfo.branchCount}</span>
+              <span className="text-gray-600">Şube Sayısı:</span>
+              <span className="text-gray-900">{storeInfo.branchCount}</span>
             </div>
           )}
           {storeInfo.hasBranches && (
             <div className="flex justify-between">
-              <span className="text-gray-400">Bu Oluşturulan Hesap Şube Türü:</span>
-              <span className="text-white">{storeInfo.isMainBranch ? "Bu Ana Şube" : "Bu Alt Şube"}</span>
+              <span className="text-gray-600">Bu Oluşturulan Hesap Şube Türü:</span>
+              <span className="text-gray-900">{storeInfo.isMainBranch ? "Bu Ana Şube" : "Bu Alt Şube"}</span>
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400">Cari ID:</span>
+            <span className="text-gray-600">Cari ID:</span>
             <div className="flex items-center space-x-2">
               <input
                 type="text"
                 readOnly
-                className="px-2 py-1 rounded bg-gray-700 text-white text-sm"
+                className="px-2 py-1 rounded bg-gray-200 text-gray-900 text-sm"
                 value={storeInfo.branchReferenceCode}
               />
               <button
@@ -86,13 +86,13 @@ const Confirmation: React.FC<ConfirmationProps> = ({
             </div>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Yetkili Kişi Sayısı:</span>
-            <span className="text-white">{authorizedPersons.length}</span>
+            <span className="text-gray-600">Yetkili Kişi Sayısı:</span>
+            <span className="text-gray-900">{authorizedPersons.length}</span>
           </div>
           {authorizedPersons.map((person, index) => (
-            <div key={index} className="mt-2 p-2 bg-gray-700 rounded">
-              <div className="text-sm text-gray-400">Yetkili Kişi {index + 1}:</div>
-              <div className="text-white">{person.firstName} {person.lastName} - {person.email} ({person.role})</div>
+            <div key={index} className="mt-2 p-2 bg-gray-100 rounded">
+              <div className="text-sm text-gray-600">Yetkili Kişi {index + 1}:</div>
+              <div className="text-gray-900">{person.firstName} {person.lastName} - {person.email} ({person.role})</div>
             </div>
           ))}
         </div>

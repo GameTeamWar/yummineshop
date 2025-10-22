@@ -38,8 +38,8 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Mağaza Adı *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.storeName ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.storeName ? 'border-red-500' : 'border-gray-300'
             }`}
             value={storeInfo?.storeName || ""}
             onChange={e => setStoreInfo(f => ({ ...f, storeName: e.target.value }))}
@@ -50,8 +50,8 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
         <div>
           <label className="block text-sm font-medium mb-1">Şirket Türü *</label>
           <select
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.corporateType ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.corporateType ? 'border-red-500' : 'border-gray-300'
             }`}
             value={storeInfo.corporateType || ""}
             onChange={e => {
@@ -85,8 +85,8 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
             <label className="block text-sm font-medium mb-1">Şirket Adı *</label>
             <input
               type="text"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formErrors.companyName ? 'border-red-500' : 'border-gray-700'
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.companyName ? 'border-red-500' : 'border-gray-300'
               }`}
               value={storeInfo.companyName || ""}
               onChange={e => setStoreInfo(f => ({ ...f, companyName: e.target.value }))}
@@ -102,8 +102,8 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
             </label>
             <input
               type="text"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formErrors.taxId ? 'border-red-500' : 'border-gray-700'
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.taxId ? 'border-red-500' : 'border-gray-300'
               }`}
               value={storeInfo.taxId || ""}
               onChange={e => setStoreInfo(f => ({ ...f, taxId: e.target.value }))}
@@ -115,8 +115,8 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
         <div>
           <label className="block text-sm font-medium mb-1">Mağaza Tipi *</label>
           <select
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.storeType ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.storeType ? 'border-red-500' : 'border-gray-300'
             }`}
             value={storeInfo.storeType || ""}
             onChange={e => setStoreInfo(f => ({ ...f, storeType: e.target.value }))}
@@ -137,7 +137,7 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
           <input
             type="file"
             accept="image/*"
-            className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             onChange={e => {
               const file = e.target.files?.[0] || null;
               setStoreInfo(f => ({ ...f, logo: file }));
@@ -160,7 +160,7 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
               <img
                 src={logoPreview}
                 alt="Mağaza Logo Önizlemesi"
-                className="max-w-32 max-h-32 object-contain border border-gray-600 rounded-lg bg-gray-800 p-2"
+                className="max-w-32 max-h-32 object-contain border border-gray-300 rounded-lg bg-gray-50 p-2"
               />
             </div>
           )}

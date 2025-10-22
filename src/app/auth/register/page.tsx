@@ -3,6 +3,7 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import Link from 'next/link';
 
 async function sendPasswordEmail({ to, password, additionalData }: { to: string; password: string; additionalData?: any }) {
   const res = await fetch('/api/send-email', {
@@ -783,14 +784,202 @@ export default function RegisterPage() {
     );
   }
 
+  // Müşteri kayıt formu
+  if (type === 'customer') {
+    const handleCustomerSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      setIsSubmitting(true);
+      setError('');
+
+      // Form validation
+      if (!person.firstName.trim() || !person.lastName.trim() || !person.email.trim() || !person.phone.trim()) {
+        setError('Lütfen tüm alanları doldurun.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(person.email)) {
+        setError('Geçerli bir e-posta adresi giriniz.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Phone validation
+      const phoneRegex = /^[0-9+\-\s()]{10,}$/;
+      if (!phoneRegex.test(person.phone.replace(/\s/g, ''))) {
+        setError('Geçerli bir telefon numarası giriniz.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Email kontrolü
+      try {
+        const auth = getAuth();
+        const signInMethods = await fetchSignInMethodsForEmail(auth, person.email);
+        if (signInMethods.length > 0) {
+          setError('Bu e-posta adresi zaten kayıtlı. Lütfen farklı bir e-posta adresi kullanın.');
+          setIsSubmitting(false);
+          return;
+        }
+      } catch (emailError) {
+        console.error('E-posta kontrolü hatası:', emailError);
+      }
+
+      // Rastgele şifre oluştur
+      const randomPassword = generateRandomPassword();
+
+      // Müşteri kayıt işlemi (role = 4)
+      try {
+        await register(person.email, randomPassword, 4, {
+          firstName: person.firstName,
+          lastName: person.lastName,
+          phone: person.phone,
+        });
+      } catch (err) {
+        toast.error('Kayıt işlemi başarısız. Lütfen tekrar deneyin.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Şifreyi e-posta ile gönder
+      try {
+        await sendPasswordEmail({ to: person.email, password: randomPassword });
+      } catch (err) {
+        setError('Şifre e-posta ile gönderilemedi. Lütfen tekrar deneyin.');
+        toast.error('Şifre e-posta ile gönderilemedi. Lütfen tekrar deneyin.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      setIsSubmitting(false);
+
+      // Başarılı kayıt sonrası yönlendirme
+      toast.success('Kayıt işlemi başarıyla tamamlandı! Yönlendiriliyorsunuz...', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      router.push('/');
+    };
+
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-md w-full space-y-8">
+          <div>
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+              Müşteri Kayıt
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
+              Yummine hesabınızı oluşturun
+            </p>
+          </div>
+          <form className="mt-8 space-y-6" onSubmit={handleCustomerSubmit}>
+            <div className="rounded-md shadow-sm -space-y-px">
+              <div>
+                <label htmlFor="firstName" className="sr-only">Ad</label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-t-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  placeholder="Ad"
+                  value={person.firstName}
+                  onChange={(e) => setPerson(p => ({ ...p, firstName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="lastName" className="sr-only">Soyad</label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  placeholder="Soyad"
+                  value={person.lastName}
+                  onChange={(e) => setPerson(p => ({ ...p, lastName: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="email" className="sr-only">E-posta</label>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  placeholder="E-posta adresi"
+                  value={person.email}
+                  onChange={(e) => setPerson(p => ({ ...p, email: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label htmlFor="phone" className="sr-only">Telefon</label>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  required
+                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white rounded-b-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                  placeholder="Telefon numarası"
+                  value={person.phone}
+                  onChange={(e) => setPerson(p => ({ ...p, phone: e.target.value }))}
+                />
+              </div>
+            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Kaydediliyor...' : 'Kayıt Ol'}
+              </button>
+            </div>
+            <div className="text-center space-y-2">
+              <a
+                href="/auth/login?type=customer"
+                className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 block"
+              >
+                Hesabınız var mı? Giriş yapın
+              </a>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
       {/* Sol: SVG ve tanıtım */}
-      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-white" suppressHydrationWarning>
+      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
         <img src={isCourier ? '/graphic1.svg' : '/graphic5.svg'} alt="Kayıt Görseli" className="w-3/4 max-w-lg mx-auto" />
         <div className="mt-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{isCourier ? 'Yummine Kurye Kayıt' : 'Yummine Mağaza Kayıt'}</h2>
-          <p className="text-gray-600 mb-6">Adım adım kolay kayıt süreciyle hemen başla!</p>
+          <h2 className="text-2xl font-bold text-white mb-2">{isCourier ? 'Yummine Kurye Kayıt' : 'Yummine Mağaza Kayıt'}</h2>
+          <p className="text-gray-300 mb-6">Adım adım kolay kayıt süreciyle hemen başla!</p>
           <div className="group relative">
             <button
               type="button"
@@ -818,7 +1007,7 @@ export default function RegisterPage() {
         </div>
       </div>
       {/* Sağ: Form */}
-      <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-gray-900 dark:bg-gray-900 text-white transition-colors duration-300">
+      <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
         <div className="max-w-lg w-full mx-auto">
           {/* Mobil için sabit icon */}
           <div className="md:hidden flex justify-center mb-6">
@@ -830,7 +1019,7 @@ export default function RegisterPage() {
                   setStep(0);
                   setFormErrors({});
                 }}
-                className="p-3 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors cursor-pointer"
+                className="p-3 rounded-full bg-gray-200 hover:bg-gray-300 transition-colors cursor-pointer"
               >
                 {isCourier ? (
                   <FaMotorcycle className="w-8 h-8 text-blue-500" />
@@ -848,15 +1037,23 @@ export default function RegisterPage() {
             </div>
           </div>
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">{isCourier ? 'Kurye Kayıt' : 'Mağaza Kayıt'}</h1>
-            <p className="text-gray-300">Aşağıdaki adımları tamamlayarak kaydınızı oluşturun.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">{isCourier ? 'Kurye Kayıt' : 'Mağaza Kayıt'}</h1>
+            <p className="text-gray-600">Aşağıdaki adımları tamamlayarak kaydınızı oluşturun.</p>
           </div>
+
+          <div className="text-center mb-6">
+            <span className="text-gray-500">Hesabınız var mı? </span>
+            <Link href="/auth/login?type=partner" className="text-blue-600 hover:text-blue-800">
+              Giriş yapmak istiyorum
+            </Link>
+          </div>
+
           {renderStepper()}
           <form onSubmit={handleSubmit} className="space-y-8">
             {renderStepContent()}
             {/* Gizlilik politikası ve hata mesajı sadece son adımda */}
             {step === steps.length - 1 && (
-              <div className="bg-gray-800 rounded-lg p-4 flex items-start">
+              <div className="bg-gray-100 rounded-lg p-4 flex items-start">
                 <input
                   id="privacy-policy"
                   name="privacy-policy"
@@ -865,7 +1062,7 @@ export default function RegisterPage() {
                   checked={privacyPolicyAccepted}
                   onChange={e => setPrivacyPolicyAccepted(e.target.checked)}
                 />
-                <label htmlFor="privacy-policy" className="ml-3 text-sm text-gray-200">
+                <label htmlFor="privacy-policy" className="ml-3 text-sm text-gray-700">
                   Gizlilik Politikasını kabul ediyorum.
                 </label>
               </div>
@@ -882,7 +1079,7 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={prevStep}
-                  className="px-6 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition cursor-pointer"
+                  className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition cursor-pointer"
                 >
                   Geri
                 </button>
@@ -910,7 +1107,7 @@ export default function RegisterPage() {
       </div>
       <style jsx global>{`
         .input {
-          @apply w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500;
+          @apply w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500;
         }
         body {
           background: #f3f4f6;

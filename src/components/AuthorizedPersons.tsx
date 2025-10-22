@@ -64,8 +64,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
               <label className="block text-sm font-medium mb-1">Ad *</label>
               <input
                 type="text"
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authFirstName_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authFirstName_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={person.firstName || ""}
                 onChange={e => {
@@ -81,8 +81,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
               <label className="block text-sm font-medium mb-1">Soyad *</label>
               <input
                 type="text"
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authLastName_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authLastName_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={person.lastName || ""}
                 onChange={e => {
@@ -98,8 +98,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
               <label className="block text-sm font-medium mb-1">Telefon *</label>
               <input
                 type="tel"
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authPhone_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authPhone_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={person.phone || ""}
                 onChange={e => {
@@ -115,8 +115,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
               <label className="block text-sm font-medium mb-1">E-posta *</label>
               <input
                 type="email"
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authEmail_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authEmail_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={person.email || ""}
                 onChange={e => handleEmailChange(index, e.target.value)}
@@ -132,8 +132,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
             <div>
               <label className="block text-sm font-medium mb-1">Mağazadaki Rolü *</label>
               <select
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authRole_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authRole_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 value={person.role || ""}
                 onChange={e => {
@@ -159,8 +159,8 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
               <input
                 type="file"
                 accept="image/*"
-                className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                  formErrors[`authIdCard_${index}`] ? 'border-red-500' : 'border-gray-700'
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors[`authIdCard_${index}`] ? 'border-red-500' : 'border-gray-300'
                 }`}
                 onChange={e => {
                   const newPersons = [...authorizedPersons];

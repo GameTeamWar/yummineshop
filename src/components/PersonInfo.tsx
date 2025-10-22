@@ -79,8 +79,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Ad *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.firstName ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.firstName ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.firstName || ""}
             onChange={e => setPerson(f => ({ ...f, firstName: e.target.value }))}
@@ -92,8 +92,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Soyad *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.lastName ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.lastName ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.lastName || ""}
             onChange={e => setPerson(f => ({ ...f, lastName: e.target.value }))}
@@ -105,8 +105,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Telefon *</label>
           <input
             type="tel"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.phone ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.phone ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.phone || ""}
             onChange={e => setPerson(f => ({ ...f, phone: e.target.value }))}
@@ -118,8 +118,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <label className="block text-sm font-medium mb-1">E-posta *</label>
           <input
             type="email"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.email ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.email ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.email || ""}
             onChange={e => handleEmailChange(e.target.value)}
@@ -138,8 +138,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           </label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.iban ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.iban ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.iban || ""}
             onChange={e => setPerson(f => ({ ...f, iban: e.target.value }))}
@@ -153,8 +153,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           </label>
           <input
             type="date"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.birthDate ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.birthDate ? 'border-red-500' : 'border-gray-300'
             }`}
             value={person?.birthDate || ""}
             onChange={e => setPerson(f => ({ ...f, birthDate: e.target.value }))}
@@ -166,7 +166,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <label className="block text-sm font-medium mb-1">KEP Adresi</label>
           <input
             type="email"
-            className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={person?.kepAddress || ""}
             onChange={e => setPerson(f => ({ ...f, kepAddress: e.target.value }))}
           />
@@ -178,8 +178,8 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
             <input
               type="number"
               min="2"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formErrors.branchCount ? 'border-red-500' : 'border-gray-700'
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.branchCount ? 'border-red-500' : 'border-gray-300'
               }`}
               value={storeInfo.branchCount || 2}
               onChange={e => setStoreInfo((f: any) => ({ ...f, branchCount: parseInt(e.target.value) || 2 }))}
@@ -192,7 +192,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
           <div>
             <label className="block text-sm font-medium mb-1">Şube Türü *</label>
             <select
-              className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={storeInfo.isMainBranch ? "main" : "branch"}
               onChange={e => setStoreInfo((f: any) => ({ ...f, isMainBranch: e.target.value === "main" }))}
               required
@@ -214,7 +214,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
                 />
 
                 <span
-                  className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                  className="relative w-8 h-8 flex justify-center items-center bg-gray-50 border-2 border-gray-300 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
                 >
                   <span
                     className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"
@@ -251,7 +251,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
                 />
 
                 <span
-                  className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                  className="relative w-8 h-8 flex justify-center items-center bg-gray-50 border-2 border-gray-300 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
                 >
                   <span
                     className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"

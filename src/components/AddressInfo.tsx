@@ -141,8 +141,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
         <div>
           <label className="block text-sm font-medium mb-1">İl *</label>
           <select
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.province ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.province ? 'border-red-500' : 'border-gray-300'
             }`}
             value={address.province || ""}
             onChange={e => setAddress(f => ({ ...f, province: e.target.value }))}
@@ -159,8 +159,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
           <label className="block text-sm font-medium mb-1">İlçe *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.district ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.district ? 'border-red-500' : 'border-gray-300'
             }`}
             value={address.district || ""}
             onChange={e => setAddress(f => ({ ...f, district: e.target.value }))}
@@ -173,8 +173,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Mahalle *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.neighborhood ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.neighborhood ? 'border-red-500' : 'border-gray-300'
             }`}
             value={address.neighborhood || ""}
             onChange={e => setAddress(f => ({ ...f, neighborhood: e.target.value }))}
@@ -187,8 +187,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
           <label className="block text-sm font-medium mb-1">Sokak/Cadde *</label>
           <input
             type="text"
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.street ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.street ? 'border-red-500' : 'border-gray-300'
             }`}
             value={address.street || ""}
             onChange={e => setAddress(f => ({ ...f, street: e.target.value }))}
@@ -200,8 +200,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium mb-1">Açık Adres *</label>
           <textarea
-            className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-              formErrors.detailedAddress ? 'border-red-500' : 'border-gray-700'
+            className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              formErrors.detailedAddress ? 'border-red-500' : 'border-gray-300'
             }`}
             value={address.detailedAddress || ""}
             onChange={e => setAddress(f => ({ ...f, detailedAddress: e.target.value }))}
@@ -215,9 +215,9 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
 
       {/* Konum Bilgileri */}
       {address.latitude && address.longitude && (
-        <div className="bg-gray-800 rounded-lg p-4">
-          <h4 className="text-sm font-medium text-gray-200 mb-2">Seçilen Konum:</h4>
-          <div className="text-xs text-gray-400">
+        <div className="bg-gray-50 rounded-lg p-4">
+          <h4 className="text-sm font-medium text-gray-900 mb-2">Seçilen Konum:</h4>
+          <div className="text-xs text-gray-600">
             Enlem: {address.latitude.toFixed(6)}, Boylam: {address.longitude.toFixed(6)}
           </div>
         </div>

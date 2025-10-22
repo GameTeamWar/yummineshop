@@ -191,8 +191,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       console.log('Registering user:', { email, passwordLength: password.length, role });
 
-      // Kurye için otomatik 8-digit güçlü şifre oluştur
-      const finalPassword = role === 3 ? generateStrongPassword() : password;
+      // Kurye için otomatik 6-digit sayısal şifre oluştur
+      const generateRandomPassword = () => {
+        const chars = '0123456789';
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
+
+      const finalPassword = role === 3 ? generateRandomPassword() : password;
 
       console.log('Final password length:', finalPassword.length);
 
