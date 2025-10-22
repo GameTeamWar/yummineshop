@@ -169,6 +169,11 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
                 }}
                 required
               />
+              {person.idCard ? (
+                <p className="text-green-400 text-xs mt-1">Seçilen dosya: {person.idCard.name}</p>
+              ) : (
+                <p className="text-gray-400 text-xs mt-1">Dosya seçilmedi</p>
+              )}
               {formErrors[`authIdCard_${index}`] && <p className="text-red-500 text-xs mt-1">{formErrors[`authIdCard_${index}`]}</p>}
             </div>
           </div>

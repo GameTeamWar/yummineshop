@@ -34,6 +34,11 @@ const Documents: React.FC<DocumentsProps> = ({
             onChange={e => setDocuments(f => ({ ...f, idCard: e.target.files?.[0] || null }))}
             required
           />
+          {documents.idCard ? (
+            <p className="text-green-400 text-xs mt-1">Seçilen dosya: {documents.idCard.name}</p>
+          ) : (
+            <p className="text-gray-400 text-xs mt-1">Dosya seçilmedi</p>
+          )}
           {formErrors.idCard && <p className="text-red-500 text-xs mt-1">{formErrors.idCard}</p>}
         </div>
         {!isCourier && (
@@ -48,6 +53,11 @@ const Documents: React.FC<DocumentsProps> = ({
               onChange={e => setDocuments(f => ({ ...f, taxCertificate: e.target.files?.[0] || null }))}
               required
             />
+            {documents.taxCertificate ? (
+              <p className="text-green-400 text-xs mt-1">Seçilen dosya: {documents.taxCertificate.name}</p>
+            ) : (
+              <p className="text-gray-400 text-xs mt-1">Dosya seçilmedi</p>
+            )}
             {formErrors.taxCertificate && <p className="text-red-500 text-xs mt-1">{formErrors.taxCertificate}</p>}
           </div>
         )}
@@ -63,6 +73,11 @@ const Documents: React.FC<DocumentsProps> = ({
               onChange={e => setDocuments(f => ({ ...f, driversLicense: e.target.files?.[0] || null }))}
               required
             />
+            {documents.driversLicense ? (
+              <p className="text-green-400 text-xs mt-1">Seçilen dosya: {documents.driversLicense.name}</p>
+            ) : (
+              <p className="text-gray-400 text-xs mt-1">Dosya seçilmedi</p>
+            )}
             {formErrors.driversLicense && <p className="text-red-500 text-xs mt-1">{formErrors.driversLicense}</p>}
           </div>
         )}

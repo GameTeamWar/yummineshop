@@ -1,5 +1,4 @@
 import React from 'react';
-
 interface StoreInfoType {
   storeName: string;
   taxId: string;
@@ -133,37 +132,6 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
           </select>
           {formErrors.storeType && <p className="text-red-500 text-xs mt-1">{formErrors.storeType}</p>}
         </div>
-
-        {storeInfo.hasBranches && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Şube Sayısı *</label>
-            <input
-              type="number"
-              min="2"
-              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                formErrors.branchCount ? 'border-red-500' : 'border-gray-700'
-              }`}
-              value={storeInfo.branchCount || 2}
-              onChange={e => setStoreInfo(f => ({ ...f, branchCount: parseInt(e.target.value) || 2 }))}
-              required
-            />
-            {formErrors.branchCount && <p className="text-red-500 text-xs mt-1">{formErrors.branchCount}</p>}
-          </div>
-        )}
-        {storeInfo.hasBranches && (
-          <div>
-            <label className="block text-sm font-medium mb-1">Şube Türü *</label>
-            <select
-              className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={storeInfo.isMainBranch ? "main" : "branch"}
-              onChange={e => setStoreInfo(f => ({ ...f, isMainBranch: e.target.value === "main" }))}
-              required
-            >
-              <option value="main">Bu Ana Şube</option>
-              <option value="branch">Bu Alt Şube</option>
-            </select>
-          </div>
-        )}
         <div className="sm:col-span-2">
           <label className="block text-sm font-medium mb-1">Mağaza Logosu</label>
           <input
@@ -181,6 +149,11 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
               }
             }}
           />
+          {storeInfo.logo ? (
+            <p className="text-green-400 text-xs mt-1">Seçilen dosya: {storeInfo.logo.name}</p>
+          ) : (
+            <p className="text-gray-400 text-xs mt-1">Dosya seçilmedi</p>
+          )}
           {logoPreview && (
             <div className="mt-3">
               <p className="text-sm text-gray-400 mb-2">Logo Önizlemesi:</p>
@@ -198,3 +171,5 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
 };
 
 export default StoreInfo;
+
+

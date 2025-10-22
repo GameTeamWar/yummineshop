@@ -16,6 +16,21 @@ interface PersonInfoProps {
   formErrors: { [key: string]: string };
   isCourier: boolean;
   checkEmailExists: (email: string, isAuthorizedPerson?: boolean, personIndex?: number) => void;
+  storeInfo?: {
+    storeName: string;
+    taxId: string;
+    companyName: string;
+    storeType: string;
+    branchCount: number;
+    isMainBranch: boolean;
+    branchReferenceCode: string;
+    corporateType: string;
+    hasBranches: boolean;
+    hasAuthorizedPersons: boolean;
+    logo: File | null;
+  };
+  setStoreInfo?: React.Dispatch<React.SetStateAction<any>>;
+  generateBranchReferenceCode?: () => string;
 }
 
 const PersonInfo: React.FC<PersonInfoProps> = ({
@@ -24,6 +39,9 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
   formErrors,
   isCourier,
   checkEmailExists,
+  storeInfo,
+  setStoreInfo,
+  generateBranchReferenceCode,
 }) => {
   const [emailTimeout, setEmailTimeout] = useState<number | null>(null);
 
@@ -153,6 +171,115 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
             onChange={e => setPerson(f => ({ ...f, kepAddress: e.target.value }))}
           />
         </div>
+
+        {!isCourier && storeInfo && setStoreInfo && storeInfo.hasBranches && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Şube Sayısı *</label>
+            <input
+              type="number"
+              min="2"
+              className={`w-full px-3 py-2 rounded-md bg-gray-800 text-white border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.branchCount ? 'border-red-500' : 'border-gray-700'
+              }`}
+              value={storeInfo.branchCount || 2}
+              onChange={e => setStoreInfo((f: any) => ({ ...f, branchCount: parseInt(e.target.value) || 2 }))}
+              required
+            />
+            {formErrors.branchCount && <p className="text-red-500 text-xs mt-1">{formErrors.branchCount}</p>}
+          </div>
+        )}
+        {!isCourier && storeInfo && setStoreInfo && storeInfo.hasBranches && (
+          <div>
+            <label className="block text-sm font-medium mb-1">Şube Türü *</label>
+            <select
+              className="w-full px-3 py-2 rounded-md bg-gray-800 text-white border border-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={storeInfo.isMainBranch ? "main" : "branch"}
+              onChange={e => setStoreInfo((f: any) => ({ ...f, isMainBranch: e.target.value === "main" }))}
+              required
+            >
+              <option value="main">Bu Ana Şube</option>
+              <option value="branch">Bu Alt Şube</option>
+            </select>
+          </div>
+        )}
+        {!isCourier && storeInfo && setStoreInfo && (
+          <div className="flex flex-col space-y-4 items-start sm:col-span-2">
+            <div className="flex items-center space-x-3">
+              <label className="group flex items-center cursor-pointer">
+                <input
+                  className="hidden peer"
+                  type="checkbox"
+                  checked={storeInfo.hasBranches}
+                  onChange={e => setStoreInfo((f: any) => ({ ...f, hasBranches: e.target.checked, branchCount: e.target.checked ? f.branchCount : 1 }))}
+                />
+
+                <span
+                  className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                >
+                  <span
+                    className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"
+                  ></span>
+
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    className="hidden w-5 h-5 text-white peer-checked:block transition-transform duration-500 transform scale-50 peer-checked:scale-100"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      clipRule="evenodd"
+                      d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                      fillRule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+
+                <span
+                  className="ml-3 text-gray-300 group-hover:text-blue-400 font-medium transition-colors duration-300"
+                >
+                  Şubeleriniz var mı?
+                </span>
+              </label>
+            </div>
+            <div className="flex items-center space-x-3">
+              <label className="group flex items-center cursor-pointer">
+                <input
+                  className="hidden peer"
+                  type="checkbox"
+                  checked={storeInfo.hasAuthorizedPersons}
+                  onChange={e => setStoreInfo((f: any) => ({ ...f, hasAuthorizedPersons: e.target.checked }))}
+                />
+
+                <span
+                  className="relative w-8 h-8 flex justify-center items-center bg-gray-800 border-2 border-gray-600 rounded-md shadow-md transition-all duration-500 peer-checked:border-blue-500 peer-checked:bg-blue-500 peer-hover:scale-105"
+                >
+                  <span
+                    className="absolute inset-0 bg-linear-to-br from-white/30 to-white/10 opacity-0 peer-checked:opacity-100 rounded-md transition-all duration-500 peer-checked:animate-pulse"
+                  ></span>
+
+                  <svg
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                    className="hidden w-5 h-5 text-white peer-checked:block transition-transform duration-500 transform scale-50 peer-checked:scale-100"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      clipRule="evenodd"
+                      d="M16.707 5.293a1 1 0 00-1.414 0L8 12.586 4.707 9.293a1 1 0 10-1.414 1.414l4 4a1 1 0 001.414 0l8-8a1 1 0 000-1.414z"
+                      fillRule="evenodd"
+                    ></path>
+                  </svg>
+                </span>
+
+                <span
+                  className="ml-3 text-gray-300 group-hover:text-blue-400 font-medium transition-colors duration-300"
+                >
+                  Yetkili kişileriniz var mı?
+                </span>
+              </label>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

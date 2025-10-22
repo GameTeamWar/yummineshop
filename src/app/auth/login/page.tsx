@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -17,6 +18,14 @@ export default function LoginPage() {
     e.preventDefault();
     try {
       await login(email, password);
+      toast.success('Giriş başarılı! Yönlendiriliyorsunuz...', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       if (type === 'customer') {
         router.push('/');
       } else {

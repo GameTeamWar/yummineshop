@@ -29,20 +29,21 @@ import { getAuth, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import CourierRegistration from '@/components/CourierRegistration';
 import StoreRegistration from '@/components/StoreRegistration';
+import { toast } from 'react-toastify';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const type = searchParams.get('type');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState<number | null>(null);
   const [error, setError] = useState('');
-  const [isCourier, setIsCourier] = useState<boolean | null>(null);
+  const [isCourier, setIsCourier] = useState<boolean | null>(type === 'courier' ? true : false);
   const [privacyPolicyAccepted, setPrivacyPolicyAccepted] = useState(false);
   const { register } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const type = searchParams.get('type');
 
   // Form validation states
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
@@ -77,7 +78,7 @@ export default function RegisterPage() {
     companyName: "",
     storeType: "",
     branchCount: 1,
-    isMainBranch: true,
+    isMainBranch: false,
     branchReferenceCode: "",
     corporateType: "",
     hasBranches: false,
@@ -185,14 +186,19 @@ export default function RegisterPage() {
     if (!person.firstName.trim()) errors.firstName = "Ad alanı zorunludur";
     if (!person.lastName.trim()) errors.lastName = "Soyad alanı zorunludur";
     if (!person.phone.trim()) errors.phone = "Telefon alanı zorunludur";
-    if (!person.email.trim()) errors.email = "E-posta alanı zorunludur";
     if (!isCourier && !person.iban.trim()) errors.iban = "IBAN alanı zorunludur";
     if (!isCourier && !person.birthDate) errors.birthDate = "Doğum tarihi alanı zorunludur";
     
     // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (person.email && !emailRegex.test(person.email)) {
-      errors.email = "Geçerli bir e-posta adresi giriniz";
+    if (!person.email.trim()) {
+      errors.email = "E-posta alanı zorunludur";
+    } else if (formErrors.email && formErrors.email !== "E-posta alanı zorunludur") {
+      errors.email = formErrors.email;
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(person.email)) {
+        errors.email = "Geçerli bir e-posta adresi giriniz";
+      }
     }
     
     // Phone validation
@@ -270,12 +276,14 @@ export default function RegisterPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const nextStep = () => {
+  const nextStep = async () => {
     const currentStepTitle = steps[step]?.title;
     let isValid = true;
 
     switch (currentStepTitle) {
       case "Kişi Bilgileri":
+        // Email kontrolü yap
+        await checkEmailExists(person.email);
         isValid = validatePersonInfo();
         // Also check if email validation is still in progress or has errors
         if (formErrors.email) {
@@ -287,6 +295,11 @@ export default function RegisterPage() {
         break;
       case "Yetkili Kişiler":
         isValid = validateAuthorizedPersons();
+        // Also check if any authorized person email validation has errors
+        const hasAuthEmailErrors = Object.keys(formErrors).some(key => key.startsWith('authEmail_') && formErrors[key]);
+        if (hasAuthEmailErrors) {
+          isValid = false;
+        }
         break;
       case "Evrak Bilgileri":
         isValid = validateDocuments();
@@ -325,11 +338,11 @@ export default function RegisterPage() {
     };
   }, [logoPreview]);
 
-  // 8 haneli harf ve rakam içeren güçlü şifre oluşturucu
+  // 6 haneli rakam içeren şifre oluşturucu
   function generateRandomPassword() {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    const chars = '0123456789';
     let result = '';
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 6; i++) {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
@@ -342,11 +355,18 @@ export default function RegisterPage() {
 
   // E-posta kontrolü fonksiyonu
   const checkEmailExists = async (email: string, isAuthorizedPerson: boolean = false, personIndex?: number) => {
-    if (!email || !email.includes('@')) return;
+    const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
+    
+    if (!email.trim()) {
+      setFormErrors(prev => ({ 
+        ...prev, 
+        [errorKey]: 'E-posta alanı zorunludur' 
+      }));
+      return;
+    }
     
     // Ana e-posta ile yetkili kişi e-postasının aynı olup olmadığını kontrol et
     if (isAuthorizedPerson && person?.email && email.toLowerCase() === person.email.toLowerCase()) {
-      const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
       setFormErrors(prev => ({ 
         ...prev, 
         [errorKey]: 'Yetkili kişi e-posta adresi ana e-posta ile aynı olamaz.' 
@@ -358,27 +378,25 @@ export default function RegisterPage() {
       const auth = getAuth();
       const signInMethods = await fetchSignInMethodsForEmail(auth, email);
       if (signInMethods.length > 0) {
-        const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
         setFormErrors(prev => ({ 
           ...prev, 
           [errorKey]: 'Bu e-posta adresi zaten kayıtlı. Lütfen farklı bir e-posta adresi kullanın.' 
         }));
+        toast.error('Bu e-posta adresi zaten kayıtlı. Lütfen farklı bir e-posta adresi kullanın.', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+        });
       } else {
-        const errorKey = personIndex !== undefined ? `authEmail_${personIndex}` : 'email';
         setFormErrors(prev => ({ ...prev, [errorKey]: '' }));
       }
     } catch (error) {
       console.error('E-posta kontrolü hatası:', error);
       // Hata durumunda sessizce geç
     }
-  };
-
-  // Dosya yükleme fonksiyonu
-  const uploadFile = async (file: File, path: string): Promise<string> => {
-    const storage = getStorage();
-    const storageRef = ref(storage, path);
-    await uploadBytes(storageRef, file);
-    return await getDownloadURL(storageRef);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -397,71 +415,9 @@ export default function RegisterPage() {
     // Cari ID (mağaza için)
     const branchReferenceCode = isCourier ? undefined : storeInfo.branchReferenceCode;
 
-    // Dosyaları yükle ve URL'leri al
-    let uploadedDocuments: {
-      idCard: File | string | null;
-      driversLicense: File | string | null;
-      taxCertificate: File | string | null;
-    } = { ...documents };
-    let uploadedLogo: File | string | null = storeInfo.logo;
-    let uploadedAuthorizedPersons = authorizedPersons.map(person => ({ ...person, idCard: person.idCard as File | string | null }));
-
-    try {
-      // Logo yükleme (mağaza için)
-      if (!isCourier && storeInfo.logo instanceof File) {
-        const logoPath = `logos/${Date.now()}_${storeInfo.logo.name}`;
-        uploadedLogo = await uploadFile(storeInfo.logo, logoPath);
-      }
-
-      // Belgeleri yükleme
-      if (documents.idCard instanceof File) {
-        uploadedDocuments.idCard = await uploadFile(documents.idCard, `documents/${Date.now()}_id_${documents.idCard.name}`);
-      }
-      if (documents.driversLicense instanceof File) {
-        uploadedDocuments.driversLicense = await uploadFile(documents.driversLicense, `documents/${Date.now()}_license_${documents.driversLicense.name}`);
-      }
-      if (documents.taxCertificate instanceof File) {
-        uploadedDocuments.taxCertificate = await uploadFile(documents.taxCertificate, `documents/${Date.now()}_tax_${documents.taxCertificate.name}`);
-      }
-
-      // Yetkili kişilerin kimliklerini yükleme
-      if (!isCourier && storeInfo.hasAuthorizedPersons) {
-        for (let i = 0; i < authorizedPersons.length; i++) {
-          const idCard = authorizedPersons[i].idCard;
-          if (idCard instanceof File) {
-            const idCardPath = `documents/${Date.now()}_auth_id_${i}_${idCard.name}`;
-            uploadedAuthorizedPersons[i] = {
-              ...uploadedAuthorizedPersons[i],
-              idCard: await uploadFile(idCard, idCardPath)
-            };
-          } else {
-            uploadedAuthorizedPersons[i] = {
-              ...uploadedAuthorizedPersons[i],
-              idCard: idCard
-            };
-          }
-        }
-      }
-    } catch (uploadError) {
-      console.error('Dosya yükleme hatası:', uploadError);
-      setError('Dosya yükleme işlemi başarısız. Lütfen tekrar deneyin.');
-      setIsSubmitting(false);
-      return;
-    }
-
     // Kayıt işlemi
     try {
-      const trimmedEmail = person.email.trim().toLowerCase();
-      
-      // Email format kontrolü
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(trimmedEmail)) {
-        setError('Geçerli bir e-posta adresi giriniz.');
-        setIsSubmitting(false);
-        return;
-      }
-
-      await register(trimmedEmail, randomPassword, isCourier ? 3 : 1, {
+      await register(person.email, randomPassword, isCourier ? 3 : 1, {
         firstName: person.firstName,
         lastName: person.lastName,
         phone: person.phone,
@@ -477,14 +433,21 @@ export default function RegisterPage() {
           isMainBranch: storeInfo.isMainBranch,
           corporateType: storeInfo.corporateType,
           branchReferenceCode,
-          logo: uploadedLogo,
-          authorizedPersons: uploadedAuthorizedPersons,
+          logo: storeInfo.logo,
+          authorizedPersons: authorizedPersons,
         }),
         ...address,
-        ...uploadedDocuments,
+        ...documents,
       });
     } catch (err) {
-      setError('Kayıt işlemi başarısız.');
+      toast.error('Kayıt işlemi başarısız. Lütfen tekrar deneyin.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       setIsSubmitting(false);
       return;
     }
@@ -494,6 +457,14 @@ export default function RegisterPage() {
       await sendPasswordEmail({ to: person.email, password: randomPassword });
     } catch (err) {
       setError('Şifre e-posta ile gönderilemedi. Lütfen tekrar deneyin.');
+      toast.error('Şifre e-posta ile gönderilemedi. Lütfen tekrar deneyin.', {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       setIsSubmitting(false);
       return;
     }
@@ -523,6 +494,15 @@ export default function RegisterPage() {
     setIsSubmitting(false);
 
     // Başarılı kayıt sonrası yönlendirme
+    toast.success('Kayıt işlemi başarıyla tamamlandı! Yönlendiriliyorsunuz...', {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    });
+    
     if (isCourier) {
       router.push("/partner");
     } else {
@@ -888,12 +868,6 @@ export default function RegisterPage() {
                 <label htmlFor="privacy-policy" className="ml-3 text-sm text-gray-200">
                   Gizlilik Politikasını kabul ediyorum.
                 </label>
-              </div>
-            )}
-            {!privacyPolicyAccepted && step === steps.length - 1 && (
-              <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
-                <X className="h-5 w-5 mr-2" />
-                <span>Gizlilik politikasını kabul etmeniz gerekmektedir.</span>
               </div>
             )}
             {error && (

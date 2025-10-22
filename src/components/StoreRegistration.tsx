@@ -111,6 +111,9 @@ const StoreRegistration: React.FC<StoreRegistrationProps> = ({
             formErrors={formErrors}
             isCourier={false}
             checkEmailExists={checkEmailExists}
+            storeInfo={storeInfo}
+            setStoreInfo={setStoreInfo}
+            generateBranchReferenceCode={generateBranchReferenceCode}
           />
         );
       case "Mağaza Bilgileri":

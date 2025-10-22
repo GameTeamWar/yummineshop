@@ -3,8 +3,10 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { auth, db, storage } from '@/lib/firebase';
 import { useNotifications } from '@/hooks/useNotifications';
+import { toast } from 'react-toastify';
 
 // Güçlü şifre oluşturma fonksiyonu
 const generateStrongPassword = (): string => {
@@ -14,6 +16,14 @@ const generateStrongPassword = (): string => {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+};
+
+// Dosya yükleme yardımcı fonksiyonu
+const uploadFileToStorage = async (file: File, path: string): Promise<string> => {
+  const storageRef = ref(storage, path);
+  const snapshot = await uploadBytes(storageRef, file);
+  const downloadURL = await getDownloadURL(snapshot.ref);
+  return downloadURL;
 };
 
 interface AuthContextType {
@@ -94,24 +104,80 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       switch (error.code) {
         case 'auth/invalid-credential':
           errorMessage = 'E-posta adresi veya şifre yanlış. Lütfen bilgilerinizi kontrol edin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/user-not-found':
           errorMessage = 'Bu e-posta adresi ile kayıtlı bir hesap bulunamadı.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/wrong-password':
           errorMessage = 'Şifre yanlış. Lütfen tekrar deneyin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/user-disabled':
           errorMessage = 'Bu hesap devre dışı bırakılmış. Lütfen destek ile iletişime geçin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/too-many-requests':
           errorMessage = 'Çok fazla başarısız giriş denemesi. Lütfen bir süre bekleyin ve tekrar deneyin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/invalid-email':
           errorMessage = 'Geçersiz e-posta adresi formatı.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/network-request-failed':
           errorMessage = 'İnternet bağlantınızı kontrol edin ve tekrar deneyin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         default:
           errorMessage = error.message || 'Bilinmeyen bir hata oluştu.';
@@ -135,13 +201,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('User created successfully:', user.uid);
 
+      // Logo dosyasını yükle (varsa)
+      let logoURL = null;
+      if (additionalData?.logo && additionalData.logo instanceof File) {
+        try {
+          const logoPath = `logos/${user.uid}/${additionalData.logo.name}`;
+          logoURL = await uploadFileToStorage(additionalData.logo, logoPath);
+          console.log('Logo uploaded successfully:', logoURL);
+        } catch (uploadError) {
+          console.error('Logo upload failed:', uploadError);
+          // Logo yükleme hatası olsa bile kayıt devam etsin
+        }
+      }
+
+      // Yetkili kişilerin kimlik dosyalarını yükle
+      let processedAuthorizedPersons = additionalData?.authorizedPersons || [];
+      if (processedAuthorizedPersons.length > 0) {
+        processedAuthorizedPersons = await Promise.all(
+          processedAuthorizedPersons.map(async (person: any, index: number) => {
+            if (person.idCard && person.idCard instanceof File) {
+              try {
+                const idCardPath = `id-cards/${user.uid}/authorized-${index}/${person.idCard.name}`;
+                const idCardURL = await uploadFileToStorage(person.idCard, idCardPath);
+                console.log(`Authorized person ${index} ID card uploaded:`, idCardURL);
+                return { ...person, idCard: idCardURL }; // File yerine URL
+              } catch (uploadError) {
+                console.error(`Authorized person ${index} ID card upload failed:`, uploadError);
+                return { ...person, idCard: null }; // Upload başarısız olursa null
+              }
+            }
+            return person;
+          })
+        );
+      }
+
+      // Evrak dosyalarını yükle
+      let processedDocuments = { ...additionalData };
+      const documentFields = ['idCard', 'driversLicense', 'taxCertificate'];
+      
+      for (const field of documentFields) {
+        if (processedDocuments[field] && processedDocuments[field] instanceof File) {
+          try {
+            const docPath = `documents/${user.uid}/${field}/${processedDocuments[field].name}`;
+            const docURL = await uploadFileToStorage(processedDocuments[field], docPath);
+            console.log(`${field} uploaded successfully:`, docURL);
+            processedDocuments[field] = docURL; // File yerine URL
+          } catch (uploadError) {
+            console.error(`${field} upload failed:`, uploadError);
+            processedDocuments[field] = null; // Upload başarısız olursa null
+          }
+        }
+      }
+
       // Kullanıcı verilerini Firestore'a kaydet
-      await setDoc(doc(db, 'users', user.uid), {
+      const userData = {
         email,
         role,
-        ...additionalData,
+        ...processedDocuments,
+        logoURL, // File objesi yerine download URL
+        authorizedPersons: processedAuthorizedPersons, // İşlenmiş yetkili kişiler
         createdAt: new Date(),
-      });
+      };
+
+      // Logo alanını kaldır (zaten logoURL olarak eklendi)
+      delete userData.logo;
+
+      await setDoc(doc(db, 'users', user.uid), userData);
 
       console.log('User data saved to Firestore');
 
@@ -174,6 +299,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       switch (error.code) {
         case 'auth/email-already-in-use':
           errorMessage = 'Bu e-posta adresi zaten kullanımda. Farklı bir e-posta adresi deneyin.';
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+          });
           break;
         case 'auth/invalid-email':
           errorMessage = 'Geçersiz e-posta adresi formatı.';
