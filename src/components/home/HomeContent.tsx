@@ -1,9 +1,8 @@
-'use client';
-
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Package, Heart, ShoppingBag, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, FileText, Navigation, Minus, Plus, Filter, LogOut, Play, Shield } from 'lucide-react';
 import ShoppingSection from './ShoppingSection';
 import DocumentSection from './DocumentSection';
+import { useAuth } from '@/context/AuthContext';
 
 // Hero Section Component
 type HeroSectionProps = {
@@ -236,6 +235,8 @@ export default function Yummine() {
   const [heroMode, setHeroMode] = useState('shopping');
   const [selectedAddress, setSelectedAddress] = useState('Ev (Atatürk Caddesi)');
   const [addressDropdownOpen, setAddressDropdownOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const { user } = useAuth();
 
   const addresses = [
     { name: 'Ev', street: 'Atatürk Caddesi' },
@@ -254,18 +255,55 @@ export default function Yummine() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [addressDropdownOpen]);
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-neutral-950'}`}>
       {/* Header */}
       <header className={`sticky top-0 z-50 transition-colors duration-300 ${darkMode ? 'bg-gray-900 border-neutral-800' : 'bg-white border-neutral-200'} border-b shadow-lg`}>
         <div className="w-full mx-auto px-4 py-3">
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2 flex-1">
-             
+            {/* Sol: Logo */}
+            <div className="flex items-center">
               <div className="hidden sm:block ml-4">
                 <span className={`text-xl sm:text-3xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span><span>.</span> <span className=" transform rotate-90 -translate-x-3 -translate-y-1 inline-block text-sm font-semibold">com</span>
               </div>
             </div>
+            
+            {/* Orta: Mode Toggle */}
+            {user && (
+              <div className={`relative p-1 rounded-2xl transition-all duration-300 ${darkMode ? 'bg-neutral-800/50 backdrop-blur-sm border border-neutral-700' : 'bg-white/50 backdrop-blur-sm border border-neutral-200 shadow-lg'}`}>
+                <div className="flex relative">
+                  <button
+                    onClick={() => setHeroMode('shopping')}
+                    className={`relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${heroMode === 'shopping' ? (darkMode ? 'text-white' : 'text-neutral-950') : (darkMode ? 'text-neutral-400 hover:text-neutral-300' : 'text-neutral-600 hover:text-neutral-950')}`}
+                  >
+                    <ShoppingBag className="w-5 h-5" />
+                    <span className="hidden sm:inline">Alışveriş</span>
+                    {heroMode === 'shopping' && (
+                      <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${darkMode ? 'bg-white/10 border border-white/20' : 'bg-neutral-950/10 border border-neutral-950/20'}`}></div>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => setHeroMode('documents')}
+                    className={`relative px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${heroMode === 'documents' ? (darkMode ? 'text-white' : 'text-neutral-950') : (darkMode ? 'text-neutral-400 hover:text-neutral-300' : 'text-neutral-600 hover:text-neutral-950')}`}
+                  >
+                    <FileText className="w-5 h-5" />
+                    <span className="hidden sm:inline">Belge ve Evrak</span>
+                    {heroMode === 'documents' && (
+                      <div className={`absolute inset-0 rounded-xl transition-all duration-300 ${darkMode ? 'bg-white/10 border border-white/20' : 'bg-neutral-950/10 border border-neutral-950/20'}`}></div>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+            
+            {/* Sağ: Diğer butonlar */}
             <div className="flex items-center gap-2">
               {/* Address Selection Button */}
               <div className="relative address-dropdown">
@@ -306,7 +344,7 @@ export default function Yummine() {
       </header>
 
       {/* Mobile Menu */}
-      {mobileMenuOpen && (
+      {isMobile && mobileMenuOpen && (
         <div className={`${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-neutral-50 border-neutral-200'} border-b`}>
           <div className="w-full mx-auto px-4 py-4 space-y-2">
             <button className={`w-full text-left px-4 py-2 rounded transition-colors ${darkMode ? 'hover:bg-gray-700' : 'hover:bg-neutral-100'}`}>
@@ -327,7 +365,7 @@ export default function Yummine() {
       )}
 
       {/* Hero Section */}
-      <HeroSection darkMode={darkMode} heroMode={heroMode} setHeroMode={setHeroMode} />
+      {!user && <HeroSection darkMode={darkMode} heroMode={heroMode} setHeroMode={setHeroMode} />}
 
       {/* Content - Changes based on heroMode */}
       {heroMode === 'shopping' ? (
