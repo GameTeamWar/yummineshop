@@ -28,8 +28,8 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import CourierRegistration from '@/components/CourierRegistration';
-import StoreRegistration from '@/components/StoreRegistration';
+import CourierRegistration from '@/components/register/CourierRegistration';
+import StoreRegistration from '@/components/register/StoreRegistration';
 import { toast } from 'react-toastify';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
