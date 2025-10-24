@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MapPin, Clock, Star, Heart, ShoppingBag, ChevronLeft, Plus, Minus, Truck, Shield, Award, Package, MessageCircle, Send, ChevronRight, ChevronLeft as ChevronLeftIcon, Eye, ThumbsUp, User, Calendar } from 'lucide-react';
+import CartPreloader from '../../../components/loader/CartPreloader';
 import Header from '../../../components/home/navigations/Header';
 import StoreInfoBar from '../../../components/home/ui/infobar';
 import ProductZoom from '../../../components/home/ui/ProductZoom';
@@ -580,6 +581,9 @@ export default function ProductPage() {
           type: 'private' // sadece kullanıcı görebilir
         }
       ]);
+    } else {
+      // Ürün bulunamazsa ana sayfaya yönlendir
+      router.push('/');
     }
 
     // Dark mode kontrolü
@@ -587,7 +591,7 @@ export default function ProductPage() {
     if (savedDarkMode) {
       setDarkMode(JSON.parse(savedDarkMode));
     }
-  }, [id]);
+  }, [id, router]);
 
   // Benzer ürünler için 15 dakikalık rotasyon
   useEffect(() => {
@@ -599,17 +603,6 @@ export default function ProductPage() {
       return () => clearInterval(interval);
     }
   }, [similarProducts]);
-
-  if (!product || !store) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p></p>
-        </div>
-      </div>
-    );
-  }
 
   const handleAskQuestion = () => {
     if (newQuestion.trim()) {
@@ -803,21 +796,27 @@ export default function ProductPage() {
         setCartTotal={setCartTotal}
       />
 
-      <StoreInfoBar
-        store={store}
-        darkMode={darkMode}
-        showBackButton={true}
-        showProductDetail={true}
-      />
+      {!product || !store ? (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <CartPreloader />
+        </div>
+      ) : (
+        <>
+          <StoreInfoBar
+            store={store}
+            darkMode={darkMode}
+            showBackButton={true}
+            showProductDetail={true}
+          />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Ana Ürün Bölümü */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
-          {/* Ürün Görselleri */}
-          <ProductZoom images={product.images} productName={product.name} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {/* Ana Ürün Bölümü */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mb-16">
+              {/* Ürün Görselleri */}
+              <ProductZoom images={product.images} productName={product.name} />
 
-          {/* Ürün Bilgileri */}
-          <div className="space-y-8">
+              {/* Ürün Bilgileri */}
+              <div className="space-y-8">
             {/* Başlık ve Fiyat */}
             <div className="space-y-4">
               <div className="flex items-start justify-between">
@@ -1557,26 +1556,28 @@ export default function ProductPage() {
           </div>
         )}
       </div>
+    </>
+  )}
 
-      {/* Toast Mesajı */}
-      {showToast && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-4 duration-300">
-          <div className={`px-6 py-4 rounded-2xl shadow-xl border backdrop-blur-sm ${
-            darkMode 
-              ? 'bg-gray-800/95 border-gray-700 text-white' 
-              : 'bg-white/95 border-gray-200 text-gray-900'
-          }`}>
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shrink-0">
-                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <p className="font-medium">{toastMessage}</p>
-            </div>
+  {/* Toast Mesajı */}
+  {showToast && (
+    <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right-4 duration-300">
+      <div className={`px-6 py-4 rounded-2xl shadow-xl border backdrop-blur-sm ${
+        darkMode 
+          ? 'bg-gray-800/95 border-gray-700 text-white' 
+          : 'bg-white/95 border-gray-200 text-gray-900'
+      }`}>
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            </svg>
           </div>
+          <p className="font-medium">{toastMessage}</p>
         </div>
-      )}
+      </div>
     </div>
-  );
+  )}
+</div>
+);
 }
