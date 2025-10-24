@@ -4,7 +4,6 @@ export default function CartPreloader() {
   const [showLastMessage, setShowLastMessage] = useState(false);
 
   useEffect(() => {
-    // 14 saniye sonra "Bu uzun sürüyor..." mesajını göster
     const timer = setTimeout(() => {
       setShowLastMessage(true);
     }, 14000);
@@ -23,23 +22,23 @@ export default function CartPreloader() {
       >
         <g fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="8">
           {/* Cart Track */}
-          <g className="stroke-gray-300 dark:stroke-gray-700 transition-colors duration-300">
+          <g className="stroke-gray-300 dark:stroke-gray-700">
             <polyline points="4,4 21,4 26,22 124,22 112,64 35,64 39,80 106,80" />
             <circle cx="43" cy="111" r="13" />
             <circle cx="102" cy="111" r="13" />
           </g>
           
           {/* Animated Lines */}
-          <g className="stroke-blue-500">
+          <g className="cart-color-light dark:cart-color-dark">
             <polyline 
-              className="animate-cartTop"
+              className="cart-top cart-lines"
               points="4,4 21,4 26,22 124,22 112,64 35,64 39,80 106,80" 
               strokeDasharray="338 338"
               strokeDashoffset="-338"
             />
-            <g className="animate-cartWheel1 origin-[43px_111px]">
+            <g className="cart-wheel1 cart-lines">
               <circle 
-                className="animate-cartWheelStroke"
+                className="cart-wheel-stroke"
                 cx="43" 
                 cy="111" 
                 r="13" 
@@ -47,9 +46,9 @@ export default function CartPreloader() {
                 strokeDashoffset="81.68" 
               />
             </g>
-            <g className="animate-cartWheel2 origin-[102px_111px]">
+            <g className="cart-wheel2 cart-lines">
               <circle 
-                className="animate-cartWheelStroke"
+                className="cart-wheel-stroke"
                 cx="102" 
                 cy="111" 
                 r="13" 
@@ -63,12 +62,15 @@ export default function CartPreloader() {
 
       {/* Text Messages */}
       <div className="relative h-6">
-        <p className={`absolute w-full transition-opacity duration-300 ${showLastMessage ? 'opacity-0 invisible' : 'opacity-100 visible'}`}>
-          Bringing you the goods…
-        </p>
-        <p className={`absolute w-full transition-opacity duration-300 ${showLastMessage ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
-          This is taking long. Something's wrong.
-        </p>
+        {!showLastMessage ? (
+          <p className="msg-animation absolute w-full">
+            Size ürünleri getiriyoruz…
+          </p>
+        ) : (
+          <p className="msg-last-animation absolute w-full">
+            Bu uzun sürüyor. Bir şeyler yanlış gidiyor.
+          </p>
+        )}
       </div>
     </div>
   );

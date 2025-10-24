@@ -325,7 +325,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
         </div>
       </div>
 
-      <div className={`grid ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-4'} gap-6 sm:gap-52 `}>
+      <div className={`grid ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-4'} gap-6`}>
         {/* Sidebar - Only on desktop */}
         {!isMobile && (
           <div className="lg:col-span-1 lg:sticky lg:top-16 lg:self-start">
@@ -562,7 +562,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
               {filteredAndSortedStores.length > 0 && (
                 <div>
                   <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Mağazalar</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredAndSortedStores.map(store => (
                     <div key={`search-store-${store.id}`} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
                       <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
@@ -593,7 +593,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                             </div>
                           </div>
 
-                          <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
+                          <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-xs sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
                             Mağazayı Gör
                             <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                           </button>
@@ -617,21 +617,21 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
 
           {/* Featured Sections - Only show when not searching */}
           {!searchQuery.trim() && (
-            <div className="space-y-8 mb-8 -ml-42">
+            <div className="space-y-8 mb-8">
               {/* Ürünler Ana Bölümü */}
              
 
               {/* Popüler Ürünler */}
-              <div id="subcategory-popular" className="mb-6">
+              <div id="subcategory-popular" className="mb-6 lg:mt-8">
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">🔥</span> Popüler Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {popularProducts.slice(0, 4).map((product, index) => (
                     <div key={`popular-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-green-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -663,12 +663,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">💰</span> İndirimli Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {discountedProducts.slice(0, 4).map((product, index) => (
                     <div key={`discounted-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-red-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -741,12 +741,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">❄️</span> Kışlık Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {discountedProducts.filter(product => product.name.toLowerCase().includes('kış') || product.name.toLowerCase().includes('mont') || product.name.toLowerCase().includes('kazak')).slice(0, 4).map((product, index) => (
                     <div key={`winter-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-blue-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -781,12 +781,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">✨</span> Yeni Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {discountedProducts.slice(0, 4).map((product, index) => (
                     <div key={`new-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-purple-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -821,12 +821,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">📈</span> Trend Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {popularProducts.slice(0, 4).map((product, index) => (
                     <div key={`trending-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-orange-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -858,12 +858,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">⚡</span> Flaş İndirimler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {discountedProducts.filter(product => product.discount >= 30).slice(0, 4).map((product, index) => (
                     <div key={`flash-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-red-600 text-white text-xs font-bold px-1.5 py-0.5 rounded animate-pulse">
@@ -898,12 +898,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">📱</span> Elektronik Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {popularProducts.slice(0, 4).map((product, index) => (
                     <div key={`electronics-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-blue-500 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -935,12 +935,12 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">⚽</span> Spor Ürünler
                 </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {discountedProducts.filter(product => product.name.toLowerCase().includes('spor') || product.name.toLowerCase().includes('ayakkabı') || product.name.toLowerCase().includes('top')).slice(0, 4).map((product, index) => (
                     <div key={`sports-${product.id}-${index}`} onClick={() => {
                       router.push(`/product/${product.id}`);
                     }} className={`rounded-xl border overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                      <div className={`h-32 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                         <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
                         <div className="absolute top-1 left-1">
                           <span className="bg-green-600 text-white text-xs font-bold px-1.5 py-0.5 rounded">
@@ -977,9 +977,9 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
             const categoryStores = filteredAndSortedStores.filter(store => store.category === cat.id);
             if (categoryStores.length === 0) return null;
             return (
-              <div key={cat.id} id={`category-${cat.id}`} className="mb-8 -ml-42">
+              <div key={cat.id} id={`category-${cat.id}`} className="mb-8">
                 <h2 className={`text-xl sm:text-2xl font-bold  mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{cat.name} Mağazaları ({categoryStores.length})</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {categoryStores.map(store => (
                     <div key={store.id} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
                       <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
@@ -1012,7 +1012,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                           </div>
                         </div>
 
-                        <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-sm sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
+                        <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-xs sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
                           Mağazayı Gör
                           <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
                         </button>

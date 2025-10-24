@@ -69,9 +69,7 @@ body {
   }
 }
 
-
-
-
+/* Marker Styles */
 .marker {
   transform: perspective(40px) rotateX(20deg) rotateZ(-45deg);
   transform-origin: 50% 50%;
@@ -84,8 +82,6 @@ body {
   left: 50%;
   top: 50%;
   margin: -2.2em 0 0 -1.3em;
-  -webkit-box-shadow: -1px 1px 4px rgba(0, 0, 0, .5);
-  -moz-box-shadow: -1px 1px 4px rgba(0, 0, 0, .5);
   box-shadow: -1px 1px 4px rgba(0, 0, 0, .5);
 }
 
@@ -97,13 +93,9 @@ body {
   background: #ffffff;
   position: absolute;
   border-radius: 50%;
-    -moz-box-shadow: 0 0 10px rgba(0, 0, 0, .5);
-  -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, .5);
-  box-shadow: 0 0 10px rgba(0, 0, 0, .5);
-  -moz-box-shadow: inset -2px 2px 4px hsla(0, 0, 0, .5);
-  -webkit-box-shadow: inset -2px 2px 4px hsla(0, 0, 0, .5);
-  box-shadow: inset -2px 2px 4px hsla(0, 0, 0, .5);
+  box-shadow: 0 0 10px rgba(0, 0, 0, .5), inset -2px 2px 4px hsla(0, 0%, 0%, .5);
 }
+
 .beacon {
   position: absolute;
   top: 50%;
@@ -111,12 +103,8 @@ body {
   height: 3em;
   width: 3em;
   border-radius: 50%;
-  -webkit-transform: translateX(-50%);
-  -o-transform: translateX(-50%);
-  -moz-transform: translateX(-50%);
-  -ms-transform: translateX(-50%);
   transform: translateX(-50%);
-  z-index: -1
+  z-index: -1;
 }
 
 .beacon:before,
@@ -130,36 +118,174 @@ body {
   background-color: transparent;
   border-radius: 50%;
   box-shadow: 0 0 0 3px #ed1f34;
-  -webkit-animation: active 2s infinite linear;
-  -moz-animation: active 2s infinite linear;
   animation: active 2s infinite linear;
 }
 
 .beacon:after {
-  -moz-animation-delay: 1s;
-  -webkit-animation-delay: 1s;
   animation-delay: 1s;
-}
-
-@-webkit-keyframes active {
-  0% {
-    -webkit-transform: scale(.1);
-    opacity: 1;
-  }
-  100% {
-    -webkit-transform: scale(2.5);
-    opacity: 0;
-  }
 }
 
 @keyframes active {
   0% {
     transform: scale(.1);
-    transform: box-shadow(0px 0px 0px 1px #ed1f34);
     opacity: 1;
   }
   100% {
     transform: scale(2.5);
     opacity: 0;
   }
+}
+
+/* Cart Preloader Animations */
+@keyframes cartLines {
+  0%, 100% {
+    opacity: 0;
+  }
+  8%, 92% {
+    opacity: 1;
+  }
+}
+
+@keyframes cartTop {
+  0% {
+    stroke-dashoffset: -338;
+  }
+  50% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 338;
+  }
+}
+
+@keyframes cartWheel1 {
+  0% {
+    transform: rotate(-0.25turn);
+  }
+  100% {
+    transform: rotate(2.75turn);
+  }
+}
+
+@keyframes cartWheel2 {
+  0% {
+    transform: rotate(0.25turn);
+  }
+  100% {
+    transform: rotate(3.25turn);
+  }
+}
+
+@keyframes cartWheelStroke {
+  0%, 100% {
+    stroke-dashoffset: 81.68;
+  }
+  50% {
+    stroke-dashoffset: 40.84;
+  }
+}
+
+@keyframes msg {
+  0% {
+    opacity: 1;
+    visibility: visible;
+  }
+  99.9% {
+    opacity: 0;
+    visibility: visible;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@keyframes msgLast {
+  0% {
+    opacity: 0;
+    visibility: hidden;
+  }
+  0.1% {
+    opacity: 0;
+    visibility: visible;
+  }
+  100% {
+    opacity: 1;
+    visibility: visible;
+  }
+}
+
+@keyframes cartColorLight {
+  0% {
+    stroke: hsl(223, 90%, 55%);
+  }
+  25% {
+    stroke: hsl(280, 90%, 55%);
+  }
+  50% {
+    stroke: hsl(340, 90%, 55%);
+  }
+  75% {
+    stroke: hsl(40, 90%, 55%);
+  }
+  100% {
+    stroke: hsl(223, 90%, 55%);
+  }
+}
+
+@keyframes cartColorDark {
+  0% {
+    stroke: hsl(223, 90%, 65%);
+  }
+  25% {
+    stroke: hsl(280, 90%, 65%);
+  }
+  50% {
+    stroke: hsl(340, 90%, 65%);
+  }
+  75% {
+    stroke: hsl(40, 90%, 65%);
+  }
+  100% {
+    stroke: hsl(223, 90%, 65%);
+  }
+}
+
+/* Cart animation classes */
+.cart-lines {
+  animation: cartLines 2s ease-in-out infinite;
+}
+
+.cart-top {
+  animation: cartTop 2s ease-in-out infinite;
+}
+
+.cart-wheel1 {
+  animation: cartWheel1 2s ease-in-out infinite;
+  transform-origin: 43px 111px;
+}
+
+.cart-wheel2 {
+  animation: cartWheel2 2s ease-in-out infinite;
+  transform-origin: 102px 111px;
+}
+
+.cart-wheel-stroke {
+  animation: cartWheelStroke 2s ease-in-out infinite;
+}
+
+.cart-color-light {
+  animation: cartColorLight 3s ease-in-out infinite;
+}
+
+.cart-color-dark {
+  animation: cartColorDark 3s ease-in-out infinite;
+}
+
+.msg-animation {
+  animation: msg 0.3s 13.7s linear forwards;
+}
+
+.msg-last-animation {
+  animation: msgLast 0.3s 14s linear forwards;
 }

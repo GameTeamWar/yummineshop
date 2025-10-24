@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { MapPin, Clock, Star, Heart, ShoppingBag, ChevronLeft, Plus, Minus, Truck, Shield, Award, Package, MessageCircle, Send, ChevronRight, ChevronLeft as ChevronLeftIcon, Eye, ThumbsUp, User, Calendar } from 'lucide-react';
 import Header from '../../../components/home/navigations/Header';
-import StoreInfoBar from '../../../components/home/store/infobar';
-import ProductZoom from '../../../components/home/store/ProductZoom';
+import StoreInfoBar from '../../../components/home/ui/infobar';
+import ProductZoom from '../../../components/home/ui/ProductZoom';
 
 // Ürün verilerini ShoppingSection'dan alalım (şimdilik static)
 const products = [

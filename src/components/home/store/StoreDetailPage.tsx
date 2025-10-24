@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { MapPin, Clock, Package, Heart, ShoppingCart, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, ArrowLeft, Filter, Grid, ChevronLeft, ChevronDown, Check, Minus, Plus, Share2 } from 'lucide-react';
 import Header from '../navigations/Header';
-import StoreInfoBar from './infobar';
+import StoreInfoBar from '../ui/infobar';
 
 export default function StoreDetailPage({ storeData, productsData }: { storeData?: any, productsData?: any[] }) {
   const router = useRouter();

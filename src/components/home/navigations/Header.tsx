@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useLoadScript, GoogleMap } from '@react-google-maps/api';
 import AddAddressModal from '../modals/AddAddressModal';
 import EditAddressModal from '../modals/EditAddressModal';
-import CartSidebar from '../card/cart';
+import CartSidebar from '../cart/cart';
 
 // Google Maps libraries - static array to prevent re-renders
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geocoding")[] = ['places', 'geocoding'];
