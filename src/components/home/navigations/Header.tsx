@@ -70,7 +70,7 @@ export default function Header({
   const [addressHasElevator, setAddressHasElevator] = useState(false);
   const [showEditAddressModal, setShowEditAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -214,58 +214,14 @@ export default function Header({
                 <span className={`text-xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span><span>.</span>
               </div>
               
-              {/* Fixed Search Button in Bottom Right Corner */}
+              {/* Mobile Search Button */}
               {heroMode === 'shopping' && (
-                <div className="absolute bottom-0 right-0 z-30">
-                  {/* Animated Search Bar - Fixed Position */}
-                  <div className={`relative flex items-center transition-all duration-500 ease-in-out ${isSearchExpanded ? 'w-screen h-12' : 'w-12 h-12'}`}>
-                    {/* Search Icon Button */}
-                    <button
-                      onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-                      className={`absolute right-0 z-20 p-3 rounded-lg transition-all duration-300 ${darkMode ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'} ${isSearchExpanded ? 'text-blue-500' : ''}`}
-                    >
-                      <Search className={`w-5 h-5 transition-transform duration-300 ${isSearchExpanded ? 'scale-110' : ''}`} />
-                    </button>
-
-                    {/* Expandable Input - Full Width */}
-                    <input
-                      type="text"
-                      placeholder={isSearchExpanded ? "Ara..." : ""}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onBlur={() => {
-                        // Auto-collapse when losing focus and empty
-                        if (!searchQuery.trim()) {
-                          setTimeout(() => setIsSearchExpanded(false), 150);
-                        }
-                      }}
-                      className={`w-full h-full pl-4 pr-12 rounded-lg border transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm ${
-                        isSearchExpanded 
-                          ? `opacity-100 ${darkMode ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500' : 'bg-neutral-100 border-neutral-300 text-neutral-950 placeholder-neutral-500'}`
-                          : 'opacity-0 w-0 p-0 border-0'
-                      }`}
-                      style={{ 
-                        transition: 'all 0.5s ease-in-out',
-                        width: isSearchExpanded ? '100vw' : '0px',
-                        transform: isSearchExpanded ? 'translateX(-100%)' : 'translateX(0%)',
-                        transformOrigin: 'right center'
-                      }}
-                    />
-
-                    {/* Close button when expanded */}
-                    {isSearchExpanded && (
-                      <button
-                        onClick={() => {
-                          setIsSearchExpanded(false);
-                          setSearchQuery('');
-                        }}
-                        className={`absolute right-3 z-20 p-2 rounded-full transition-all duration-300 ${darkMode ? 'hover:bg-neutral-700 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-600'}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <button
+                  onClick={() => setShowMobileSearch(true)}
+                  className={`p-2 rounded-lg transition-colors duration-300 ${darkMode ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}`}
+                >
+                  <Search className="w-5 h-5" />
+                </button>
               )}
             </div>
           ) : (
@@ -442,7 +398,7 @@ export default function Header({
                           <button className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}>
                             <div className="flex items-center gap-2">
                               <ShoppingBag className="w-4 h-4" />
-                              Satın Aldıklarım
+                              Siparişlerim
                             </div>
                           </button>
                           <button onClick={() => router.push('/favorites')} className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}>
@@ -571,6 +527,87 @@ export default function Header({
         setSelectedAddress={setSelectedAddress}
         user={user}
       />
+
+      {/* Mobile Search Modal */}
+      {showMobileSearch && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={() => setShowMobileSearch(false)}
+          />
+
+          {/* Search Modal */}
+          <div className={`relative w-full max-w-md mx-4 rounded-2xl shadow-2xl border transition-all duration-300 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
+                Ara
+              </h3>
+              <button
+                onClick={() => setShowMobileSearch(false)}
+                className={`p-2 rounded-full transition-colors duration-200 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-4">
+              <div className="relative">
+                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
+                <input
+                  type="text"
+                  placeholder="Ürün, mağaza veya kategori ara..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoFocus
+                  className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${
+                    darkMode
+                      ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                      : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
+                  }`}
+                />
+              </div>
+
+              {/* Search Results Preview (if needed) */}
+              {searchQuery.trim() && (
+                <div className="mt-4">
+                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    "{searchQuery}" için arama yapılıyor...
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Footer Actions */}
+            <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  // Here you could add logic to clear search results
+                }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  darkMode
+                    ? 'text-gray-400 hover:text-white hover:bg-gray-800'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                }`}
+              >
+                Temizle
+              </button>
+              <button
+                onClick={() => {
+                  // Here you could add logic to perform search
+                  setShowMobileSearch(false);
+                }}
+                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors duration-200"
+              >
+                Ara
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
