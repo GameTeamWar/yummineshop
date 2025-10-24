@@ -63,7 +63,7 @@ export default function PartnerDashboard() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-white text-xl">Yükleniyor...</div>
+        <div className="text-white text-xl"></div>
       </div>
     );
   }

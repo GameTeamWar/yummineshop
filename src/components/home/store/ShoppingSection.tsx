@@ -66,6 +66,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
   const [popularProductsSlide, setPopularProductsSlide] = useState(0);
   const [discountedProductsSlide, setDiscountedProductsSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [filters, setFilters] = useState({
     rating: 0,
     delivery: 0,
@@ -74,7 +75,18 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
     storeType: 'all'
   });
   const [sortBy, setSortBy] = useState('recommended');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
+  // Arama yapıldığında kart pozisyonlarını yeniden ayarla
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      // Arama sonuçları kısmına scroll et
+      setTimeout(() => {
+        const searchResultsElement = document.querySelector('[data-search-results]');
+        if (searchResultsElement) {
+          searchResultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [searchQuery]);
 
   const categories = [
     { id: 'all', name: 'Tümü', icon: '🛍️' },
@@ -483,15 +495,15 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
 
           {/* Search Results */}
           {searchQuery.trim() && (
-            <div className="mb-8">
+            <div className="mb-8" data-search-results>
               <h2 className={`text-xl sm:text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                 Arama Sonuçları "{searchQuery}" ({searchedProducts.length + filteredAndSortedStores.length})
               </h2>
               
               {/* Products in search results */}
               {searchedProducts.length > 0 && (
-                <div className="-mb-12">
-                  <h3 className={`text-lg font-semibold mb-3 -mt-12  ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Ürünler</h3>
+                <div className="mb-8">
+                  <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Ürünler</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {searchedProducts.map((product, index) => (
                       <div key={`search-product-${product.id}-${index}`} onClick={() => {

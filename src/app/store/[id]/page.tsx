@@ -112,7 +112,7 @@ export default function StorePage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Yükleniyor...</div>;
+    return <div className="min-h-screen flex items-center justify-center"></div>;
   }
 
   // Always show StoreDetailPage with mock data if store not found

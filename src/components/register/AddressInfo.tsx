@@ -184,7 +184,7 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
           </>
         ) : (
           <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-            <div className="text-gray-400">Harita yükleniyor...</div>
+            <div className="text-gray-400"></div>
           </div>
         )}
       </div>

@@ -693,7 +693,7 @@ export default function RegisterPage() {
             </>
           ) : (
             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-              <div className="text-gray-400">Harita yükleniyor...</div>
+              <div className="text-gray-400"></div>
             </div>
           )}
         </div>
@@ -817,7 +817,7 @@ export default function RegisterPage() {
             className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"
             suppressHydrationWarning
           ></div>
-          <p className="text-gray-600 dark:text-gray-400">Yükleniyor...</p>
+          <p className="text-gray-600 dark:text-gray-400"></p>
         </div>
       </div>
     );

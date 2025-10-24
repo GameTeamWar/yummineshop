@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { MapPin, Clock, Star, Heart, ShoppingBag, ChevronLeft, Plus, Minus, Truck, Shield, Award, Package, MessageCircle, Send, ChevronRight, ChevronLeft as ChevronLeftIcon, Eye, ThumbsUp, User, Calendar } from 'lucide-react';
 import Header from '../../../components/home/navigations/Header';
 import StoreInfoBar from '../../../components/home/store/infobar';
-import ProductZoom from '../../../components/ProductZoom';
+import ProductZoom from '../../../components/home/store/ProductZoom';
 
 // Ürün verilerini ShoppingSection'dan alalım (şimdilik static)
 const products = [
@@ -605,7 +605,7 @@ export default function ProductPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Ürün yükleniyor...</p>
+          <p></p>
         </div>
       </div>
     );
@@ -1132,7 +1132,7 @@ export default function ProductPage() {
                         ) : (
                           <Package className="w-4 h-4" />
                         )}
-                        {uploadingImage ? 'Yükleniyor...' : 'Fotoğraf Seç'}
+                        {uploadingImage ? '' : 'Fotoğraf Seç'}
                       </label>
                     </div>
 
@@ -1162,7 +1162,7 @@ export default function ProductPage() {
                           ) : (
                             <Eye className="w-4 h-4" />
                           )}
-                          {uploadingVideo ? 'Yükleniyor...' : 'Video Seç'}
+                          {uploadingVideo ? '' : 'Video Seç'}
                         </label>
                         <button
                           onClick={handleYouTubeAuth}

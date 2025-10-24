@@ -213,7 +213,7 @@ export default function EditAddressModal({
                   <div className={`h-full ${darkMode ? 'bg-gray-700' : 'bg-gray-100'} flex items-center justify-center`}>
                     <div className="text-center">
                       <MapPin className={`w-8 h-8 mx-auto mb-2 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Harita yükleniyor...</p>
+                      <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}></p>
                     </div>
                   </div>
                 )}

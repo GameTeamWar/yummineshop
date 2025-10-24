@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useLoadScript, GoogleMap } from '@react-google-maps/api';
 import AddAddressModal from '../modals/AddAddressModal';
 import EditAddressModal from '../modals/EditAddressModal';
+import CartSidebar from '../card/cart';
 
 // Google Maps libraries - static array to prevent re-renders
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geocoding")[] = ['places', 'geocoding'];
@@ -522,160 +523,15 @@ export default function Header({
       </header>
 
       {/* Cart Sidebar */}
-      <div className={`fixed top-[4.91rem] right-0 h-[calc(100vh-4rem)] w-80 z-50 transform transition-transform duration-300 ease-in-out cart-sidebar ${cartSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className={`h-full shadow-2xl ${darkMode ? 'bg-gray-900 border-l border-neutral-700' : 'bg-white border-l border-neutral-600'}`}>
-          {/* Sidebar Header */}
-          <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
-            <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Sepetim</h2>
-            <button onClick={() => setCartSidebarOpen(false)} className={`p-2 rounded-lg transition-colors duration-300 ${darkMode ? 'hover:bg-neutral-700' : 'hover:bg-neutral-100'}`}>
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Sidebar Content */}
-          <div className="flex-1 flex flex-col">
-            {cart.length === 0 ? (
-              /* Empty Cart State */
-              <div className="flex-1 p-4 flex flex-col items-center justify-center text-center">
-                <ShoppingCart className={`w-16 h-16 mb-4 ${darkMode ? 'text-neutral-600' : 'text-neutral-400'}`} />
-                <h3 className={`text-lg font-semibold mb-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Sepetiniz Boş</h3>
-                <p className={`text-sm mb-4 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>Henüz ürün eklemediniz</p>
-                <button className="px-6 py-2 bg-linear-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:shadow-lg transition-all duration-300">
-                  Alışverişe Başla
-                </button>
-              </div>
-            ) : (
-              <>
-                {/* Cart Items - Scrollable */}
-                <div className="flex-1 overflow-y-auto p-4">
-                  <div className="space-y-4">
-                    {cart.map((item, index) => (
-                      <div key={index} className={`flex items-center gap-3 p-3 rounded-lg ${darkMode ? 'bg-gray-800' : 'bg-gray-50'}`}>
-                        <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-sm truncate">{item.name}</h4>
-                          <p className="text-xs text-gray-600">{item.store}</p>
-                          <div className="flex items-center justify-between mt-2">
-                            <div className="flex flex-col">
-                              {item.originalPrice && item.originalPrice > item.price ? (
-                                <>
-                                  <span className={`text-xs line-through ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
-                                    ₺{(item.originalPrice * item.quantity).toLocaleString('tr-TR')}
-                                  </span>
-                                  <span className="text-sm font-semibold text-green-600">
-                                    ₺{item.total.toLocaleString('tr-TR')}
-                                  </span>
-                                </>
-                              ) : (
-                                <span className="text-sm font-semibold text-green-600">
-                                  ₺{item.total.toLocaleString('tr-TR')}
-                                </span>
-                              )}
-                            </div>
-                            {/* Adet Kontrolü */}
-                            <div className="flex items-center gap-2">
-                              <button
-                                onClick={() => {
-                                  if (setCart && item.quantity > 1) {
-                                    const updatedCart = [...cart];
-                                    updatedCart[index].quantity -= 1;
-                                    updatedCart[index].total = updatedCart[index].price * updatedCart[index].quantity;
-                                    setCart(updatedCart);
-                                    if (setCartTotal) {
-                                      const newTotal = updatedCart.reduce((sum, item) => sum + item.total, 0);
-                                      setCartTotal(newTotal);
-                                    }
-                                  }
-                                }}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                                } ${item.quantity <= 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                disabled={item.quantity <= 1}
-                              >
-                                -
-                              </button>
-                              <span className="text-sm font-medium min-w-6 text-center">{item.quantity}</span>
-                              <button
-                                onClick={() => {
-                                  if (setCart) {
-                                    const updatedCart = [...cart];
-                                    updatedCart[index].quantity += 1;
-                                    updatedCart[index].total = updatedCart[index].price * updatedCart[index].quantity;
-                                    setCart(updatedCart);
-                                    if (setCartTotal) {
-                                      const newTotal = updatedCart.reduce((sum, item) => sum + item.total, 0);
-                                      setCartTotal(newTotal);
-                                    }
-                                  }
-                                }}
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs transition-colors ${
-                                  darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'
-                                }`}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => {
-                            if (setCart) {
-                              const updatedCart = cart.filter((_, i) => i !== index);
-                              setCart(updatedCart);
-                              if (setCartTotal) {
-                                const newTotal = updatedCart.reduce((sum, item) => sum + item.total, 0);
-                                setCartTotal(newTotal);
-                              }
-                            }
-                          }}
-                          className="text-red-500 hover:text-red-600 p-1 shrink-0"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Cart Total - Fixed at bottom */}
-                <div className={`p-4 border-t ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'} shadow-lg`}>
-                  {/* Fiyat Detayları */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Ürün Ücreti:</span>
-                      <span>₺{cartTotal.toLocaleString('tr-TR')}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>Teslimat Ücreti:</span>
-                      <span className="text-green-600">Ücretsiz</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>KDV (%18):</span>
-                      <span>₺{(cartTotal * 0.18).toLocaleString('tr-TR')}</span>
-                    </div>
-                    <div className={`border-t pt-2 ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-                      <div className="flex justify-between items-center">
-                        <span className="font-semibold">Toplam:</span>
-                        <span className="text-xl font-bold text-green-600">
-                          ₺{(cartTotal + (cartTotal * 0.18)).toLocaleString('tr-TR')}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <button className="w-full bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl">
-                    Siparişi Tamamla
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Overlay */}
-      {cartSidebarOpen && (
-        <div className="fixed inset-0  bg-black/60 z-40" onClick={() => setCartSidebarOpen(false)}></div>
-      )}
+      <CartSidebar
+        darkMode={darkMode}
+        cartSidebarOpen={cartSidebarOpen}
+        setCartSidebarOpen={setCartSidebarOpen}
+        cart={cart}
+        cartTotal={cartTotal}
+        setCart={setCart}
+        setCartTotal={setCartTotal}
+      />
 
       {/* Add Address Modal */}
       <AddAddressModal

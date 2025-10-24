@@ -11,9 +11,10 @@ interface ProductZoomProps {
 
 export default function ProductZoom({ images, productName }: ProductZoomProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isAutoSwitchEnabled, setIsAutoSwitchEnabled] = useState(true);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (images.length <= 1) return;
+    if (images.length <= 1 || !isAutoSwitchEnabled) return;
 
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -23,7 +24,13 @@ export default function ProductZoom({ images, productName }: ProductZoomProps) {
   };
 
   const handleMouseLeave = () => {
-    setCurrentImageIndex(0);
+    if (isAutoSwitchEnabled) {
+      setCurrentImageIndex(0);
+    }
+  };
+
+  const handleImageClick = () => {
+    setIsAutoSwitchEnabled(!isAutoSwitchEnabled);
   };
 
   return (
@@ -34,6 +41,7 @@ export default function ProductZoom({ images, productName }: ProductZoomProps) {
           className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl bg-gray-100"
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
+          onClick={handleImageClick}
         >
           <TransformWrapper
             initialScale={1}
@@ -108,8 +116,10 @@ export default function ProductZoom({ images, productName }: ProductZoomProps) {
       )}
 
       {/* Zoom Talimatları */}
-      <div className="text-center text-sm text-gray-600">
-        <p>🖱️ Fare tekerleği ile yakınlaştırın • 📱 İki parmak ile yakınlaştırın</p>
+      <div className="text-center text-sm text-gray-600 space-y-1">
+        <p className="hidden md:block">🖱️ Fare tekerleği ile yakınlaştırın</p>
+        <p className="block md:hidden">📱 İki parmak ile yakınlaştırın</p>
+        <p>👆 Görsele tıklayarak otomatik geçişi {isAutoSwitchEnabled ? 'kapatın' : 'açın'}</p>
       </div>
     </div>
   );
