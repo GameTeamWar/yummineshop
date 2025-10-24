@@ -91,7 +91,7 @@ export default function EditAddressModal({
 
   // Update marker when position changes
   useEffect(() => {
-    if (mapRef.current && isLoaded && window.google && window.google.maps && window.google.maps.marker) {
+    if (mapRef.current && isLoaded && window.google && window.google.maps) {
       // Remove existing marker
       if (markerRef.current) {
         markerRef.current.map = null;
@@ -100,12 +100,34 @@ export default function EditAddressModal({
 
       // Create new marker if position exists
       if (markerPosition) {
-        const marker = new window.google.maps.marker.AdvancedMarkerElement({
-          map: mapRef.current,
-          position: markerPosition,
-          content: createMarkerContent(),
-        });
-        markerRef.current = marker;
+        // Use regular Marker if AdvancedMarkerElement is not available
+        if (window.google.maps.marker && window.google.maps.marker.AdvancedMarkerElement) {
+          const marker = new window.google.maps.marker.AdvancedMarkerElement({
+            map: mapRef.current,
+            position: markerPosition,
+            content: createMarkerContent(),
+          });
+          markerRef.current = marker;
+        } else {
+          // Fallback to regular Marker
+          const marker = new window.google.maps.Marker({
+            map: mapRef.current,
+            position: markerPosition,
+            icon: {
+              path: window.google.maps.SymbolPath.CIRCLE,
+              scale: 10,
+              fillColor: '#FF0000',
+              fillOpacity: 1,
+              strokeColor: '#FFFFFF',
+              strokeWeight: 2,
+            },
+          });
+          markerRef.current = marker as any;
+        }
+        
+        // Center map on marker
+        mapRef.current.setCenter(markerPosition);
+        mapRef.current.setZoom(18);
       }
     }
   }, [markerPosition, isLoaded]);

@@ -1,10 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { MapPin, Clock, Package, Heart, ShoppingCart, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, ArrowLeft, Filter, Grid, ChevronLeft, ChevronDown, Check, Minus, Plus, Share2 } from 'lucide-react';
-import Header from '../Header';
+import Header from '../navigations/Header';
+import StoreInfoBar from './infobar';
 
 export default function StoreDetailPage({ storeData, productsData }: { storeData?: any, productsData?: any[] }) {
+  const router = useRouter();
   const getColorFromClass = (colorClass: string) => {
     const colorMap: {[key: string]: string} = {
       'color-1': '#FFD700', // Altın
@@ -47,6 +50,9 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
   const [priceRange, setPriceRange] = useState({ min: '', max: '' });
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const [favorited, setFavorited] = useState(false);
+  const [currentImages, setCurrentImages] = useState<{[key: number]: number}>({});
+  const [isMobile, setIsMobile] = useState(false);
+  const intervalsRef = useRef<Map<number, number>>(new Map());
   // Header states
   const [heroMode, setHeroMode] = useState('shopping');
   const [searchQuery, setSearchQuery] = useState('');
@@ -752,33 +758,19 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
         setShowAddAddressModal={setShowAddAddressModal}
         showHowItWorksModal={showHowItWorksModal}
         setShowHowItWorksModal={setShowHowItWorksModal}
+        isMobile={isMobile}
       />
       {/* Header component will be added here */}
 
-      {/* Store Info Bar */}
-      <div className={`${darkMode ? 'bg-gray-800 border-neutral-800' : 'bg-neutral-50 border-neutral-200'} border-b`}>
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4 text-sm flex-wrap">
-            <div className="flex items-center gap-1">
-              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-              <span className="font-bold">{store.rating}</span>
-              <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>({store.reviews})</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>{store.distance} km</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Clock className="w-4 h-4" />
-              <span>{store.delivery} dakika</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Package className="w-4 h-4" />
-              <span>{store.items} ürün</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <StoreInfoBar
+        store={store}
+        darkMode={darkMode}
+        showBackButton={true}
+        showSortSelector={true}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        currentProduct={currentProduct}
+      />
 
       {currentProduct ? (
         <>
@@ -930,34 +922,12 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
         </>
       ) : (
         <>
-          <div className="py-6 sm:py-8 pb-32">
+          <div className="py-6 sm:py-8 pb-32 ">
             <div className="grid lg:grid-cols-4 gap-6 sm:gap-8">
               {/* Sidebar */}
-              <div className="lg:col-span-1 lg:sticky lg:top-42 lg:self-start">
-                <div className={`rounded-2xl p-4 sm:p-6 pt-12 transition-colors duration-300 max-h-[calc(100vh-8rem)] overflow-y-auto ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-neutral-50 border border-neutral-200'}`}>
-                  {/* Store Info */}
-                  <div className="mb-6">
-                    <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Mağaza Bilgileri</h3>
-                    <div className={`p-4 rounded-xl space-y-3 ${darkMode ? 'bg-gray-700 border border-neutral-600' : 'bg-white border border-neutral-200'}`}>
-                      <div className="flex items-center gap-2">
-                        <Star className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                        <span className="font-bold text-lg">{store.rating}</span>
-                        <span className={`text-sm ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>({store.reviews} yorum)</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        <span>{store.distance} km uzaklıkta</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4" />
-                        <span>{store.delivery} dk teslimat</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4" />
-                        <span>{store.items} ürün</span>
-                      </div>
-                    </div>
-                  </div>
+              <div className="relative lg:col-span-1 lg:sticky top-24 lg:self-start ">
+                <div className={`rounded-2xl p-4 sm:p-6 pt-12 transition-colors duration-300 max-h-[calc(100vh-8rem)] overflow-y-auto mt-1 ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-neutral-50 border border-neutral-200'}`}>
+
 
                   {/* Partner Options */}
                   {store.partnerOptions?.map((option: any, index: number) => (
@@ -1137,12 +1107,12 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
                   ))}
 
                   {/* Sort Options */}
-                  <div className="mb-6">
+                  <div className="mb-6 ">
                     <h3 className={`text-lg font-bold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Sıralama</h3>
                     <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
-                      className={`w-full p-2 rounded-lg border transition-colors duration-300 ${darkMode ? 'bg-gray-700 border-neutral-600 text-white' : 'bg-white border-neutral-300 text-neutral-950'}`}
+                      className={`w-full p-2  left-10 rounded-lg border transition-colors duration-300 ${darkMode ? 'bg-gray-700 border-neutral-600 text-white' : 'bg-white border-neutral-300 text-neutral-950'}`}
                     >
                       <option value="popular">Popülerlik</option>
                       <option value="price-low">Fiyat (Düşükten Yükseğe)</option>
@@ -1155,78 +1125,93 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
               </div>
 
               {/* Main Content */}
-              <div className="lg:col-span-3">
-                {/* Categories */}
-                <div className="mb-6 overflow-x-auto">
-                  <div className="flex gap-2">
-                    {categories.map(cat => (
-                      <button key={cat.id} onClick={() => setStoreCategory(cat.id)} className={`px-4 py-2 rounded-full font-semibold whitespace-nowrap text-sm transition-all ${storeCategory === cat.id ? (darkMode ? 'bg-white text-gray-900' : 'bg-neutral-950 text-white') : (darkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200')}`}>
-                        {cat.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Controls */}
-                <div className="mb-6 flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2">
-                    <Filter className="w-4 h-4" />
-                    <button onClick={() => setShowFilters(!showFilters)} className={`text-sm font-semibold transition-colors ${showFilters ? 'text-blue-500' : ''}`}>
-                      Filtreler
-                    </button>
-                    <span className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-600'}`}>({sortedProducts.length} ürün)</span>
-                  </div>
-
-                  <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className={`px-3 py-1 rounded-lg border text-sm transition-colors ${darkMode ? 'bg-gray-800 border-neutral-700 text-white' : 'bg-neutral-100 border-neutral-200 text-neutral-950'}`}>
-                    <option value="popular">Popüler</option>
-                    <option value="price-low">Fiyat (Düşükten Yükseğe)</option>
-                    <option value="price-high">Fiyat (Yüksekten Düşüğe)</option>
-                  </select>
-                </div>
+              <div className="lg:col-span-3">             
+               
 
                 {/* Products Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {sortedProducts.map(product => (
-                    <div key={product.id} onClick={() => setSelectedProduct(product.id)} className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg group ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-white border border-neutral-200'}`}>
-                      {/* Image */}
-                      <div className={`relative p-6 flex items-center justify-center aspect-square ${darkMode ? 'bg-gray-700' : 'bg-neutral-100'}`}>
-                        <img src={product.images[0]} alt={product.name} className="w-full h-full object-cover rounded-lg" />
-                        {product.badge && (
-                          <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold text-white ${product.badgeColor === 'purple' ? 'bg-purple-500' : product.badgeColor === 'red' ? 'bg-red-500' : product.badgeColor === 'blue' ? 'bg-blue-500' : 'bg-orange-500'}`}>
-                            {product.badge}
+                  {sortedProducts.map(product => {
+                    const currentIndex = currentImages[product.id] || 0;
+                    return (
+                      <div key={product.id} onClick={() => router.push(`/product/${product.id}`)} className={`rounded-xl overflow-hidden cursor-pointer transition-all duration-300 hover:shadow-lg group ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-white border border-neutral-200'}`} onMouseMove={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const x = e.clientX - rect.left;
+                        const width = rect.width;
+                        const index = Math.floor((x / width) * product.images.length);
+                        setCurrentImages(prev => ({ ...prev, [product.id]: Math.min(index, product.images.length - 1) }));
+                      }}>
+                        {/* Image Carousel */}
+                        <div className={`relative p-6 flex items-center justify-center aspect-square overflow-hidden ${darkMode ? 'bg-gray-700' : 'bg-neutral-100'}`}>
+                          {product.images.map((image: string, index: number) => (
+                            <img
+                              key={index}
+                              src={image}
+                              alt={product.name}
+                              className={`absolute inset-0 w-full h-full object-cover rounded-lg transition-opacity duration-500 ${index === currentIndex ? 'opacity-100' : 'opacity-0'}`}
+                            />
+                          ))}
+                          {/* Dots */}
+                          <div className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 flex gap-1 rounded-full px-2 py-1 ${darkMode ? 'bg-white/50' : 'bg-black/50'}`}>
+                            {product.images.map((_: string, index: number) => (
+                              <button
+                                key={index}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setCurrentImages(prev => ({ ...prev, [product.id]: index }));
+                                }}
+                                className={`w-2 h-2 rounded-full transition-colors ${index === currentIndex ? (darkMode ? 'bg-black' : 'bg-white') : (darkMode ? 'bg-black/50' : 'bg-white/50')}`}
+                              />
+                            ))}
                           </div>
-                        )}
-                        <button className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${darkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}>
-                          <Heart className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-3 space-y-2">
-                        <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-blue-500 transition-colors">{product.name}</h3>
-
-                        {/* Rating */}
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-0.5">
-                            <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                            <span className="text-xs font-semibold">{product.rating}</span>
-                          </div>
-                          <span className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>({product.reviews})</span>
-                          <span className={`text-xs font-semibold ml-auto ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{product.favorites}</span>
+                          {product.badge && (
+                            <div className={`absolute top-3 left-3 px-2 py-1 rounded-full text-xs font-bold text-white ${product.badgeColor === 'purple' ? 'bg-purple-500' : product.badgeColor === 'red' ? 'bg-red-500' : product.badgeColor === 'blue' ? 'bg-blue-500' : 'bg-orange-500'}`}>
+                              {product.badge}
+                            </div>
+                          )}
+                          <button className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${darkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}>
+                            <Heart className="w-4 h-4" />
+                          </button>
                         </div>
 
-                        {/* Price */}
-                        <div className="space-y-1">
+                        {/* Content */}
+                        <div className="p-3 space-y-2">
+                          <h3 className="font-semibold text-sm line-clamp-2 group-hover:text-blue-500 transition-colors">{product.name}</h3>
+
+                          {/* Rating */}
                           <div className="flex items-center gap-2">
-                            <span className="text-lg font-bold text-blue-500">₺{product.price.toLocaleString('tr-TR')}</span>
-                            <span className={`text-xs line-through ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>₺{product.originalPrice.toLocaleString('tr-TR')}</span>
+                            <div className="flex items-center gap-0.5">
+                              <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                              <span className="text-xs font-semibold">{product.rating}</span>
+                            </div>
+                            <span className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>({product.reviews})</span>
+                            <span className={`text-xs font-semibold ml-auto ${darkMode ? 'text-green-400' : 'text-green-600'}`}>{product.favorites}</span>
                           </div>
-                          <p className={`text-xs font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>✓ {product.discount2}</p>
-                          <p className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>📦 {product.shipping} içinde</p>
+
+                          {/* Price */}
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-lg font-bold text-blue-500">₺{product.price.toLocaleString('tr-TR')}</span>
+                              <span className={`text-xs line-through ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>₺{product.originalPrice.toLocaleString('tr-TR')}</span>
+                            </div>
+                            <p className={`text-xs font-semibold ${darkMode ? 'text-green-400' : 'text-green-600'}`}>✓ {product.discount2}</p>
+                            <p className={`text-xs ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>📦 {product.shipping} içinde</p>
+                          </div>
+
+                          {/* Sepete Ekle Butonu */}
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCartCount(cartCount + 1);
+                            }}
+                            className={`w-full mt-3 px-4 py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-colors ${darkMode ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                          >
+                            <ShoppingCart className="w-4 h-4" />
+                            Sepete Ekle
+                          </button>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {sortedProducts.length === 0 && (
