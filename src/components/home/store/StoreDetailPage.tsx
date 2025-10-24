@@ -52,6 +52,39 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
   const [favorited, setFavorited] = useState(false);
   const [currentImages, setCurrentImages] = useState<{[key: number]: number}>({});
   const [isMobile, setIsMobile] = useState(false);
+  const [favorites, setFavorites] = useState<number[]>([]);
+
+  useEffect(() => {
+    // Favori ürünleri localStorage'dan yükle
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+
+    // Dark mode kontrolü
+    const savedDarkMode = localStorage.getItem('darkMode');
+    if (savedDarkMode) {
+      setDarkMode(JSON.parse(savedDarkMode));
+    }
+
+    // Mobile kontrolü
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Favori toggle fonksiyonu
+  const toggleFavorite = (productId: number) => {
+    const newFavorites = favorites.includes(productId)
+      ? favorites.filter(id => id !== productId)
+      : [...favorites, productId];
+    
+    setFavorites(newFavorites);
+    localStorage.setItem('favorites', JSON.stringify(newFavorites));
+  };
   const intervalsRef = useRef<Map<number, number>>(new Map());
   // Header states
   const [heroMode, setHeroMode] = useState('shopping');
@@ -78,7 +111,7 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
   const [editingAddress, setEditingAddress] = useState<any>(null);
 
   const store = storeData || {
-    id: 1,
+    id: 7,
     name: 'İpekyol Mağazası',
     rating: 4.8,
     reviews: 1523,
@@ -87,6 +120,8 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
     items: 12,
     badge: 'Popüler',
     description: 'En güncel moda ve stil ürünlerini burada bulabilirsiniz',
+    logo: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop',
+    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop',
     partnerOptions: [
       {
         type: 'LeafCategory',
@@ -1168,8 +1203,18 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
                               {product.badge}
                             </div>
                           )}
-                          <button className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${darkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-white text-neutral-600 hover:bg-neutral-100'}`}>
-                            <Heart className="w-4 h-4" />
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleFavorite(product.id);
+                            }}
+                            className={`absolute top-3 right-3 p-2 rounded-full transition-colors ${
+                              favorites.includes(product.id) 
+                                ? (darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-100 text-red-600') 
+                                : (darkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-white text-neutral-600 hover:bg-neutral-100')
+                            }`}
+                          >
+                            <Heart className={`w-4 h-4 ${favorites.includes(product.id) ? 'fill-current' : ''}`} />
                           </button>
                         </div>
 

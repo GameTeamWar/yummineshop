@@ -1,13 +1,15 @@
 ﻿import React, { useState, useEffect } from 'react';
-import { MapPin, Clock, Package, Heart, ShoppingBag, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, FileText, Navigation, Minus, Plus, Filter, LogOut, Play, Shield, ShoppingCart, Users, Edit, Trash2 } from 'lucide-react';
+import { MapPin, Clock, Package, Heart, ShoppingBag, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, Navigation, Minus, Plus, Filter, LogOut, Play, Shield, ShoppingCart, Users, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useLoadScript, GoogleMap } from '@react-google-maps/api';
 import AddAddressModal from '../modals/AddAddressModal';
 import EditAddressModal from '../modals/EditAddressModal';
 import CartSidebar from '../cart/cart';
+import ModeToggle from '../ui/ModeToggle';
 
 // Google Maps libraries - static array to prevent re-renders
 const GOOGLE_MAPS_LIBRARIES: ("places" | "geocoding")[] = ['places', 'geocoding'];
@@ -71,6 +73,7 @@ export default function Header({
   const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   // Google Maps
   const { isLoaded, loadError } = useLoadScript({
@@ -277,47 +280,13 @@ export default function Header({
                 </div>
 
                 {/* Orta: Mode Toggle - Compact Design */}
-                {user && (
-                  <div className="relative">
-                    {/* Compact Tab Design */}
-                    <div className={`relative flex rounded-xl overflow-hidden border transition-all duration-300 ${darkMode ? 'bg-gray-800/80 border-gray-700/50' : 'bg-white/90 border-gray-200/50'} backdrop-blur-sm shadow-lg`}>
-                      
-                      {/* Sliding Indicator */}
-                      <div 
-                        className={`absolute top-0 bottom-0 w-1/2 rounded-lg transition-all duration-300 ease-out ${
-                          heroMode === 'shopping' 
-                            ? 'left-0 bg-linear-to-r from-blue-500 to-purple-500' 
-                            : 'left-1/2 bg-linear-to-r from-green-500 to-teal-500'
-                        }`}
-                      ></div>
-
-                      {/* Shopping Tab */}
-                      <button
-                        onClick={() => setHeroMode('shopping')}
-                        className={`relative flex-1 px-3 sm:px-4 py-2.5 font-semibold transition-all duration-300 flex items-center justify-center gap-2 z-10 ${
-                          heroMode === 'shopping' 
-                            ? 'text-white' 
-                            : `${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`
-                        }`}
-                      >
-                        <ShoppingBag className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${heroMode === 'shopping' ? 'animate-pulse' : ''}`} />
-                        <span className="text-xs sm:text-sm font-medium">Market</span>
-                      </button>
-
-                      {/* Documents Tab */}
-                      <button
-                        onClick={() => setHeroMode('documents')}
-                        className={`relative flex-1 px-3 sm:px-4 py-2.5 font-semibold transition-all duration-300 flex items-center justify-center gap-2 z-10 ${
-                          heroMode === 'documents' 
-                            ? 'text-white' 
-                            : `${darkMode ? 'text-gray-400 hover:text-white' : 'text-gray-600 hover:text-gray-900'}`
-                        }`}
-                      >
-                        <FileText className={`w-4 h-4 sm:w-5 sm:h-5 transition-all duration-300 ${heroMode === 'documents' ? 'animate-pulse' : ''}`} />
-                        <span className="text-xs sm:text-sm font-medium">Belge</span>
-                      </button>
-                    </div>
-                  </div>
+                {user && pathname === '/' && (
+                  <ModeToggle
+                    darkMode={darkMode}
+                    heroMode={heroMode}
+                    setHeroMode={setHeroMode}
+                    user={user}
+                  />
                 )}
 
                 {/* Sağ: Transparent Action Buttons */}
@@ -476,7 +445,7 @@ export default function Header({
                               Satın Aldıklarım
                             </div>
                           </button>
-                          <button className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}>
+                          <button onClick={() => router.push('/favorites')} className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}>
                             <div className="flex items-center gap-2">
                               <Heart className="w-4 h-4" />
                               Favorilerim

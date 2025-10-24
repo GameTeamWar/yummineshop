@@ -497,6 +497,9 @@ export default function ProductPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
+  // Favori state'i
+  const [isFavorited, setIsFavorited] = useState(false);
+
   useEffect(() => {
     // Ürün ID'sine göre ürünü bul
     const productId = parseInt(id as string);
@@ -513,6 +516,10 @@ export default function ProductPage() {
       // Benzer ürünleri bul (aynı kategorideki diğer ürünler)
       const similar = products.filter(p => p.category === foundProduct.category && p.id !== productId);
       setSimilarProducts(similar);
+
+      // Favori kontrolü
+      const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+      setIsFavorited(favorites.includes(productId));
 
       // Mock yorumlar
       setReviews([
@@ -592,6 +599,24 @@ export default function ProductPage() {
       setDarkMode(JSON.parse(savedDarkMode));
     }
   }, [id, router]);
+
+  // Favori toggle fonksiyonu
+  const toggleFavorite = () => {
+    const productId = parseInt(id as string);
+    const favorites = JSON.parse(localStorage.getItem('favorites') || '[]');
+    
+    if (isFavorited) {
+      // Favorilerden çıkar
+      const newFavorites = favorites.filter((id: number) => id !== productId);
+      localStorage.setItem('favorites', JSON.stringify(newFavorites));
+      setIsFavorited(false);
+    } else {
+      // Favorilere ekle
+      const newFavorites = [...favorites, productId];
+      localStorage.setItem('favorites', JSON.stringify(newFavorites));
+      setIsFavorited(true);
+    }
+  };
 
   // Benzer ürünler için 15 dakikalık rotasyon
   useEffect(() => {
@@ -821,10 +846,17 @@ export default function ProductPage() {
             <div className="space-y-4">
               <div className="flex items-start justify-between">
                 <h1 className="text-4xl font-bold leading-tight">{product.name}</h1>
-                <button className={`p-3 rounded-full transition-colors ${
-                  darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
-                }`}>
-                  <Heart className="w-6 h-6" />
+                <button 
+                  onClick={toggleFavorite}
+                  className={`p-3 rounded-full transition-all duration-300 ${
+                    isFavorited 
+                      ? 'bg-red-500 hover:bg-red-600' 
+                      : darkMode ? 'hover:bg-gray-800' : 'hover:bg-gray-100'
+                  }`}
+                >
+                  <Heart className={`w-6 h-6 transition-colors ${
+                    isFavorited ? 'fill-white text-white' : 'text-gray-400'
+                  }`} />
                 </button>
               </div>
 
@@ -873,7 +905,7 @@ export default function ProductPage() {
               </div>
             </div>
 
-            {/* Mağaza Bilgileri */}
+            {/* Mağaza Bilgileri 
             <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-800' : 'bg-white'} border ${darkMode ? 'border-gray-700' : 'border-gray-200'} shadow-lg`}>
               <div className="flex items-center gap-4 mb-4">
                 <img src={store.image} alt={store.name} className="w-14 h-14 rounded-full object-cover" />
@@ -901,7 +933,7 @@ export default function ProductPage() {
               >
                 Mağazayı İncele
               </button>
-            </div>
+            </div>*/}
 
             {/* Adet Seçimi ve Sepete Ekle */}
             <div className="space-y-6">

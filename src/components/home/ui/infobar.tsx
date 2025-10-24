@@ -1,16 +1,19 @@
 'use client';
 
-import { ChevronLeft, MapPin, Clock, Star, Package } from 'lucide-react';
+import { ChevronLeft, MapPin, Clock, Star, Package, Heart } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 interface StoreInfoBarProps {
   store: {
+    id: number;
     name: string;
     rating: number;
     reviews: number;
     distance: number;
     delivery: number;
     items: number;
+    logo?: string;
   };
   darkMode: boolean;
   showBackButton?: boolean;
@@ -32,6 +35,25 @@ export default function StoreInfoBar({
   showProductDetail = false
 }: StoreInfoBarProps) {
   const router = useRouter();
+  const [favoriteStores, setFavoriteStores] = useState<number[]>([]);
+
+  useEffect(() => {
+    // Favori mağazaları localStorage'dan yükle
+    const savedFavoriteStores = localStorage.getItem('favoriteStores');
+    if (savedFavoriteStores) {
+      setFavoriteStores(JSON.parse(savedFavoriteStores));
+    }
+  }, []);
+
+  // Mağaza favorisi toggle fonksiyonu
+  const toggleStoreFavorite = () => {
+    const newFavoriteStores = favoriteStores.includes(store.id)
+      ? favoriteStores.filter(id => id !== store.id)
+      : [...favoriteStores, store.id];
+    
+    setFavoriteStores(newFavoriteStores);
+    localStorage.setItem('favoriteStores', JSON.stringify(newFavoriteStores));
+  };
 
   return (
     <div className={`${darkMode ? 'bg-gray-800 border-neutral-800' : 'bg-neutral-50 border-neutral-200'} border-b`}>
@@ -47,10 +69,28 @@ export default function StoreInfoBar({
             </button>
           )}
           <div className="flex items-center gap-1">
+            {store.logo && (
+              <img src={store.logo} alt={store.name} className="w-8 h-8 rounded-full object-cover" />
+            )}
             <span className={`text-lg font-bold mr-5 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.name}</span>
+            <button
+              onClick={toggleStoreFavorite}
+              className={`p-2 rounded-full transition-colors ${
+                favoriteStores.includes(store.id) 
+                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  : darkMode ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-600'
+              }`}
+            >
+              <Heart className={`w-4 h-4 ${favoriteStores.includes(store.id) ? 'fill-current' : ''}`} />
+            </button>
             <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
             <span className="font-bold">{store.rating}</span>
-            <span className={darkMode ? 'text-neutral-400' : 'text-neutral-600'}>({store.reviews})</span>
+            <button
+              onClick={() => router.push(`/store/${store.id}/reviews`)}
+              className={`hover:underline transition-colors ${darkMode ? 'text-neutral-400 hover:text-neutral-300' : 'text-neutral-600 hover:text-neutral-700'}`}
+            >
+              ({store.reviews} yorum)
+            </button>
           </div>
           <div className="flex items-center gap-1">
             <MapPin className="w-4 h-4" />
