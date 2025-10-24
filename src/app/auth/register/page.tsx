@@ -46,6 +46,30 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const router = useRouter();
 
+  if (!type || (type !== 'customer' && type !== 'partner' && type !== 'courier')) {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <link rel="stylesheet" href="/403-error.css" />
+        <div className="message">You are not authorized.</div>
+        <div className="message2">You tried to access a page you did not have prior authorization for.</div>
+        <div className="container">
+          <div className="neon">403</div>
+          <div className="door-frame">
+            <div className="door">
+              <div className="rectangle"></div>
+              <div className="handle"></div>
+              <div className="window">
+                <div className="eye"></div>
+                <div className="eye eye2"></div>
+                <div className="leaf"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Form validation states
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -76,12 +100,9 @@ export default function RegisterPage() {
   const [neighborhoods, setNeighborhoods] = useState<string[]>([]);
   const [loadingLocations, setLoadingLocations] = useState(false);
 
-  // Stepper states for customer
-  const [customerStep, setCustomerStep] = useState(0);
-  const customerSteps = [
-    { title: "Kişi Bilgileri" },
-    { title: "Adres Bilgileri" },
-  ];
+  // Customer profile photo
+  const [customerProfilePhoto, setCustomerProfilePhoto] = useState<File | null>(null);
+  const [customerProfilePhotoPreview, setCustomerProfilePhotoPreview] = useState<string | null>(null);
   const [storeInfo, setStoreInfo] = useState({
     storeName: "",
     taxId: "",
@@ -835,30 +856,15 @@ export default function RegisterPage() {
       return Object.keys(errors).length === 0;
     };
 
-    const validateCustomerAddress = () => {
-      const errors: {[key: string]: string} = {};
-      
-      if (!address.province) errors.province = "İl seçimi zorunludur";
-      if (!address.district.trim()) errors.district = "İlçe alanı zorunludur";
-      if (!address.neighborhood.trim()) errors.neighborhood = "Mahalle alanı zorunludur";
-      if (!address.street.trim()) errors.street = "Sokak/Cadde alanı zorunludur";
-      if (!address.detailedAddress.trim()) errors.detailedAddress = "Açık adres alanı zorunludur";
-      if (!address.latitude || !address.longitude) errors.location = "Harita üzerinden konum seçimi zorunludur";
-      
-      setFormErrors(errors);
-      return Object.keys(errors).length === 0;
-    };
-
     const handleCustomerSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       setIsSubmitting(true);
       setError('');
 
-      // Final validation - check both steps
+      // Final validation - check person info only
       const personValid = validateCustomerPersonInfo();
-      const addressValid = validateCustomerAddress();
 
-      if (!personValid || !addressValid) {
+      if (!personValid) {
         setError('Lütfen tüm alanları doğru şekilde doldurun.');
         setIsSubmitting(false);
         return;
@@ -890,7 +896,6 @@ export default function RegisterPage() {
           firstName: person.firstName,
           lastName: person.lastName,
           phone: person.phone,
-          ...address,
         });
       } catch (err) {
         toast.error('Kayıt işlemi başarısız. Lütfen tekrar deneyin.', {
@@ -937,287 +942,115 @@ export default function RegisterPage() {
       router.push('/');
     };
 
-    const nextCustomerStep = async () => {
-      const currentStepTitle = customerSteps[customerStep]?.title;
-      let isValid = true;
-
-      switch (currentStepTitle) {
-        case "Kişi Bilgileri":
-          // Email kontrolü yap
-          await checkEmailExists(person.email);
-          isValid = validateCustomerPersonInfo();
-          // Also check if email validation is still in progress or has errors
-          if (formErrors.email) {
-            isValid = false;
-          }
-          break;
-        case "Adres Bilgileri":
-          isValid = validateCustomerAddress();
-          break;
-      }
-
-      if (isValid) {
-        setCustomerStep((s) => Math.min(s + 1, customerSteps.length - 1));
-        setFormErrors({});
-      }
-    };
-
-    const prevCustomerStep = () => {
-      setCustomerStep((s) => Math.max(s - 1, 0));
-      setFormErrors({});
-    };
-
-    const renderCustomerStepper = () => (
-      <div className="flex items-center justify-center mb-8">
-        {customerSteps.map((s, idx) => (
-          <React.Fragment key={s.title}>
-            <div className={`flex flex-col items-center ${idx === customerStep ? "text-blue-600 dark:text-blue-400" : "text-gray-400 dark:text-gray-500"}`}>
-              <div className={`w-8 h-8 flex items-center justify-center rounded-full border-2 ${idx === customerStep ? "border-blue-600 dark:border-blue-400 bg-white dark:bg-gray-900" : "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800"}`}>
-                {idx + 1}
-              </div>
-              <span className="mt-2 text-xs font-medium">{s.title}</span>
-            </div>
-            {idx < customerSteps.length - 1 && (
-              <div className="flex-1 h-0.5 bg-gray-200 dark:bg-gray-700 mx-2" />
-            )}
-          </React.Fragment>
-        ))}
-      </div>
-    );
-
     const renderCustomerStepContent = () => {
-      switch (customerSteps[customerStep]?.title) {
-        case "Kişi Bilgileri":
-          return (
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Ad *</label>
-                <input
-                  type="text"
-                  value={person.firstName}
-                  onChange={(e) => setPerson(p => ({ ...p, firstName: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.firstName ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Adınızı girin"
-                  required
-                />
-                {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Soyad *</label>
-                <input
-                  type="text"
-                  value={person.lastName}
-                  onChange={(e) => setPerson(p => ({ ...p, lastName: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.lastName ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Soyadınızı girin"
-                  required
-                />
-                {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">E-posta *</label>
-                <input
-                  type="email"
-                  value={person.email}
-                  onChange={(e) => setPerson(p => ({ ...p, email: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="E-posta adresinizi girin"
-                  required
-                />
-                {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Telefon *</label>
-                <input
-                  type="tel"
-                  value={person.phone}
-                  onChange={(e) => setPerson(p => ({ ...p, phone: e.target.value }))}
-                  className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    formErrors.phone ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="Telefon numaranızı girin"
-                  required
-                />
-                {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
-              </div>
-            </div>
-          );
-        case "Adres Bilgileri":
-          return (
-            <div className="space-y-4">
-              {/* Google Maps */}
-              <div className="w-full h-64 rounded-lg overflow-hidden border border-gray-300 relative">
-                {isLoaded ? (
-                  <>
-                    <GoogleMap
-                      mapContainerStyle={{ width: '100%', height: '100%' }}
-                      center={{
-                        lat: address.latitude || 39.9334,
-                        lng: address.longitude || 32.8597
-                      }}
-                      zoom={address.latitude ? 15 : 6}
-                      onClick={(e) => {
-                        if (e.latLng) {
-                          const lat = e.latLng.lat?.();
-                          const lng = e.latLng.lng?.();
-                          if (typeof lat === 'number' && typeof lng === 'number') {
-                            setAddress(f => ({
-                              ...f,
-                              latitude: lat,
-                              longitude: lng,
-                            }));
-                          }
-                        }
-                      }}
-                      options={{
-                        disableDefaultUI: true,
-                        clickableIcons: false,
-                      }}
-                    >
-                      {address.latitude && address.longitude && (
-                        <Marker
-                          position={{
-                            lat: address.latitude,
-                            lng: address.longitude
-                          }}
-                        />
-                      )}
-                    </GoogleMap>
-                    <button
-                      type="button"
-                      className="absolute top-4 right-4 z-10 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded shadow"
-                      onClick={async () => {
-                        if (navigator.geolocation) {
-                          navigator.geolocation.getCurrentPosition(
-                            (position) => {
-                              setAddress(f => ({
-                                ...f,
-                                latitude: position.coords.latitude,
-                                longitude: position.coords.longitude,
-                              }));
-                            },
-                            (error) => {
-                              console.error('Konum alma hatası:', error);
-                              alert('Konum alınamadı. Lütfen harita üzerinden manuel olarak konum seçin.');
-                            },
-                            { enableHighAccuracy: true, timeout: 10000, maximumAge: 300000 }
-                          );
-                        } else {
-                          alert('Tarayıcınız konum özelliğini desteklemiyor.');
-                        }
-                      }}
-                    >
-                      Konumumu Bul
-                    </button>
-                  </>
+      return (
+        <div className="space-y-6">
+          {/* Profile Photo */}
+          <div className="flex justify-center">
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg overflow-hidden">
+                {customerProfilePhotoPreview ? (
+                  <img
+                    src={customerProfilePhotoPreview}
+                    alt="Profil fotoğrafı"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                    <div className="text-gray-500">Harita yükleniyor...</div>
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                    <User className="w-8 h-8 text-gray-400" />
                   </div>
                 )}
               </div>
-
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div>
-                  <label className="block text-sm font-medium mb-1">İl *</label>
-                  <select
-                    className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.province ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={address.province || ""}
-                    onChange={e => setAddress(f => ({ ...f, province: e.target.value }))}
-                    required
-                  >
-                    <option value="" disabled>İl seçin</option>
-                    {cities.map(city => (
-                      <option key={city} value={city}>{city}</option>
-                    ))}
-                  </select>
-                  {formErrors.province && <p className="text-red-500 text-xs mt-1">{formErrors.province}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">İlçe *</label>
-                  <input
-                    type="text"
-                    className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.district ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={address.district || ""}
-                    onChange={e => setAddress(f => ({ ...f, district: e.target.value }))}
-                    placeholder="İlçe adını girin"
-                    required
-                  />
-                  {formErrors.district && <p className="text-red-500 text-xs mt-1">{formErrors.district}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Mahalle *</label>
-                  <input
-                    type="text"
-                    className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.neighborhood ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={address.neighborhood || ""}
-                    onChange={e => setAddress(f => ({ ...f, neighborhood: e.target.value }))}
-                    placeholder="Mahalle adını girin"
-                    required
-                  />
-                  {formErrors.neighborhood && <p className="text-red-500 text-xs mt-1">{formErrors.neighborhood}</p>}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Sokak/Cadde *</label>
-                  <input
-                    type="text"
-                    className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.street ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={address.street || ""}
-                    onChange={e => setAddress(f => ({ ...f, street: e.target.value }))}
-                    placeholder="Örnek: Atatürk Caddesi"
-                    required
-                  />
-                  {formErrors.street && <p className="text-red-500 text-xs mt-1">{formErrors.street}</p>}
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block text-sm font-medium mb-1">Açık Adres *</label>
-                  <textarea
-                    className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                      formErrors.detailedAddress ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    value={address.detailedAddress || ""}
-                    onChange={e => setAddress(f => ({ ...f, detailedAddress: e.target.value }))}
-                    placeholder="Bina no, daire no, kat bilgisi vb."
-                    rows={2}
-                    required
-                  />
-                  {formErrors.detailedAddress && <p className="text-red-500 text-xs mt-1">{formErrors.detailedAddress}</p>}
-                </div>
-              </div>
-
-              {/* Konum Bilgileri */}
-              {address.latitude && address.longitude && (
-                <div className="bg-gray-100 rounded-lg p-3">
-                  <h4 className="text-sm font-medium text-gray-700 mb-1">Seçilen Konum:</h4>
-                  <div className="text-xs text-gray-600">
-                    Enlem: {address.latitude.toFixed(6)}, Boylam: {address.longitude.toFixed(6)}
-                  </div>
-                </div>
-              )}
-
-              {formErrors.location && <p className="text-red-500 text-xs mt-1">{formErrors.location}</p>}
+              <label
+                htmlFor="customer-profile-photo"
+                className="absolute bottom-0 right-0 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center cursor-pointer hover:bg-blue-700 transition-colors shadow-lg"
+              >
+                <Camera className="w-4 h-4 text-white" />
+              </label>
+              <input
+                id="customer-profile-photo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setCustomerProfilePhoto(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setCustomerProfilePhotoPreview(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="hidden"
+              />
             </div>
-          );
-        default:
-          return null;
-      }
+          </div>
+
+          {/* Name and Surname in one row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Ad *</label>
+              <input
+                type="text"
+                value={person.firstName}
+                onChange={(e) => setPerson(p => ({ ...p, firstName: e.target.value }))}
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors.firstName ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Adınız"
+                required
+              />
+              {formErrors.firstName && <p className="text-red-500 text-xs mt-1">{formErrors.firstName}</p>}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">Soyad *</label>
+              <input
+                type="text"
+                value={person.lastName}
+                onChange={(e) => setPerson(p => ({ ...p, lastName: e.target.value }))}
+                className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors.lastName ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Soyadınız"
+                required
+              />
+              {formErrors.lastName && <p className="text-red-500 text-xs mt-1">{formErrors.lastName}</p>}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">E-posta *</label>
+            <input
+              type="email"
+              value={person.email}
+              onChange={(e) => setPerson(p => ({ ...p, email: e.target.value }))}
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.email ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="E-posta adresinizi girin"
+              required
+            />
+            {formErrors.email && <p className="text-red-500 text-xs mt-1">{formErrors.email}</p>}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Telefon *</label>
+            <input
+              type="tel"
+              value={person.phone}
+              onChange={(e) => setPerson(p => ({ ...p, phone: e.target.value }))}
+              className={`w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                formErrors.phone ? 'border-red-500' : 'border-gray-300'
+              }`}
+              placeholder="Telefon numaranızı girin"
+              required
+            />
+            {formErrors.phone && <p className="text-red-500 text-xs mt-1">{formErrors.phone}</p>}
+          </div>
+        </div>
+      );
     };
 
     return (
@@ -1227,7 +1060,7 @@ export default function RegisterPage() {
           <img src="/graphic3.svg" alt="Müşteri Kayıt Görseli" className="w-3/4 max-w-lg mx-auto" />
           <div className="mt-8 text-center">
             <h2 className="text-2xl font-bold text-white mb-2">Yummine Müşteri Kayıt</h2>
-            <p className="text-gray-300 mb-6">Hesabınızı oluşturarak siparişlerinizi takip edin</p>
+            <p className="text-gray-300 mb-6">Hesabınızı oluşturarak siparişlerinizi takip edin ve daha fazlasını keşfedin.</p>
           </div>
         </div>
 
@@ -1236,15 +1069,10 @@ export default function RegisterPage() {
           <div className="max-w-lg w-full mx-auto">
             {/* Mobil için logo */}
             <div className="md:hidden flex justify-center mb-6">
-              <div className="text-2xl font-bold text-blue-600">Yummine</div>
+              <div className="text-2xl font-bold text-dark-600">Yummine.com</div>
             </div>
 
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hesabınızı Oluşturun</h1>
-              <p className="text-gray-600">Kişisel bilgilerinizi doldurarak kayıt olun.</p>
-            </div>
-
-            {renderCustomerStepper()}
+           
 
             <form onSubmit={handleCustomerSubmit} className="space-y-6">
               {renderCustomerStepContent()}
@@ -1258,32 +1086,13 @@ export default function RegisterPage() {
 
               {/* Navigation buttons */}
               <div className="flex justify-between items-center">
-                {customerStep > 0 && (
-                  <button
-                    type="button"
-                    onClick={prevCustomerStep}
-                    className="px-6 py-2 rounded-lg bg-gray-200 text-gray-800 hover:bg-gray-300 transition cursor-pointer"
-                  >
-                    Geri
-                  </button>
-                )}
-                {customerStep < customerSteps.length - 1 ? (
-                  <button
-                    type="button"
-                    onClick={nextCustomerStep}
-                    className="ml-auto px-8 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition cursor-pointer"
-                  >
-                    İleri
-                  </button>
-                ) : (
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="ml-auto px-8 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-                  >
-                    {isSubmitting ? 'Kaydediliyor...' : 'Kayıt Ol'}
-                  </button>
-                )}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full px-8 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {isSubmitting ? 'Kaydediliyor...' : 'Kayıt Ol'}
+                </button>
               </div>
 
               <div className="text-center">

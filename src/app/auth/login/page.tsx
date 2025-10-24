@@ -21,6 +21,31 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const type = searchParams.get('type'); // 'customer', 'store', or 'courier'
 
+  // Sadece type=customer ile erişime izin ver
+  if (type !== 'customer') {
+    return (
+      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+        <link rel="stylesheet" href="/403-error.css" />
+        <div className="message">You are not authorized.</div>
+        <div className="message2">You tried to access a page you did not have prior authorization for.</div>
+        <div className="container">
+          <div className="neon">403</div>
+          <div className="door-frame">
+            <div className="door">
+              <div className="rectangle"></div>
+              <div className="handle"></div>
+              <div className="window">
+                <div className="eye"></div>
+                <div className="eye eye2"></div>
+                <div className="leaf"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -36,13 +61,7 @@ export default function LoginPage() {
         pauseOnHover: true,
         draggable: true,
       });
-      if (type === 'customer') {
-        router.push('/');
-      } else if (type === 'store') {
-        router.push('/partner');
-      } else if (type === 'courier') {
-        router.push('/partner');
-      }
+      router.push('/');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -50,474 +69,118 @@ export default function LoginPage() {
     }
   };
 
-  if (!type) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white">
-              Giriş Türü Seçin
-            </h2>
-            <div className="mt-8 space-y-4">
-              <a
-                href="/auth/login?type=customer"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-              >
-                Müşteri Girişi
-              </a>
-              <a
-                href="/auth/login?type=store"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700"
-              >
-                Mağaza Girişi
-              </a>
-              <a
-                href="/auth/login?type=courier"
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700"
-              >
-                Kurye Girişi
-              </a>
-            </div>
-          </div>
+  // Müşteri girişi için yeni tasarım
+  return (
+    <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
+      {/* Sol: SVG ve tanıtım */}
+      <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
+        <img src="/graphic3.svg" alt="Müşteri Giriş Görseli" className="w-3/4 max-w-lg mx-auto" />
+        <div className="mt-8 text-center">
+          <h2 className="text-2xl font-bold text-white mb-2">Yummine Müşteri Girişi</h2>
+          <p className="text-gray-300 mb-6">Hesabınıza giriş yaparak siparişlerinizi takip edin ve daha fazlasını keşfedin.</p>
         </div>
       </div>
-    );
-  }
 
-  const isCustomer = type === 'customer';
-  const isStore = type === 'store';
-  const isCourier = type === 'courier';
-
-  if (isCustomer) {
-    // Müşteri girişi için yeni tasarım
-    return (
-      <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
-        {/* Sol: SVG ve tanıtım */}
-        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
-          <img src="/graphic3.svg" alt="Müşteri Giriş Görseli" className="w-3/4 max-w-lg mx-auto" />
-          <div className="mt-8 text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Yummine Müşteri Girişi</h2>
-            <p className="text-gray-300 mb-6">Hesabınıza giriş yaparak siparişlerinizi takip edin</p>
+      {/* Sağ: Form */}
+      <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
+        <div className="max-w-lg w-full mx-auto">
+          {/* Mobil için logo */}
+          <div className="md:hidden flex justify-center mb-6">
+            <div className="text-2xl font-bold text-blue-600">Yummine</div>
           </div>
-        </div>
 
-        {/* Sağ: Form */}
-        <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
-          <div className="max-w-lg w-full mx-auto">
-            {/* Mobil için logo */}
-            <div className="md:hidden flex justify-center mb-6">
-              <div className="text-2xl font-bold text-blue-600">Yummine</div>
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Hesabınıza Giriş Yapın</h1>
+            <p className="text-gray-600">Tasarım ve web endüstrisinin en güçlü aracına erişin.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="E-posta Adresi"
+                required
+              />
             </div>
 
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Hesabınıza Giriş Yapın</h1>
-              <p className="text-gray-600">Tasarım ve web endüstrisinin en güçlü aracına erişin.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
+            <div>
+              <div className="relative">
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="E-posta Adresi"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-3 py-2 pr-10 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Şifre"
                   required
                 />
-              </div>
-
-              <div>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-3 py-2 pr-10 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Şifre"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  >
-                    {showPassword ? (
-                      <Eye className="h-5 w-5" />
-                    ) : (
-                      <EyeClosed className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
-                  <X className="h-5 w-5 mr-2" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
                 <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
                 >
-                  {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+                  {showPassword ? (
+                    <Eye className="h-5 w-5" />
+                  ) : (
+                    <EyeClosed className="h-5 w-5" />
+                  )}
                 </button>
-                <Link href="/auth/forgot-password?type=customer" className="ml-4 text-blue-600 hover:text-blue-800 text-sm">
-                  Şifremi Unuttum?
-                </Link>
-              </div>
-
-              <div className="other-links social-with-title">
-                <div className="text-center mb-4">
-                  <span className="text-gray-500">Veya şununla giriş yapın</span>
-                </div>
-                <div className="flex justify-center">
-                  <a href="#" className="w-12 h-12 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition shadow-sm">
-                    <FcGoogle className="w-6 h-6" />
-                  </a>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <span className="text-gray-500">Yeni hesap mı? </span>
-                <Link href="/auth/register?type=customer" className="text-blue-600 hover:text-blue-800">
-                  Yeni hesap oluşturun
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <style jsx global>{`
-          body {
-            background: #f3f4f6;
-          }
-          @media (prefers-color-scheme: dark) {
-            body {
-              background: #111827;
-            }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Store girişi için yeni tasarım
-  if (isStore) {
-    return (
-      <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
-        {/* Sol: SVG ve tanıtım */}
-        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
-          <img src="/graphic2.svg" alt="Mağaza Giriş Görseli" className="w-3/4 max-w-lg mx-auto" />
-          <div className="mt-8 text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Yummine Mağaza Girişi</h2>
-            <p className="text-gray-300 mb-6">Mağaza panelinize erişmek için giriş yapın</p>
-            
-            <nav className="relative mb-10 group w-full h-40 flex items-center justify-center">
-              <a
-                href="/auth/register?type=partner"
-                className="relative w-16 h-16 bg-[#3b82f6] text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-300 transform group-hover:scale-110 z-50 hover:bg-[#2563eb]"
-              >
-                <svg
-                  className="w-8 h-8 transition-transform duration-500 ease-in-out group-hover:rotate-45"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-              </a>
-
-              <div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center z-40 transition-all duration-500"
-              >
-                <a
-                  href="/auth/register?type=partner"
-                  className="absolute transform -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:-translate-x-[75px] transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] delay-50"
-                >
-                  <div
-                    className="w-12 h-12 bg-green-500 rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 hover:bg-gray-100"
-                  >
-                    <BsShop className="w-5 h-5 text-gray-700 hover:text-[#3b82f6] transition-colors duration-300" />
-                  </div>
-                  <span
-                    className="text-xs font-bold text-gray-400 text-center mt-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300"
-                    >Mağaza Kayıt</span
-                  >
-                </a>
-              </div>
-            </nav>
-          </div>
-        </div>
-
-        {/* Sağ: Form */}
-        <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
-          <div className="max-w-lg w-full mx-auto">
-            {/* Mobil için sabit icon */}
-            <div className="md:hidden flex justify-center mb-6">
-              <div className="group relative">
-                <BsShop className="w-12 h-12 text-green-500" />
-                <span className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 origin-bottom scale-100 px-3 rounded-lg border py-2 text-sm font-bold shadow-md border-green-400 bg-green-500 text-white">
-                  MAĞAZA
-                </span>
               </div>
             </div>
 
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Mağaza Girişi</h1>
-              <p className="text-gray-600">Mağaza hesabınıza giriş yaparak panelinize erişin.</p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-1">E-posta</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="E-posta adresinizi girin"
-                    required
-                  />
-                </div>
+            {error && (
+              <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
+                <X className="h-5 w-5 mr-2" />
+                <span>{error}</span>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-medium mb-1">Şifre</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Şifrenizi girin"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  >
-                    {showPassword ? (
-                      <Eye className="h-5 w-5" />
-                    ) : (
-                      <EyeClosed className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
-                  <X className="h-5 w-5 mr-2" />
-                  <span>{error}</span>
-                </div>
-              )}
-
+            <div className="flex items-center justify-between">
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:from-blue-700 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
               </button>
+              <Link href="/auth/forgot-password?type=customer" className="ml-4 text-blue-600 hover:text-blue-800 text-sm">
+                Şifremi Unuttum?
+              </Link>
+            </div>
 
-              <div className="text-center">
-                <Link href="/auth/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">
-                  Şifremi unuttum
-                </Link>
+            <div className="other-links social-with-title">
+              <div className="text-center mb-4">
+                <span className="text-gray-500">Veya şununla giriş yapın</span>
               </div>
-
-              <div className="text-center">
-                <span className="text-gray-500">Hesabınız yok mu? </span>
-                <Link href="/auth/register?type=partner" className="text-blue-600 hover:text-blue-800">
-                  Kayıt olun
-                </Link>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <style jsx global>{`
-          body {
-            background: #f3f4f6;
-          }
-          @media (prefers-color-scheme: dark) {
-            body {
-              background: #111827;
-            }
-          }
-        `}</style>
-      </div>
-    );
-  }
-
-  // Courier girişi için tasarım
-  if (isCourier) {
-    return (
-      <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
-        {/* Sol: SVG ve tanıtım */}
-        <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>
-          <img src="/graphic1.svg" alt="Kurye Giriş Görseli" className="w-3/4 max-w-lg mx-auto" />
-          <div className="mt-8 text-center">
-            <h2 className="text-2xl font-bold text-white mb-2">Yummine Kurye Girişi</h2>
-            <p className="text-gray-300 mb-6">Kurye panelinize erişmek için giriş yapın</p>
-            
-            <nav className="relative mb-10 group w-full h-40 flex items-center justify-center">
-              <a
-                href="/auth/register?type=partner"
-                className="relative w-16 h-16 bg-[#3b82f6] text-white rounded-full flex items-center justify-center shadow-xl transition-all duration-300 transform group-hover:scale-110 z-50 hover:bg-[#2563eb]"
-              >
-                <svg
-                  className="w-8 h-8 transition-transform duration-500 ease-in-out group-hover:rotate-45"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 4v16m8-8H4"
-                  ></path>
-                </svg>
-              </a>
-
-              <div
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex justify-center items-center z-40 transition-all duration-500"
-              >
-                <a
-                  href="/auth/register?type=partner"
-                  className="absolute transform -translate-x-1/2 opacity-0 group-hover:opacity-100 group-hover:translate-x-[75px] transition-all duration-500 ease-[cubic-bezier(0.68,-0.55,0.27,1.55)] delay-100"
-                >
-                  <div
-                    className="w-12 h-12 bg-white rounded-full flex flex-col items-center justify-center shadow-lg transition-all duration-300 hover:scale-110 hover:bg-gray-100"
-                  >
-                    <FaMotorcycle className="w-5 h-5 text-gray-400 hover:text-[#3b82f6] transition-colors duration-300" />
-                  </div>
-                  <span
-                    className="text-xs font-bold text-gray-400 text-center mt-2 block opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-300"
-                    >Kurye Kayıt</span
-                  >
+              <div className="flex justify-center">
+                <a href="#" className="w-12 h-12 bg-white border border-gray-300 rounded-full flex items-center justify-center hover:bg-gray-50 transition shadow-sm">
+                  <FcGoogle className="w-6 h-6" />
                 </a>
               </div>
-            </nav>
-          </div>
-        </div>
-
-        {/* Sağ: Form */}
-        <div className="flex flex-col justify-center w-full md:w-1/2 px-6 py-12 bg-white text-gray-900 transition-colors duration-300">
-          <div className="max-w-lg w-full mx-auto">
-            {/* Mobil için sabit icon */}
-            <div className="md:hidden flex justify-center mb-6">
-              <div className="group relative">
-                <FaMotorcycle className="w-12 h-12 text-blue-500" />
-                <span className="absolute -top-12 left-1/2 -translate-x-1/2 z-20 origin-bottom scale-100 px-3 rounded-lg border py-2 text-sm font-bold shadow-md border-blue-400 bg-blue-500 text-white">
-                  KURYE
-                </span>
-              </div>
             </div>
 
-            <div className="mb-8">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Kurye Girişi</h1>
-              <p className="text-gray-600">Kurye hesabınıza giriş yaparak panelinize erişin.</p>
+            <div className="text-center">
+              <span className="text-gray-500">Yeni hesap mı? </span>
+              <Link href="/auth/register?type=customer" className="text-blue-600 hover:text-blue-800">
+                Yeni hesap oluşturun
+              </Link>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-1">E-posta</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="E-posta adresinizi girin"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-1">Şifre</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    placeholder="Şifrenizi girin"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                  >
-                    {showPassword ? (
-                      <Eye className="h-5 w-5" />
-                    ) : (
-                      <EyeClosed className="h-5 w-5" />
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              {error && (
-                <div className="bg-red-100 text-red-700 rounded-lg p-3 flex items-center">
-                  <X className="h-5 w-5 mr-2" />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-linear-to-r from-blue-600 to-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:from-blue-700 hover:to-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isSubmitting ? 'Giriş yapılıyor...' : 'Giriş Yap'}
-              </button>
-
-              <div className="text-center">
-                <Link href="/auth/forgot-password" className="text-blue-600 hover:text-blue-800 text-sm">
-                  Şifremi unuttum
-                </Link>
-              </div>
-
-              <div className="text-center">
-                <span className="text-gray-500">Hesabınız yok mu? </span>
-                <Link href="/auth/register?type=partner" className="text-blue-600 hover:text-blue-800">
-                  Kayıt olun
-                </Link>
-              </div>
-            </form>
-          </div>
+          </form>
         </div>
-
-        <style jsx global>{`
-          body {
-            background: #f3f4f6;
-          }
-          @media (prefers-color-scheme: dark) {
-            body {
-              background: #111827;
-            }
-          }
-        `}</style>
       </div>
-    );
-  }
+
+      <style jsx global>{`
+        body {
+          background: #f3f4f6;
+        }
+        @media (prefers-color-scheme: dark) {
+          body {
+            background: #111827;
+          }
+        }
+      `}</style>
+    </div>
+  );
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+import React, { useRef, useEffect } from 'react';
+import { GoogleMap, useLoadScript } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
 
@@ -35,6 +35,66 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
+  const mapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
+
+  // Create custom marker content
+  const createMarkerContent = () => {
+    const content = document.createElement("div");
+    content.innerHTML = `
+      <div style="
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background-color: #3B82F6;
+        border: 3px solid white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      ">
+        <div style="
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background-color: white;
+        "></div>
+      </div>
+    `;
+    return content;
+  };
+
+  // Update marker when address coordinates change
+  useEffect(() => {
+    if (mapRef.current && isLoaded && window.google && window.google.maps && window.google.maps.marker) {
+      // Remove existing marker
+      if (markerRef.current) {
+        markerRef.current.map = null;
+        markerRef.current = null;
+      }
+
+      // Create new marker if coordinates exist
+      if (address.latitude && address.longitude) {
+        const marker = new window.google.maps.marker.AdvancedMarkerElement({
+          map: mapRef.current,
+          position: { lat: address.latitude, lng: address.longitude },
+          content: createMarkerContent(),
+        });
+        markerRef.current = marker;
+      }
+    }
+  }, [address.latitude, address.longitude, isLoaded]);
+
+  // Cleanup marker on unmount
+  useEffect(() => {
+    return () => {
+      if (markerRef.current) {
+        markerRef.current.map = null;
+        markerRef.current = null;
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-6" suppressHydrationWarning>
       <h3 className="text-xl font-semibold mb-4">Adres Bilgileri</h3>
@@ -51,6 +111,9 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
                 lng: address.longitude || 32.8597
               }}
               zoom={address.latitude ? 15 : 6}
+              onLoad={(map) => {
+                mapRef.current = map;
+              }}
               onClick={(e) => {
                 if (e.latLng) {
                   const lat = e.latLng.lat?.();
@@ -69,14 +132,6 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
                 clickableIcons: false,
               }}
             >
-              {address.latitude && address.longitude && (
-                <Marker
-                  position={{
-                    lat: address.latitude,
-                    lng: address.longitude
-                  }}
-                />
-              )}
             </GoogleMap>
             {/* Sadece Konumumu Bul butonu */}
             <button

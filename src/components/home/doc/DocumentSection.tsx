@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 
 // Document Delivery Page Component
-const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
+const DocumentDeliveryPage = ({ darkMode, user }: { darkMode: boolean; user: any }) => {
   const [showForm, setShowForm] = useState(false);
   const [regions, setRegions] = useState([{ id: 1, pickup: '', delivery: '', weight: '' }]);
   const [deliveryTime, setDeliveryTime] = useState('gun_icinde');
@@ -32,19 +32,19 @@ const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
     <div className="py-6 sm:py-8 pb-32">
       <div className="grid lg:grid-cols-5 gap-6 sm:gap-8">
         {/* Sidebar */}
-        <div className="lg:col-span-1 lg:sticky lg:top-24 lg:self-start">
-          <div className={`rounded-2xl p-4 sm:p-6 transition-colors duration-300 ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-white border border-neutral-200'} shadow-lg`}>
+        <div className="lg:col-span-1">
+          <div className={`rounded-2xl p-4 sm:p-6 h-screen overflow-y-auto transition-colors duration-300 ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-white border border-neutral-200'} shadow-lg`}>
             {!showForm ? (
               <div className="flex flex-col items-center text-center space-y-6">
                 <p className={`text-sm font-medium ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                  "Bölge Aç" butonuna tıklayın, ardından aşağıdaki adımları takip edin.
+                  "Teslimat Oluştur" butonuna tıklayın ve teslimat detaylarını girin.
                 </p>
                 
                 <button 
                   onClick={() => setShowForm(true)}
                   className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2.5 rounded-lg font-semibold transition-all duration-300"
                 >
-                  Bölge Aç
+                  Teslimat Oluştur
                 </button>
 
                 <div className="space-y-8 w-full mt-8">
@@ -55,7 +55,7 @@ const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
                     </div>
                     <div className="text-orange-500 text-3xl mb-2">📍</div>
                     <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Teslimat Bölgesini Belirleyin
+                      Alış Noktası'nı Belirleyin
                     </p>
                   </div>
 
@@ -64,9 +64,9 @@ const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-800 text-white'}`}>
                       2
                     </div>
-                    <div className="text-orange-500 text-3xl mb-2">�</div>
+                    <div className="text-orange-500 text-3xl mb-2">🏠</div>
                     <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Paket Bilgilerini Giriniz
+                      Teslimat Noktası'nı Belirleyin
                     </p>
                   </div>
 
@@ -75,16 +75,36 @@ const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-800 text-white'}`}>
                       3
                     </div>
+                    <div className="text-orange-500 text-3xl mb-2">📦</div>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Paket Bilgilerini Giriniz
+                    </p>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-800 text-white'}`}>
+                      4
+                    </div>
                     <div className="text-orange-500 text-3xl mb-2">⏰</div>
                     <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                       Teslimat Zamanını Seçin
                     </p>
                   </div>
+
+                  {/* Step 5 */}
+                  <div className="flex flex-col items-center">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 ${darkMode ? 'bg-gray-700 text-white' : 'bg-gray-800 text-white'}`}>
+                      5
+                    </div>
+                    <div className="text-orange-500 text-3xl mb-2">🏍️</div>
+                    <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Kurye Çağır
+                    </p>
+                  </div>
                 </div>
 
-                <button className={`text-purple-600 text-sm font-medium hover:underline mt-6 ${darkMode ? 'text-purple-400' : ''}`}>
-                  📋 Teslimat nasıl yapılır?
-                </button>
+               
               </div>
             ) : (
               <div className="flex flex-col space-y-4">
@@ -293,8 +313,8 @@ const DocumentDeliveryPage = ({ darkMode }: { darkMode: boolean }) => {
         </div>
 
         {/* Google Maps */}
-        <div className="lg:col-span-4 lg:sticky lg:top-24 lg:self-start">
-          <div className={`rounded-2xl overflow-hidden h-[400px] sm:h-[600px] border-2 transition-colors duration-300 ${darkMode ? 'border-neutral-700 bg-gray-800' : 'border-neutral-200 bg-neutral-100'}`}>
+        <div className="lg:col-span-4">
+          <div className={`rounded-2xl overflow-hidden h-screen border-2 transition-colors duration-300 ${darkMode ? 'border-neutral-700 bg-gray-800' : 'border-neutral-200 bg-neutral-100'}`}>
             <iframe
               src="https://www.openstreetmap.org/export/embed.html?bbox=28.8,40.9,29.2,41.2&layer=mapnik&marker=41.0082,28.9784"
               width="100%"
