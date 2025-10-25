@@ -19,8 +19,8 @@ interface HeaderProps {
   setDarkMode: (darkMode: boolean) => void;
   heroMode: string;
   setHeroMode: (mode: string) => void;
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (query: string) => void;
   cartSidebarOpen: boolean;
   setCartSidebarOpen: (open: boolean) => void;
   showAddAddressModal: boolean;

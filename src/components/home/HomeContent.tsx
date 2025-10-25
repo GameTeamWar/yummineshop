@@ -10,15 +10,15 @@ import HowItWorksModal from './modals/HowItWorksModal';
 import HeroSection from './hero/HeroSection';
 
 export default function Yummine() {
-  const [activeTab, setActiveTab] = useState('home');
   const [darkMode, setDarkMode] = useState(true);
   const [heroMode, setHeroMode] = useState('shopping');
+  const [activeTab, setActiveTab] = useState(heroMode === 'document' ? 'documents' : 'home');
   const [isMobile, setIsMobile] = useState(false);
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const router = useRouter();
 
   // Load dark mode preference from localStorage on mount
@@ -41,6 +41,11 @@ export default function Yummine() {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+
+  // Update activeTab when heroMode changes
+  useEffect(() => {
+    setActiveTab(heroMode === 'document' ? 'documents' : 'home');
+  }, [heroMode]);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-gray-900 text-white' : 'bg-white text-neutral-950'}`}>
@@ -79,7 +84,7 @@ export default function Yummine() {
       />
 
       {/* Bottom Navigation - Only show on mobile */}
-      {isMobile && <MobileNavigation activeTab={activeTab} setActiveTab={setActiveTab} darkMode={darkMode} />}
+      {isMobile && <MobileNavigation activeTab={activeTab} setActiveTab={setActiveTab} darkMode={darkMode} user={user} logout={logout} heroMode={heroMode} setHeroMode={setHeroMode} />}
     </div>
   );
 }

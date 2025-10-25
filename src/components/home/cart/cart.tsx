@@ -24,7 +24,7 @@ export default function CartSidebar({
   return (
     <>
       {/* Cart Sidebar */}
-      <div className={`fixed top-[4.91rem] right-0 h-[calc(100vh-4rem)] w-80 z-50 transform transition-transform duration-300 ease-in-out cart-sidebar ${cartSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div className={`fixed sm:top-[3.4rem] lg:top-[4.9rem] right-0 h-[calc(100vh-4rem)] w-80 z-50 transform transition-transform duration-300 ease-in-out cart-sidebar ${cartSidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}>
         <div className={`h-full flex flex-col shadow-2xl ${darkMode ? 'bg-gray-900 border-l border-neutral-700' : 'bg-white border-l border-neutral-600'}`}>
           {/* Sidebar Header */}
           <div className={`flex items-center justify-between p-4 border-b border-t ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>

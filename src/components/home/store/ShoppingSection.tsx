@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Package, Heart, ShoppingBag, Search, User, Menu, X, Truck, Star, ChevronRight, Sun, Moon, FileText, Navigation, Minus, Plus, Filter, LogOut, Play, Shield } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import CategoryBar from '../categories/categorybar';
+import SearchSection from '../search/SearchSection';
 
 // ShoppingSection Props Interface
 interface ShoppingSectionProps {
@@ -66,7 +68,6 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
   const [popularProductsSlide, setPopularProductsSlide] = useState(0);
   const [discountedProductsSlide, setDiscountedProductsSlide] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [filters, setFilters] = useState({
     rating: 0,
     delivery: 0,
@@ -76,54 +77,6 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
   });
   const [sortBy, setSortBy] = useState('recommended');
   // Arama yapıldığında kart pozisyonlarını yeniden ayarla
-  useEffect(() => {
-    if (searchQuery.trim()) {
-      // Arama sonuçları kısmına scroll et
-      setTimeout(() => {
-        const searchResultsElement = document.querySelector('[data-search-results]');
-        if (searchResultsElement) {
-          searchResultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }, 100);
-    }
-  }, [searchQuery]);
-
-  const categories = [
-    { id: 'all', name: 'Tümü', icon: '🛍️' },
-   //  { id: 'products', name: 'Ürünlers', icon: '🛒', subcategories: [
-     //  { id: 'popular', name: 'Popüler Ürünler', icon: '🔥' },
-     //  { id: 'discounted', name: 'İndirimli Ürünler', icon: '💰' },
-     //  { id: 'new', name: 'Yeni Ürünler', icon: '✨' },
-    //   { id: 'trending', name: 'Trend Ürünler', icon: '📈' },
-    //   { id: 'flash', name: 'Flaş İndirimler', icon: '⚡' },
-      // { id: 'school', name: 'Okul Ürünleri', icon: '📚' },
-     //  { id: 'winter', name: 'Kışlık Ürünler', icon: '❄️' },
-     //  { id: 'summer', name: 'Yazlık Ürünler', icon: '☀️' },
-     //  { id: 'electronics', name: 'Elektronik Ürünler', icon: '📱' },
-     //  { id: 'sports', name: 'Spor Ürünler', icon: '⚽' }
-  //   ]},
-    { id: 'textile', name: 'Tekstil', icon: '👕' },
-    { id: 'cosmetics', name: 'Kozmetik', icon: '💄' },
-    { id: 'accessories', name: 'Aksesuar', icon: '⌚' },
-    { id: 'decor', name: 'Dekorasyon', icon: '🏠' }
-  ];
-
-  // Mobile navigation items - combined categories and product subcategories
-  const mobileNavItems = [
-    { id: 'all', name: 'Tümü', icon: '🛍️', type: 'category' },
-    { id: 'popular', name: 'Popüler', icon: '🔥', type: 'product' },
-    { id: 'discounted', name: 'İndirimli', icon: '💰', type: 'product' },
-    { id: 'new', name: 'Yeni', icon: '✨', type: 'product' },
-    { id: 'trending', name: 'Trend', icon: '📈', type: 'product' },
-    { id: 'flash', name: 'Flaş', icon: '⚡', type: 'product' },
-    { id: 'winter', name: 'Kışlık', icon: '❄️', type: 'product' },
-    { id: 'electronics', name: 'Elektronik', icon: '📱', type: 'product' },
-    { id: 'sports', name: 'Spor', icon: '⚽', type: 'product' },
-    { id: 'textile', name: 'Tekstil', icon: '👕', type: 'category' },
-    { id: 'cosmetics', name: 'Kozmetik', icon: '💄', type: 'category' },
-    { id: 'accessories', name: 'Aksesuar', icon: '⌚', type: 'category' },
-    { id: 'decor', name: 'Dekorasyon', icon: '🏠', type: 'category' }
-  ];
 
   const stores = [
     { id: 1, name: 'Stil Fashion', category: 'textile', distance: 0.8, delivery: 30, rating: 4.8, items: 145, badge: 'Popüler', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop' },
@@ -159,25 +112,6 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
     { id: 121, name: 'Akıllı Saat', images: ['https://picsum.photos/400/400?random=121', 'https://picsum.photos/400/400?random=122', 'https://picsum.photos/400/400?random=123'], price: 2499, store: 'Apple Store', category: 'electronics', rating: 4.8, reviewCount: 156 },
   ];
 
-  // Search functionality for products
-  const searchedProducts = searchQuery.trim() ? [
-    ...discountedProducts.filter(product => {
-      const query = searchQuery.toLowerCase().trim();
-      const productName = product.name.toLowerCase();
-      const storeName = product.store.toLowerCase();
-      const categoryName = categories.find(cat => cat.id === product.category)?.name.toLowerCase() || '';
-      
-      return productName.includes(query) || storeName.includes(query) || categoryName.includes(query);
-    }),
-    ...popularProducts.filter(product => {
-      const query = searchQuery.toLowerCase().trim();
-      const productName = product.name.toLowerCase();
-      const storeName = product.store.toLowerCase();
-      
-      return productName.includes(query) || storeName.includes(query);
-    })
-  ] : [];
-
   // Filtered and sorted stores
   const filteredAndSortedStores = stores
     .filter(store => {
@@ -187,23 +121,6 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
       if (filters.distance > 0 && store.distance > filters.distance) return false;
       if (filters.price !== 'all' && store.price !== filters.price) return false;
       if (filters.storeType !== 'all' && store.storeType !== filters.storeType) return false;
-      
-      // Search functionality
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase().trim();
-        const storeName = store.name.toLowerCase();
-        const categoryName = categories.find(cat => cat.id === store.category)?.name.toLowerCase() || '';
-        const storeTypeName = store.storeType === 'esnaf' ? 'esnaf' : 
-                             store.storeType === 'avm' ? 'avm' : 
-                             store.storeType === 'marka' ? 'marka' : '';
-        
-        // Search in store name, category name, or store type
-        if (!storeName.includes(query) && 
-            !categoryName.includes(query) && 
-            !storeTypeName.includes(query)) {
-          return false;
-        }
-      }
       
       return true;
     })
@@ -274,56 +191,17 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
 
   return (
     <div className="py-8 sm:py-1 pb-2 ">
-      {/* Search Bar - Top of Shopping Section */}
-      <div className="mb-1">
-        <div className="relative mx-auto">
-          <div className={`relative flex items-center transition-all duration-500 ease-in-out ${isSearchExpanded ? 'w-full' : 'w-12'}`}>
-            {/* Search Icon Button */}
-            <button
-              onClick={() => setIsSearchExpanded(!isSearchExpanded)}
-              className={`absolute left-0 z-20 p-3 rounded-lg transition-all duration-300 ${darkMode ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-neutral-100 hover:bg-neutral-200'} ${isSearchExpanded ? 'text-blue-500' : ''}`}
-            >
-              <Search className={`w-5 h-5 transition-transform duration-300 ${isSearchExpanded ? 'scale-110 rotate-12' : ''}`} />
-            </button>
 
-            {/* Expandable Input */}
-            <input
-              type="text"
-              placeholder={isSearchExpanded ? "Ürün, kategori, mağaza veya marka ara..." : ""}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onBlur={() => {
-                // Auto-collapse when losing focus and empty
-                if (!searchQuery.trim()) {
-                  setTimeout(() => setIsSearchExpanded(false), 150);
-                }
-              }}
-              className={`w-full pl-14 pr-4 py-3 rounded-lg border transition-all duration-500 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base ${
-                isSearchExpanded 
-                  ? `opacity-100 ${darkMode ? 'bg-neutral-800 border-neutral-700 text-white placeholder-neutral-500' : 'bg-neutral-100 border-neutral-300 text-neutral-950 placeholder-neutral-500'}`
-                  : 'opacity-0 w-0 p-0 border-0'
-              }`}
-              style={{ 
-                transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-                width: isSearchExpanded ? '100%' : '0px'
-              }}
-            />
-
-            {/* Close button when expanded */}
-            {isSearchExpanded && (
-              <button
-                onClick={() => {
-                  setIsSearchExpanded(false);
-                  setSearchQuery('');
-                }}
-                className={`absolute right-2 z-20 p-1.5 rounded-full transition-all duration-300 ${darkMode ? 'hover:bg-neutral-700 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-600'}`}
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
+      <SearchSection
+        darkMode={darkMode}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        isMobile={isMobile}
+        stores={stores}
+        discountedProducts={discountedProducts}
+        popularProducts={popularProducts}
+        categories={[]}
+      />
 
       <div className={`grid ${isMobile ? 'grid-cols-1' : 'lg:grid-cols-4'} gap-6`}>
         {/* Sidebar - Only on desktop */}
@@ -336,28 +214,13 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
             
             <div className={`rounded-2xl p-4 sm:p-6 transition-colors duration-300 max-h-[calc(100vh-8rem)] overflow-y-auto ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-neutral-50 border border-neutral-200'}`}>
             {/* Categories */}
-            <div className="mb-6">
-              <div className="space-y-2">
-                {categories.map(cat => (
-                  <div key={cat.id}>
-                    <button 
-                      onClick={() => {
-                        if (cat.id === 'all') {
-                          window.scrollTo({top: 0, behavior: 'smooth'});
-                        } else {
-                          const element = document.getElementById(`category-${cat.id}`);
-                          element?.scrollIntoView({behavior: 'smooth'});
-                        }
-                      }} 
-                      className={`w-full text-left p-3 rounded-xl transition-all duration-300 flex items-center gap-3 ${darkMode ? 'hover:bg-neutral-700 border border-transparent' : 'hover:bg-neutral-100 border border-transparent'}`}
-                    >
-                      <span className="text-lg">{cat.icon}</span>
-                      <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{cat.name}</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            <CategoryBar
+              darkMode={darkMode}
+              isMobile={false}
+              searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
 
             {/* Filters */}
             <div className="mb-6">
@@ -464,164 +327,20 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
 
         {/* Main Content */}
         <div className={`${isMobile ? 'col-span-1' : 'lg:col-span-3 mr-3 pr-4'}`}>
-          {/* Mobile Category Bar - Only on mobile */}
-          {isMobile && !searchQuery.trim() && (
-            <div className={`sticky top-[3.39rem] pt-5 z-10 mb-12 pb-4 border-b ${darkMode ? 'bg-gray-900 border-neutral-700' : 'bg-white border-neutral-200'} backdrop-blur-sm bg-opacity-95`}>
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-                {mobileNavItems.map(item => (
-                  <button 
-                    key={item.id}
-                    onClick={() => {
-                      if (item.id === 'all') {
-                        window.scrollTo({top: 0, behavior: 'smooth'});
-                      } else if (item.type === 'category') {
-                        const element = document.getElementById(`category-${item.id}`);
-                        element?.scrollIntoView({behavior: 'smooth'});
-                      } else {
-                        // Product subcategory
-                        const element = document.getElementById(`subcategory-${item.id}`);
-                        element?.scrollIntoView({behavior: 'smooth'});
-                      }
-                    }} 
-                    className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${darkMode ? 'bg-neutral-700 text-white hover:bg-neutral-600' : 'bg-neutral-100 text-neutral-950 hover:bg-neutral-200'}`}
-                  >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Search Results */}
-          {searchQuery.trim() && (
-            <div className="mb-8" data-search-results>
-              <h2 className={`text-xl sm:text-2xl font-bold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
-                Arama Sonuçları "{searchQuery}" ({searchedProducts.length + filteredAndSortedStores.length})
-              </h2>
-              
-              {/* Products in search results */}
-              {searchedProducts.length > 0 && (
-                <div className="mb-8">
-                  <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Ürünler</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {searchedProducts.map((product, index) => (
-                      <div key={`search-product-${product.id}-${index}`} onClick={() => {
-                        router.push(`/product/${product.id}`);
-                      }} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-                        <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
-                          <ProductImageSlider images={product.images} alt={product.name} className="w-full h-full" />
-                          {'discount' in product && (
-                            <div className="absolute top-2 right-2">
-                              <span className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                -{product.discount}%
-                              </span>
-                            </div>
-                          )}
-                          {!('discount' in product) && (
-                            <div className="absolute top-2 left-2">
-                              <span className="bg-green-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                🔥 Popüler
-                              </span>
-                            </div>
-                          )}
-                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-                            <button className="bg-white text-black font-bold px-4 py-2 rounded-full hover:bg-gray-100 transition-colors duration-300">
-                              Bu Benim Olmalı!
-                            </button>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h3 className={`font-semibold text-sm mb-2 line-clamp-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{product.name}</h3>
-                          <div className="flex items-center justify-between mb-2">
-                            {'discount' in product ? (
-                              <div className="flex items-center gap-2">
-                                <span className="text-red-500 font-bold text-sm">₺{product.currentPrice}</span>
-                                <span className={`text-xs line-through ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>₺{product.originalPrice}</span>
-                              </div>
-                            ) : (
-                              <span className="text-green-500 font-bold text-sm">₺{product.price.toLocaleString()}</span>
-                            )}
-                            <span className={`text-xs font-medium ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{product.store}</span>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                              <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{product.rating}</span>
-                            </div>
-                            <span className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>({product.reviewCount} yorum)</span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Stores in search results */}
-              {filteredAndSortedStores.length > 0 && (
-                <div>
-                  <h3 className={`text-lg font-semibold mb-3 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Mağazalar</h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {filteredAndSortedStores.map(store => (
-                    <div key={`search-store-${store.id}`} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
-                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
-                        <img src={store.image} alt={store.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        <div className={`absolute inset-0 ${darkMode ? 'bg-linear-to-br from-black/20 to-black/40' : 'bg-linear-to-br from-black/10 to-black/20'}`}></div>
-                        <div className="absolute top-3 right-3">
-                          <span className={`text-xs font-bold px-3 py-1 rounded-full transition-colors duration-300 ${darkMode ? 'bg-white text-gray-900' : 'bg-neutral-950 text-white'}`}>
-                            {store.badge}
-                          </span>
-                        </div>
-                      </div>                        <div className="p-4">
-                          <h3 className={`text-lg font-bold mb-2 transition-colors duration-300 group-hover:opacity-70 line-clamp-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.name}</h3>
-                          <div className={`flex items-center gap-4 mb-3 pb-3 border-b transition-colors duration-300 ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
-                            <div className="flex items-center gap-1">
-                              <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                              <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.rating}</span>
-                            </div>
-                            <span className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-600'}`}>({store.items})</span>
-                          </div>
-                          <div className={`grid grid-cols-2 gap-2 mb-4 text-xs sm:text-sm ${darkMode ? 'text-neutral-400' : 'text-neutral-700'}`}>
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 shrink-0" />
-                              <span>{store.distance} km</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Clock className="w-4 h-4 shrink-0" />
-                              <span>{store.delivery} dk</span>
-                            </div>
-                          </div>
-
-                          <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-xs sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
-                            Mağazayı Gör
-                            <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* No results */}
-              {searchedProducts.length === 0 && filteredAndSortedStores.length === 0 && (
-                <div className={`text-center py-12 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                  <Search className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p className="text-lg">"{searchQuery}" için sonuç bulunamadı</p>
-                  <p className="text-sm mt-2">Farklı anahtar kelimeler deneyebilirsiniz</p>
-                </div>
-              )}
-            </div>
+          {/* Mobile Category Bar */}
+          {isMobile && (
+            <CategoryBar
+              darkMode={darkMode}
+              isMobile={isMobile}
+              searchQuery={searchQuery}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+            />
           )}
 
           {/* Featured Sections - Only show when not searching */}
           {!searchQuery.trim() && (
             <div className="space-y-8 mb-8">
-              {/* Ürünler Ana Bölümü */}
-             
-
-              {/* Popüler Ürünler */}
               <div id="subcategory-popular" className="mb-6 lg:mt-8">
                 <h2 className={`text-lg sm:text-xl font-bold mb-3 flex items-center gap-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
                   <span className="text-lg">🔥</span> Popüler Ürünler
@@ -972,57 +691,54 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
             </div>
           )}
 
-          {/* Category Sections - Only show when not searching */}
-          {!searchQuery.trim() && categories.filter(cat => cat.id !== 'all').map(cat => {
-            const categoryStores = filteredAndSortedStores.filter(store => store.category === cat.id);
-            if (categoryStores.length === 0) return null;
-            return (
-              <div key={cat.id} id={`category-${cat.id}`} className="mb-8">
-                <h2 className={`text-xl sm:text-2xl font-bold  mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{cat.name} Mağazaları ({categoryStores.length})</h2>
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {categoryStores.map(store => (
-                    <div key={store.id} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
-                      <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
-                        <img src={store.image} alt={store.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                        <div className={`absolute inset-0 ${darkMode ? 'bg-linear-to-br from-black/20 to-black/40' : 'bg-linear-to-br from-black/10 to-black/20'}`}></div>
-                        <div className="absolute top-3 right-3">
-                          <span className={`text-xs font-bold px-3 py-1 rounded-full transition-colors duration-300 ${darkMode ? 'bg-white text-gray-900' : 'bg-neutral-950 text-white'}`}>
-                            {store.badge}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="p-4">
-                        <h3 className={`text-lg font-bold mb-2 transition-colors duration-300 group-hover:opacity-70 line-clamp-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.name}</h3>
-                        <div className={`flex items-center gap-4 mb-3 pb-3 border-b transition-colors duration-300 ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
-                          <div className="flex items-center gap-1">
-                            <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
-                            <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.rating}</span>
-                          </div>
-                          <span className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-600'}`}>({store.items})</span>
-                        </div>
-                        <div className={`grid grid-cols-2 gap-2 mb-4 text-xs sm:text-sm ${darkMode ? 'text-neutral-400' : 'text-neutral-700'}`}>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 shrink-0" />
-                            <span>{store.distance} km</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Clock className="w-4 h-4 shrink-0" />
-                            <span>{store.delivery} dk</span>
-                          </div>
-                        </div>
-
-                        <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-xs sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
-                          Mağazayı Gör
-                          <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
-                        </button>
+          {/* Store Grid - Always show when not searching */}
+          {!searchQuery.trim() && (
+            <div className="mt-8">
+              <h2 className={`text-xl sm:text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>
+                Mağazalar
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredAndSortedStores.slice(0, 12).map(store => (
+                  <div key={store.id} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
+                    <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
+                      <img src={store.image} alt={store.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                      <div className={`absolute inset-0 ${darkMode ? 'bg-linear-to-br from-black/20 to-black/40' : 'bg-linear-to-br from-black/10 to-black/20'}`}></div>
+                      <div className="absolute top-3 right-3">
+                        <span className={`text-xs font-bold px-3 py-1 rounded-full transition-colors duration-300 ${darkMode ? 'bg-white text-gray-900' : 'bg-neutral-950 text-white'}`}>
+                          {store.badge}
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="p-4">
+                      <h3 className={`text-lg font-bold mb-2 transition-colors duration-300 group-hover:opacity-70 line-clamp-2 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.name}</h3>
+                      <div className={`flex items-center gap-4 mb-3 pb-3 border-b transition-colors duration-300 ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 fill-yellow-500 text-yellow-500" />
+                          <span className={`font-semibold text-sm ${darkMode ? 'text-white' : 'text-neutral-950'}`}>{store.rating}</span>
+                        </div>
+                        <span className={`text-xs ${darkMode ? 'text-neutral-500' : 'text-neutral-600'}`}>({store.items})</span>
+                      </div>
+                      <div className={`grid grid-cols-2 gap-2 mb-4 text-xs sm:text-sm ${darkMode ? 'text-neutral-400' : 'text-neutral-700'}`}>
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 shrink-0" />
+                          <span>{store.distance} km</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 shrink-0" />
+                          <span>{store.delivery} dk</span>
+                        </div>
+                      </div>
+
+                      <button onClick={() => router.push(`/store/${store.id}`)} className={`w-full font-semibold py-2.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2 group text-xs sm:text-base bg-linear-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl`}>
+                        Mağazayı Gör
+                        <ChevronRight className="w-4 h-4 group-hover:translate-x-1 transition" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          )}
         </div>
       </div>
     </div>

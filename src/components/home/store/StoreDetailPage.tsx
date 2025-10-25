@@ -88,7 +88,6 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
   const intervalsRef = useRef<Map<number, number>>(new Map());
   // Header states
   const [heroMode, setHeroMode] = useState('shopping');
-  const [searchQuery, setSearchQuery] = useState('');
   const [cartSidebarOpen, setCartSidebarOpen] = useState(false);
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
@@ -672,7 +671,7 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
     },
     {
       id: 121,
-      name: 'Akıllı Saat',
+      name: 'Akıllı xSaat',
       category: 'accessories',
       price: 2499,
       originalPrice: 3499,
@@ -785,8 +784,6 @@ export default function StoreDetailPage({ storeData, productsData }: { storeData
         setDarkMode={setDarkMode}
         heroMode={heroMode}
         setHeroMode={setHeroMode}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
         cartSidebarOpen={cartSidebarOpen}
         setCartSidebarOpen={setCartSidebarOpen}
         showAddAddressModal={showAddAddressModal}

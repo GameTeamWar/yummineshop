@@ -5,8 +5,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { MapPin, Clock, Star, Heart, ShoppingBag, ChevronLeft, Plus, Minus, Truck, Shield, Award, Package, MessageCircle, Send, ChevronRight, ChevronLeft as ChevronLeftIcon, Eye, ThumbsUp, User, Calendar } from 'lucide-react';
 import CartPreloader from '../../../components/loader/CartPreloader';
 import Header from '../../../components/home/navigations/Header';
+import MobileNavigation from '../../../components/home/navigations/MobileNavigation';
 import StoreInfoBar from '../../../components/home/ui/infobar';
 import ProductZoom from '../../../components/home/ui/ProductZoom';
+import { useAuth } from '../../../context/AuthContext';
 
 // Ürün verilerini ShoppingSection'dan alalım (şimdilik static)
 const products = [
@@ -457,6 +459,7 @@ const stores = [
 export default function ProductPage() {
   const { id } = useParams();
   const router = useRouter();
+  const { user, logout } = useAuth();
   const [product, setProduct] = useState<any>(null);
   const [store, setStore] = useState<any>(null);
   const [quantity, setQuantity] = useState(1);
@@ -469,6 +472,9 @@ export default function ProductPage() {
   const [showAddAddressModal, setShowAddAddressModal] = useState(false);
   const [showHowItWorksModal, setShowHowItWorksModal] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Mobile navigation state
+  const [mobileNavActiveTab, setMobileNavActiveTab] = useState('home');
 
   // Yeni state'ler
   const [activeTab, setActiveTab] = useState('description');
@@ -501,7 +507,13 @@ export default function ProductPage() {
   const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
-    // Ürün ID'sine göre ürünü bul
+    const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  useEffect(() => {
     const productId = parseInt(id as string);
 
     // products array'inde ara
@@ -820,6 +832,9 @@ export default function ProductPage() {
         setCart={setCart}
         setCartTotal={setCartTotal}
       />
+
+      {/* Mobile Navigation */}
+      {isMobile && <MobileNavigation activeTab={mobileNavActiveTab} setActiveTab={setMobileNavActiveTab} darkMode={darkMode} user={user} logout={logout} heroMode={heroMode} setHeroMode={setHeroMode} />}
 
       {!product || !store ? (
         <div className="min-h-screen flex items-center justify-center bg-background">
