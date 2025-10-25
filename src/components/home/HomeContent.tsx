@@ -3,7 +3,7 @@ import { MapPin, Clock, Search, Menu, X, Truck, Star, ChevronRight, Sun, Moon, F
 import ShoppingSection from './store/ShoppingSection';
 import DocumentSection from './doc/DocumentSection';
 import Header from './navigations/Header';
-import MobileNavigation from './navigations/mobil';
+import MobileNavigation from './navigations/MobileNavigation';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import HowItWorksModal from './modals/HowItWorksModal';

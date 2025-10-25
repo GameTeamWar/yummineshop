@@ -70,7 +70,6 @@ export default function Header({
   const [addressHasElevator, setAddressHasElevator] = useState(false);
   const [showEditAddressModal, setShowEditAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
-  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
@@ -208,21 +207,140 @@ export default function Header({
       <header className={`sticky top-0 z-50 transition-colors duration-300 ${darkMode ? 'bg-gray-900 border-neutral-800' : 'bg-white border-neutral-200'} border-b shadow-lg`}>
         <div className="w-full mx-auto px-4 py-3">
           {isMobile ? (
-            // Mobile Header: Only logo and search
+            // Mobile Header: Logo, address, and dark mode toggle
             <div className="flex items-center justify-between relative">
+              {/* Sol: Logo */}
               <div className="flex items-center">
-                <span className={`text-xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span><span>.</span>
+                <span className={`text-xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span>
               </div>
-              
-              {/* Mobile Search Button */}
-              {heroMode === 'shopping' && (
-                <button
-                  onClick={() => setShowMobileSearch(true)}
-                  className={`p-2 rounded-lg transition-colors duration-300 ${darkMode ? 'bg-neutral-800 hover:bg-neutral-700 text-neutral-300' : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-700'}`}
-                >
-                  <Search className="w-5 h-5" />
+
+              {/* Sağ: Address, Cart and Dark Mode Toggle */}
+              <div className="flex items-center gap-1">
+                {/* Address Selection Button - Mobile */}
+                {user && (
+                  <div className="relative address-dropdown">
+                    <button onClick={() => setAddressDropdownOpen(!addressDropdownOpen)} className={`flex items-center gap-1 px-2 py-1 rounded-lg transition-colors duration-300 bg-transparent hover:bg-gray-100 dark:hover:bg-neutral-400 ${darkMode ? 'text-neutral-300 hover:text-white' : 'text-neutral-700 hover:text-white'}`}>
+                      <MapPin className="w-4 h-4" />
+                      <span className="text-xs font-medium max-w-16 truncate">{selectedAddress.split(' (')[0]}</span>
+                    </button>
+
+                    {addressDropdownOpen && (
+                      <div className={`absolute top-full right-0 mt-2 w-64 rounded-lg shadow-xl border z-50 transition-all duration-300 ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
+                        {addresses.map((address, index) => {
+                          const shortNeighborhood = address.neighborhood && address.neighborhood.length > 15
+                            ? address.neighborhood.substring(0, 15) + '...'
+                            : address.neighborhood || '';
+
+                          const displayString = `${address.name} (${shortNeighborhood})`;
+                          const isSelected = displayString === selectedAddress;
+
+                          return (
+                            <div key={address.id || index} className={`px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 ${isSelected ? (darkMode ? 'bg-blue-900/50 border-l-4 border-blue-400' : 'bg-blue-50 border-l-4 border-blue-500') : ''}`}>
+                              <div className="flex items-center justify-between">
+                                <button onClick={() => {
+                                  setSelectedAddress(displayString);
+                                  setAddressDropdownOpen(false);
+                                }} className="flex-1 text-left">
+                                  <div className="flex items-center gap-2">
+                                    {isSelected && <Star className="w-4 h-4 text-yellow-500 fill-current" />}
+                                    <div className="font-medium">{address.name}</div>
+                                  </div>
+                                  <div className={`text-sm ml-6 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>{address.street}</div>
+                                </button>
+                                <div className="flex items-center gap-1 ml-2">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingAddress(address);
+                                      setNewAddressName(address.name);
+                                      setNewAddressStreet(address.additionalInfo || '');
+                                      setAddressCity(address.city);
+                                      setAddressDistrict(address.district);
+                                      setAddressNeighborhood(address.neighborhood);
+                                      setAddressStreet(address.streetName);
+                                      setAddressBuildingNumber(address.buildingNumber);
+                                      setAddressApartment(address.apartment);
+                                      setAddressFloor(address.floor);
+                                      setAddressHasElevator(address.hasElevator || false);
+                                      setShowEditAddressModal(true);
+                                      setAddressDropdownOpen(false);
+                                    }}
+                                    className={`p-1 rounded hover:bg-neutral-200 dark:hover:bg-neutral-600 transition-colors ${darkMode ? 'text-neutral-400 hover:text-neutral-300' : 'text-neutral-600 hover:text-neutral-800'}`}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={async (e) => {
+                                      e.stopPropagation();
+                                      if (window.confirm('Bu adresi silmek istediğinizden emin misiniz?')) {
+                                        try {
+                                          const updatedAddresses = addresses.filter((_, i) => i !== index);
+                                          setAddresses(updatedAddresses);
+
+                                          const userRef = doc(db, 'users', user.uid);
+                                          await updateDoc(userRef, {
+                                            addresses: updatedAddresses
+                                          });
+
+                                          if (isSelected) {
+                                            if (updatedAddresses.length > 0) {
+                                              const firstAddress = updatedAddresses[0];
+                                              const shortNeighborhood = firstAddress.neighborhood && firstAddress.neighborhood.length > 15
+                                                ? firstAddress.neighborhood.substring(0, 15) + '...'
+                                                : firstAddress.neighborhood || '';
+                                              setSelectedAddress(`${firstAddress.name} (${shortNeighborhood})`);
+                                            } else {
+                                              setSelectedAddress('Adres Ekleyin');
+                                            }
+                                          }
+                                        } catch (error) {
+                                          console.error('Error deleting address:', error);
+                                        }
+                                      }
+                                    }}
+                                    className={`p-1 rounded hover:bg-red-200 dark:hover:bg-red-900 transition-colors ${darkMode ? 'text-neutral-400 hover:text-red-400' : 'text-neutral-600 hover:text-red-600'}`}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        <div className={`border-t ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
+                          <button onClick={() => { setShowAddAddressModal(true); setAddressDropdownOpen(false); }} className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 rounded-b-lg ${darkMode ? 'text-blue-400 hover:bg-neutral-700' : 'text-blue-600 hover:bg-neutral-50'}`}>
+                            <div className="flex items-center gap-2">
+                              <Plus className="w-4 h-4" />
+                              Adres Ekle
+                            </div>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Cart Button - Mobile */}
+                {user && (
+                  <button
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setCartSidebarOpen(!cartSidebarOpen); }}
+                    className={`p-1.5 rounded-lg transition-colors duration-300 bg-transparent hover:bg-gray-100 dark:hover:bg-neutral-800 relative ${darkMode ? 'text-neutral-300 hover:text-white' : 'text-neutral-400 hover:text-white'}`}
+                  >
+                    <ShoppingCart className="w-4 h-4" />
+                    {/* Sepet sayısı badge'i (dinamik) */}
+                    {cart.length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center text-[10px]">
+                        {cart.length}
+                      </span>
+                    )}
+                  </button>
+                )}
+
+                {/* Dark Mode Toggle - Mobile */}
+                <button onClick={() => setDarkMode(!darkMode)} className={`p-1.5 rounded-lg transition-colors duration-300 bg-transparent hover:bg-gray-100 dark:hover:bg-neutral-800 ${darkMode ? 'text-neutral-300 hover:text-white' : 'text-neutral-400 hover:text-white'}`}>
+                  {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
                 </button>
-              )}
+              </div>
             </div>
           ) : (
             // Desktop Header: Full version
@@ -231,7 +349,7 @@ export default function Header({
                 {/* Sol: Logo */}
                 <div className="flex items-center">
                   <div className="hidden sm:block ml-4">
-                    <span className={`text-xl sm:text-3xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span><span>.</span> <span className=" transform rotate-90 -translate-x-3 -translate-y-1 inline-block text-sm font-semibold">com</span>
+                    <span className={`text-xl sm:text-3xl font-bold transition-colors duration-300 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine</span> {/*<span>.</span> <span className=" transform rotate-90 -translate-x-3 -translate-y-1 inline-block text-sm font-semibold">com</span>*/}
                   </div>
                 </div>
 
@@ -527,87 +645,6 @@ export default function Header({
         setSelectedAddress={setSelectedAddress}
         user={user}
       />
-
-      {/* Mobile Search Modal */}
-      {showMobileSearch && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={() => setShowMobileSearch(false)}
-          />
-
-          {/* Search Modal */}
-          <div className={`relative w-full max-w-md mx-4 rounded-2xl shadow-2xl border transition-all duration-300 ${darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'}`}>
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-900'}`}>
-                Ara
-              </h3>
-              <button
-                onClick={() => setShowMobileSearch(false)}
-                className={`p-2 rounded-full transition-colors duration-200 ${darkMode ? 'hover:bg-gray-800 text-gray-400' : 'hover:bg-gray-100 text-gray-600'}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Search Input */}
-            <div className="p-4">
-              <div className="relative">
-                <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${darkMode ? 'text-gray-400' : 'text-gray-500'}`} />
-                <input
-                  type="text"
-                  placeholder="Ürün, mağaza veya kategori ara..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoFocus
-                  className={`w-full pl-10 pr-4 py-3 rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-base ${
-                    darkMode
-                      ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
-                      : 'bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500'
-                  }`}
-                />
-              </div>
-
-              {/* Search Results Preview (if needed) */}
-              {searchQuery.trim() && (
-                <div className="mt-4">
-                  <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                    "{searchQuery}" için arama yapılıyor...
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer Actions */}
-            <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => {
-                  setSearchQuery('');
-                  // Here you could add logic to clear search results
-                }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                  darkMode
-                    ? 'text-gray-400 hover:text-white hover:bg-gray-800'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                Temizle
-              </button>
-              <button
-                onClick={() => {
-                  // Here you could add logic to perform search
-                  setShowMobileSearch(false);
-                }}
-                className="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors duration-200"
-              >
-                Ara
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
