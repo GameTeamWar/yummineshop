@@ -74,8 +74,7 @@ export default function LoginPage() {
   };
 
   // Müşteri girişi için yeni tasarım
-if (type === 'customer') {
-  return (
+  if (type === 'customer') {
     <div className="min-h-screen flex items-stretch bg-gray-100 dark:bg-gray-900 transition-colors duration-300" suppressHydrationWarning>
       {/* Sol: SVG ve tanıtım */}
       <div className="hidden md:flex flex-col justify-center items-center w-1/2 bg-gray-900" suppressHydrationWarning>

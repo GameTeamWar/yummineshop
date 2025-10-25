@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { doc, getDoc, collection, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, addDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import StoreDetailPage from '@/components/home/store/StoreDetailPage';
+import StoreDetailPage from '../StoreDetailPage';
 
 interface Product {
   id: string;
@@ -59,14 +59,69 @@ export default function StorePage() {
     fetchStoreAndProducts();
   }, [id]);
 
-  const addToCart = (productId: string) => {
+  // Real-time cart updates from Firestore
+  useEffect(() => {
+    if (user && id) {
+      const unsubscribe = onSnapshot(doc(db, 'carts', user.uid), (docSnap) => {
+        const data = docSnap.data();
+        const cart = data?.stores?.[id as string] || {};
+        setCart(cart);
+      });
+      return unsubscribe;
+    }
+  }, [user, id]);
+
+  const addToCart = async (productId: string) => {
+    if (!user) return;
+
+    // Optimistic update
     setCart(prev => ({
       ...prev,
       [productId]: (prev[productId] || 0) + 1,
     }));
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ storeId: id, productId }),
+      });
+      if (!response.ok) {
+        // Revert on failure
+        setCart(prev => {
+          const newCart = { ...prev };
+          if (newCart[productId] > 1) {
+            newCart[productId]--;
+          } else {
+            delete newCart[productId];
+          }
+          return newCart;
+        });
+        console.error('Failed to add to cart:', await response.text());
+      }
+    } catch (error) {
+      // Revert on error
+      setCart(prev => {
+        const newCart = { ...prev };
+        if (newCart[productId] > 1) {
+          newCart[productId]--;
+        } else {
+          delete newCart[productId];
+        }
+        return newCart;
+      });
+      console.error('Error adding to cart:', error);
+    }
   };
 
-  const removeFromCart = (productId: string) => {
+  const removeFromCart = async (productId: string) => {
+    if (!user) return;
+
+    // Optimistic update
     setCart(prev => {
       const newCart = { ...prev };
       if (newCart[productId] > 1) {
@@ -76,6 +131,33 @@ export default function StorePage() {
       }
       return newCart;
     });
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/cart/remove', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ storeId: id, productId }),
+      });
+      if (!response.ok) {
+        // Revert on failure
+        setCart(prev => ({
+          ...prev,
+          [productId]: (prev[productId] || 0) + 1,
+        }));
+        console.error('Failed to remove from cart:', await response.text());
+      }
+    } catch (error) {
+      // Revert on error
+      setCart(prev => ({
+        ...prev,
+        [productId]: (prev[productId] || 0) + 1,
+      }));
+      console.error('Error removing from cart:', error);
+    }
   };
 
   const placeOrder = async () => {
@@ -104,10 +186,71 @@ export default function StorePage() {
         createdAt: new Date(),
       });
       alert('Sipariş verildi!');
-      setCart({});
+      // Clear cart in Firestore
+      const token = await user.getIdToken();
+      await fetch('/api/cart/clear', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ storeId: store.id }),
+      });
     } catch (error) {
       console.error('Sipariş verilirken hata:', error);
       alert('Sipariş verilemedi.');
+    }
+  };
+
+  const clearCart = async () => {
+    if (!user) return;
+    const token = await user.getIdToken();
+    await fetch('/api/cart/clear', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ storeId: id }),
+    });
+  };
+
+  const deleteItemFromCart = async (productId: string) => {
+    if (!user) return;
+
+    // Optimistic update
+    const previousQuantity = cart[productId];
+    setCart(prev => {
+      const newCart = { ...prev };
+      delete newCart[productId];
+      return newCart;
+    });
+
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/cart/delete-item', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ storeId: id, productId }),
+      });
+      if (!response.ok) {
+        // Revert on failure
+        setCart(prev => ({
+          ...prev,
+          [productId]: previousQuantity,
+        }));
+        console.error('Failed to delete item from cart:', await response.text());
+      }
+    } catch (error) {
+      // Revert on error
+      setCart(prev => ({
+        ...prev,
+        [productId]: previousQuantity,
+      }));
+      console.error('Error deleting item from cart:', error);
     }
   };
 
@@ -115,6 +258,5 @@ export default function StorePage() {
     return <div className="min-h-screen flex items-center justify-center"></div>;
   }
 
-  // Always show StoreDetailPage with mock data if store not found
-  return <StoreDetailPage storeData={store} productsData={products} />;
+  return <StoreDetailPage storeData={store} productsData={products} cart={cart} addToCart={addToCart} setCart={setCart} clearCart={clearCart} removeFromCart={removeFromCart} deleteItemFromCart={deleteItemFromCart} />;
 }

@@ -30,6 +30,8 @@ interface AuthContextType {
   user: User | null;
   role: number | null;
   loading: boolean;
+  darkMode: boolean;
+  setDarkMode: (darkMode: boolean) => void;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: number, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -39,6 +41,8 @@ const AuthContext = createContext<AuthContextType | undefined>({
   user: null,
   role: null,
   loading: true,
+  darkMode: false,
+  setDarkMode: () => {},
   login: async () => {},
   register: async () => {},
   logout: async () => {},
@@ -61,6 +65,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [role, setRole] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('darkMode') === 'true';
+    }
+    return false;
+  });
 
   // Bildirimleri başlat
   useNotifications();
@@ -68,6 +78,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  // Dark mode effect
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('darkMode', darkMode.toString());
+      if (darkMode) {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    }
+  }, [darkMode]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -372,6 +394,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     role,
     loading,
+    darkMode,
+    setDarkMode,
     login,
     register,
     logout,

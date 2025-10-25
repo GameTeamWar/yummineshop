@@ -28,8 +28,8 @@ import { db } from '@/lib/firebase';
 import { collection, getDocs, doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { getAuth, fetchSignInMethodsForEmail } from 'firebase/auth';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import CourierRegistration from '@/components/register/CourierRegistration';
-import StoreRegistration from '@/components/register/StoreRegistration';
+import CourierRegistration from '@/components/general/register/CourierRegistration';
+import StoreRegistration from '@/components/general/register/StoreRegistration';
 import { toast } from 'react-toastify';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
@@ -939,7 +939,10 @@ export default function RegisterPage() {
         draggable: true,
       });
 
-      router.push('/');
+      // Check if user was viewing a product page
+      const redirectPath = localStorage.getItem('redirectAfterAuth') || '/';
+      localStorage.removeItem('redirectAfterAuth');
+      router.push(redirectPath);
     };
 
     const renderCustomerStepContent = () => {
