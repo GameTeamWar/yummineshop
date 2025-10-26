@@ -32,6 +32,7 @@ interface MobileNavigationProps {
 export default function MobileNavigation({ activeTab, setActiveTab, darkMode, user, logout, heroMode, setHeroMode, categories = [], onCategorySelect, partnerOptions = [], partnerCollapsed = {}, setPartnerCollapsed, partnerSearchQueries = {}, setPartnerSearchQueries, selectedFilters = {}, setSelectedFilters, selectedColors = [], setSelectedColors, priceRange = { min: '', max: '' }, setPriceRange, sortBy = 'popular', setSortBy, getColorFromClass }: MobileNavigationProps) {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
+  const [hamburgerDropdownOpen, setHamburgerDropdownOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
   const navItems = user ? [
@@ -140,6 +141,36 @@ export default function MobileNavigation({ activeTab, setActiveTab, darkMode, us
             <div className="flex items-center gap-2">
               <LogOut className="w-4 h-4" />
               Çıkış Yap
+            </div>
+          </button>
+        </div>
+      )}
+
+      {/* Hamburger Dropdown - Only for guests */}
+      {hamburgerDropdownOpen && !user && (
+        <div className={`fixed bottom-16 left-4 right-4 z-50 rounded-lg shadow-xl border transition-all duration-300 ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
+          <button
+            onClick={() => {
+              setHamburgerDropdownOpen(false);
+              router.push('/login');
+            }}
+            className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 first:rounded-t-lg ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}
+          >
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Giriş Yap
+            </div>
+          </button>
+          <button
+            onClick={() => {
+              setHamburgerDropdownOpen(false);
+              router.push('/register');
+            }}
+            className={`w-full text-left px-4 py-3 hover:bg-neutral-100 dark:hover:bg-neutral-700 transition-colors duration-200 last:rounded-b-lg ${darkMode ? 'text-white hover:bg-neutral-700' : 'text-neutral-950 hover:bg-neutral-50'}`}
+          >
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4" />
+              Kayıt Ol
             </div>
           </button>
         </div>
@@ -364,4 +395,8 @@ export default function MobileNavigation({ activeTab, setActiveTab, darkMode, us
       )}
     </>
   );
+}
+
+function setHamburgerDropdownOpen(arg0: boolean) {
+  throw new Error('Function not implemented.');
 }

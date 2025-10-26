@@ -25,6 +25,8 @@ export async function POST(request: NextRequest) {
     // Email subject'ini belirle
     const subject = additionalData?.isAuthorized
       ? `Yummine Mağaza Yetkilendirmesi - ${additionalData.storeName}`
+      : additionalData?.isPasswordReset
+      ? "Yummine Şifre Sıfırlama - Yeni Giriş Bilgileriniz"
       : "Yummine Partner Kaydı Başarılı - Giriş Bilgileriniz";
 
     // SendGrid ile email gönder
@@ -67,6 +69,80 @@ function generateRegistrationEmailContent(email: string, additionalData?: any): 
   const isStore = additionalData?.partnerType === "store";
   const isCourier = additionalData?.partnerType === "courier";
   const isAuthorized = additionalData?.isAuthorized === true;
+  const isPasswordReset = additionalData?.isPasswordReset === true;
+
+  // Şifre sıfırlama email template'i
+  if (isPasswordReset) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Yummine Şifre Sıfırlama - Yeni Giriş Bilgileriniz</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .credentials { background: #fff; padding: 20px; border: 2px solid #3b82f6; border-radius: 8px; margin: 20px 0; }
+          .warning { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Şifre Sıfırlama</h1>
+            <p>Yeni giriş bilgileriniz hazır</p>
+          </div>
+
+          <div class="content">
+            <h2>Merhaba!</h2>
+            <p>Hesabınızın şifresi başarıyla sıfırlandı. Aşağıda yeni giriş bilgileriniz bulunmaktadır:</p>
+
+            <div class="credentials">
+              <h3>🔑 Yeni Giriş Bilgileriniz</h3>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>Yeni Şifre:</strong> ${additionalData?.generatedPassword || "Yeni şifre oluşturulamadı"}</p>
+              <p style="color: #1d4ed8; font-weight: bold;">✅ Bu şifre otomatik olarak oluşturulmuştur.</p>
+            </div>
+
+            <div class="warning">
+              <h4>⚠️ Önemli Bilgilendirme</h4>
+              <ul>
+                <li>Bu yeni şifre ile hemen giriş yapabilirsiniz.</li>
+                <li>Güvenliğiniz için lütfen ilk fırsatta şifrenizi değiştirin.</li>
+                <li>Eski şifreniz artık geçerli değildir.</li>
+                <li>Şifrenizi tekrar unutmanız durumunda aynı işlemi tekrarlayabilirsiniz.</li>
+              </ul>
+            </div>
+
+            <h3>🚀 Sonraki Adımlar</h3>
+            <ol>
+              <li>Yummine uygulamasına yeni şifrenizle giriş yapın</li>
+              <li>Profil ayarlarından şifrenizi değiştirin</li>
+              <li>Hesabınızı güvenli hale getirin</li>
+            </ol>
+
+            <p style="text-align: center; margin: 30px 0;">
+              <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/login"
+                 style="background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                Hemen Giriş Yap
+              </a>
+            </p>
+
+            <p>Bu işlem sizin talebiniz üzerine gerçekleştirildi. Eğer bu işlemi siz yapmadıysanız, lütfen hemen destek ekibimizle iletişime geçin.</p>
+
+            <div class="footer">
+              <p>Bu email Yummine tarafından gönderilmiştir.<br>
+              © ${new Date().getFullYear()} Yummine. Tüm hakları saklıdır.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
 
   // Yetkili kişi için özel email template
   if (isAuthorized) {
@@ -288,7 +364,110 @@ function generatePlainTextEmail(email: string, additionalData?: any): string {
   const isStore = additionalData?.partnerType === "store";
   const isCourier = additionalData?.partnerType === "courier";
   const isAuthorized = additionalData?.isAuthorized === true;
+  const isPasswordReset = additionalData?.isPasswordReset === true;
 
+  // Şifre sıfırlama için plain text email
+  if (isPasswordReset) {
+    return `Yummine Platform - Şifre Sıfırlama
+
+Merhaba!
+
+Hesabınızın şifresi başarıyla sıfırlandı. Aşağıda yeni giriş bilgileriniz bulunmaktadır:
+
+YENİ GİRİŞ BİLGİLERİNİZ
+Email: ${email}
+Yeni Şifre: ${additionalData?.generatedPassword || "Yeni şifre oluşturulamadı"}
+
+Bu şifre otomatik olarak oluşturulmuştur.
+
+ÖNEMLİ BİLGİLENDİRME
+- Bu yeni şifre ile hemen giriş yapabilirsiniz.
+- Güvenliğiniz için lütfen ilk fırsatta şifrenizi değiştirin.
+- Eski şifreniz artık geçerli değildir.
+- Şifrenizi tekrar unutmanız durumunda aynı işlemi tekrarlayabilirsiniz.
+
+SONRAKİ ADIMLAR
+1. Yummine uygulamasına yeni şifrenizle giriş yapın
+2. Profil ayarlarından şifrenizi değiştirin
+3. Hesabınızı güvenli hale getirin
+
+Hemen Giriş Yap: ${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/login
+
+Bu işlem sizin talebiniz üzerine gerçekleştirildi. Eğer bu işlemi siz yapmadıysanız, lütfen hemen destek ekibimizle iletişime geçin.
+
+Bu email Yummine tarafından gönderilmiştir.
+© ${new Date().getFullYear()} Yummine. Tüm hakları saklıdır.
+`;
+  }
+
+  // Yetkili kişi için plain text email
+  if (isAuthorized) {
+    const roleDisplayNames: { [key: string]: string } = {
+      "manager": "Mağaza Müdürü",
+      "assistant_manager": "Müdür Yardımcısı",
+      "cashier": "Kasiyer",
+      "sales_assistant": "Satış Görevlisi",
+      "warehouse_staff": "Depo Görevlisi",
+      "accountant": "Muhasebeci",
+      "other": "Diğer"
+    };
+
+    const roleName = roleDisplayNames[additionalData.role] || additionalData.role || "Yetkili Personel";
+
+    return `Yummine Platform - Mağaza Yetkilendirmesi
+
+Merhaba${additionalData?.firstName && additionalData?.lastName ? ` ${additionalData.firstName} ${additionalData.lastName}` : ''}!
+
+${additionalData.storeName} mağazası tarafından ${roleName} rolü ile yetkilendirildiniz.
+
+GİRİŞ BİLGİLERİNİZ
+Email: ${email}
+Şifre: ${additionalData?.generatedPassword || "tempPassword123!"}
+Rolünüz: ${roleName}
+
+Bu şifre otomatik olarak oluşturulmuştur.
+
+YETKİLERİNİZ
+Rolünüze göre aşağıdaki işlemleri gerçekleştirebilirsiniz:
+${additionalData.role === "manager" ? `
+- Mağaza genel yönetimi
+- Personel yönetimi
+- Satış raporları
+- Stok yönetimi
+` : additionalData.role === "cashier" ? `
+- Satış işlemleri
+- Ödeme işlemleri
+- Günlük raporlar
+` : additionalData.role === "sales_assistant" ? `
+- Satış desteği
+- Müşteri hizmetleri
+- Ürün tanıtımı
+` : `
+- Rolünüze özel işlemler
+`}
+
+ÖNEMLİ BİLGİLENDİRME
+- Bu email adresiniz aynı zamanda hesabınızın kullanıcı adıdır.
+- Güvenliğiniz için lütfen geçici şifrenizi hemen değiştirin.
+- Şifrenizi unutmanız durumunda "Şifremi Unuttum" özelliğini kullanabilirsiniz.
+- Mağaza sahibi tarafından yetkilendirildiğiniz için rolünüze uygun işlemleri gerçekleştirebilirsiniz.
+
+SONRAKİ ADIMLAR
+1. Yummine uygulamasına giriş yapın
+2. Profil bilgilerinizi tamamlayın
+3. Şifrenizi değiştirin
+4. Görevlerinizi yerine getirmeye başlayın!
+
+Hemen Giriş Yap: ${process.env.NEXT_PUBLIC_APP_URL || "https://yummine.com"}/auth/login?type=partner
+
+Herhangi bir sorunuz olursa, mağaza sahibi ile iletişime geçebilirsiniz.
+
+Bu email Yummine tarafından gönderilmiştir.
+© ${new Date().getFullYear()} Yummine. Tüm hakları saklıdır.
+`;
+  }
+
+  // Normal kayıt için plain text email
   let content = `Yummine Platform - Partner Kayıt Bilgileri
 
 Merhaba${additionalData?.firstName && additionalData?.lastName ? ` ${additionalData.firstName} ${additionalData.lastName}` : ''}!

@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import CartPreloader from "@/components/store/loader/CartPreloader";
+import { Providers } from "@/components/providers/theme-provider";
 
 interface ClientLayoutProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ function LayoutContent({ children }: { children: ReactNode }) {
 
 export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
-    <>
+    <Providers>
       <AuthProvider>
         <LayoutContent>{children}</LayoutContent>
       </AuthProvider>
@@ -42,6 +43,6 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
         pauseOnHover
         theme="dark"
       />
-    </>
+    </Providers>
   );
 }
