@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, Clock, Search, Menu, X, Truck, Star, ChevronRight, Sun, Moon, FileText, Navigation, Minus, Plus, Filter, LogOut, Play, Shield, ShoppingCart, Users } from 'lucide-react';
-import ShoppingSection from '@/app/store/ShoppingSection';
+import ShoppingSection from '@/app/store/shop/ShoppingSection';
 import DocumentSection from '../doc/DocumentSection';
 import Header from '../navigations/Header';
 import MobileNavigation from '../navigations/MobileNavigation';

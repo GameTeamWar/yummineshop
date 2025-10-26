@@ -7,12 +7,18 @@ interface LayoutProps {
   children: React.ReactNode;
   sidebarContent?: React.ReactNode;
   showSidebar?: boolean;
+  headerProps?: {
+    title?: string;
+    subtitle?: string;
+    onMenuClick?: () => void;
+  };
 }
 
 const Layout: React.FC<LayoutProps> = ({
   children,
   sidebarContent,
-  showSidebar = true
+  showSidebar = true,
+  headerProps
 }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -27,11 +33,13 @@ const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <Header />
+      <Header {...headerProps} />
 
       {/* Mobile menu button */}
       {showSidebar && (
-        <MobileMenuButton onClick={toggleSidebar} />
+        <div className="hidden lg:block">
+          <MobileMenuButton onClick={toggleSidebar} />
+        </div>
       )}
 
       <div className="flex flex-1">

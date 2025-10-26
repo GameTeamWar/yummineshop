@@ -102,27 +102,6 @@ const Header: React.FC<HeaderProps> = ({
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center">
-            {/* Mobile menu button */}
-            {onMenuClick && (
-              <button
-                onClick={onMenuClick}
-                className="lg:hidden mr-4 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-            )}
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h1>
           </div>
           <div className="flex items-center space-x-4">

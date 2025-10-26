@@ -6,7 +6,7 @@ import { doc, getDoc, collection, getDocs, addDoc, onSnapshot } from 'firebase/f
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import StoreDetailPage from '../StoreDetailPage';
+import StoreDetailPage from '../shop/StoreDetailPage';
 
 interface Product {
   id: string;

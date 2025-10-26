@@ -12,16 +12,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose, children }) 
       {/* Overlay */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          className=" inset-0 bg-black bg-opacity-50 z-40 hidden lg:block"
           onClick={onClose}
         />
       )}
 
       {/* Sidebar */}
       <div
-        className={`fixed top-16 left-0 min-h-[calc(100vh-4rem)] w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 ${
+        className={` top-16 left-0 min-h-[calc(100vh-4rem)] w-96  bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 lg:sticky lg:top-16 lg:h-[calc(100vh-4rem)] ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:static lg:inset-0 lg:w-80 lg:min-h-[calc(100vh-4rem)] lg:shadow-none lg:top-0`}
+        } hidden lg:translate-x-0 lg:static lg:inset-0 lg:w-96 lg:max-h-[calc(200vh-24rem)] lg:shadow-none lg:top-0 lg:block`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
