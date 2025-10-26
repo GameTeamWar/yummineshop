@@ -146,8 +146,8 @@ export default function EditAddressModal({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowEditAddressModal(false)}></div>
-      <div className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-200rounded-lg shadow-2xl border z-50 transition-all duration-300 ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
+      <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setShowEditAddressModal(false)}></div>
+      <div className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl rounded-lg shadow-2xl border z-50 transition-all duration-300 ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
         <div className={`flex items-center justify-between p-4 border-b ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
           <h2 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Adresi Düzenle</h2>
           <button onClick={() => setShowEditAddressModal(false)} className={`p-2 rounded-lg transition-colors duration-300 ${darkMode ? 'hover:bg-neutral-700' : 'hover:bg-neutral-100'}`}>
@@ -155,7 +155,7 @@ export default function EditAddressModal({
           </button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div>
             <label className={`text-sm mb-2 block ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
               Adres Adı (Örn: Ev, İş, vb.)
@@ -179,7 +179,7 @@ export default function EditAddressModal({
               Konum Seçimi
             </label>
             <div className={`rounded-lg overflow-hidden border ${darkMode ? 'border-gray-600' : 'border-gray-300'}`}>
-              <div className="h-48">
+              <div className="h-48 sm:h-64">
                 {isLoaded ? (
                   <GoogleMap
                     mapContainerStyle={{ width: '100%', height: '100%' }}
@@ -271,7 +271,7 @@ export default function EditAddressModal({
           </div>
 
           {/* Address Details */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`text-sm mb-2 block ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 İl
@@ -306,7 +306,7 @@ export default function EditAddressModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className={`text-sm mb-2 block ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 Mahalle
@@ -341,7 +341,7 @@ export default function EditAddressModal({
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div>
               <label className={`text-sm mb-2 block ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                 Bina No
@@ -427,7 +427,7 @@ export default function EditAddressModal({
             </select>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4">
             <button
               onClick={() => {
                 setShowEditAddressModal(false);
@@ -445,7 +445,7 @@ export default function EditAddressModal({
                 setAddressFloor('');
                 setAddressHasElevator(false);
               }}
-              className={`flex-1 py-2 rounded-lg font-semibold transition-colors duration-300 ${darkMode ? 'bg-neutral-700 hover:bg-neutral-600 text-white' : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-950'}`}
+              className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-colors duration-300 text-sm sm:text-base ${darkMode ? 'bg-neutral-700 hover:bg-neutral-600 text-white' : 'bg-neutral-200 hover:bg-neutral-300 text-neutral-950'}`}
             >
               İptal
             </button>
@@ -534,7 +534,7 @@ export default function EditAddressModal({
                   }
                 }
               }}
-              className="flex-1 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors duration-300"
+              className="flex-1 py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors duration-300 text-sm sm:text-base"
             >
               Güncelle
             </button>

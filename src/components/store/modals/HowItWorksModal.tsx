@@ -13,16 +13,16 @@ export default function HowItWorksModal({ darkMode, showHowItWorksModal, setShow
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={() => setShowHowItWorksModal(false)}></div>
+      <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setShowHowItWorksModal(false)}></div>
       <div className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-lg shadow-2xl border z-50 transition-all duration-300 ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'}`}>
-        <div className={`flex items-center justify-between p-6 border-b ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
-          <h2 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine Nasıl Çalışır?</h2>
+        <div className={`flex items-center justify-between p-4 sm:p-6 border-b ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
+          <h2 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Yummine Nasıl Çalışır?</h2>
           <button onClick={() => setShowHowItWorksModal(false)} className={`p-2 rounded-lg transition-colors duration-300 ${darkMode ? 'hover:bg-neutral-700' : 'hover:bg-neutral-100'}`}>
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
           </button>
         </div>
 
-        <div className="p-6 space-y-8">
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8">
           {/* Shopping Section */}
           <div>
             <h3 className={`text-xl font-semibold mb-4 flex items-center gap-3 ${darkMode ? 'text-blue-400' : 'text-blue-600'}`}>
@@ -115,8 +115,8 @@ export default function HowItWorksModal({ darkMode, showHowItWorksModal, setShow
 
           {/* Features */}
           <div>
-            <h3 className={`text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Neden Yummine?</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 className={`text-lg sm:text-xl font-semibold mb-4 ${darkMode ? 'text-white' : 'text-neutral-950'}`}>Neden Yummine?</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {[
                 { icon: Truck, title: 'Hızlı Teslimat', desc: '25-45 dakika içinde kapınızda' },
                 { icon: Shield, title: 'Güvenli Ödeme', desc: 'SSL korumalı güvenli alışveriş' },
@@ -137,11 +137,11 @@ export default function HowItWorksModal({ darkMode, showHowItWorksModal, setShow
           </div>
 
           {/* CTA */}
-          <div className={`text-center pt-6 border-t ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
-            <p className={`mb-4 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>Hazır mısınız? Hemen başlayın!</p>
+          <div className={`text-center pt-4 sm:pt-6 border-t ${darkMode ? 'border-neutral-700' : 'border-neutral-200'}`}>
+            <p className={`mb-4 text-sm sm:text-base ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>Hazır mısınız? Hemen başlayın!</p>
             <button 
               onClick={() => { setShowHowItWorksModal(false); router.push('/auth/register?type=customer'); }}
-              className="px-8 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+              className="px-6 sm:px-8 py-3 bg-linear-to-r from-blue-600 to-purple-600 text-white font-bold rounded-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 text-sm sm:text-base"
             >
               Ücretsiz Kayıt Ol
             </button>
