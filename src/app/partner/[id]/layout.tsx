@@ -30,11 +30,39 @@ export default function PartnerLayout({
     return pathname === href;
   };
 
-  // Aktif link stilleri
+  // Grup aktif link kontrolü (alt linklerden biri aktifse)
+  const isGroupActive = (groupPages: string[]) => {
+    return groupPages.some(page => pathname.includes(page));
+  };
+
+  // Ana menü butonları için aktif link stilleri
+  const getMenuButtonClasses = (isOpen: boolean, groupPages: string[], hoverClasses: string) => {
+    const baseClasses = "flex items-center w-full px-5 py-4 rounded-xl text-base font-semibold transition-all duration-200 group hover:shadow-lg";
+    const activeClasses = "bg-blue-600/30 text-blue-400 border-blue-500/50 shadow-lg";
+    const inactiveClasses = `text-gray-300 ${hoverClasses} border border-transparent hover:border-opacity-30`;
+
+    const isActiveGroup = isGroupActive(groupPages);
+    return isActiveGroup || isOpen
+      ? `${baseClasses} ${activeClasses}`
+      : `${baseClasses} ${inactiveClasses}`;
+  };
+
+  // Aktif link stilleri - Ana linkler için
   const getLinkClasses = (href: string, hoverClasses: string) => {
     const baseClasses = "flex items-center px-5 py-4 rounded-xl text-base font-semibold transition-all duration-200 group hover:shadow-lg";
     const activeClasses = "bg-blue-600/30 text-blue-400 border-blue-500/50 shadow-lg";
     const inactiveClasses = `text-gray-300 ${hoverClasses} border border-transparent hover:border-opacity-30`;
+
+    return isActive(href)
+      ? `${baseClasses} ${activeClasses}`
+      : `${baseClasses} ${inactiveClasses}`;
+  };
+
+  // Aktif link stilleri - Alt linkler için
+  const getSubLinkClasses = (href: string, hoverClasses: string) => {
+    const baseClasses = "flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 group";
+    const activeClasses = "bg-blue-600/20 text-blue-300 border-blue-500/30";
+    const inactiveClasses = `text-gray-400 ${hoverClasses} border border-transparent hover:border-opacity-30`;
 
     return isActive(href)
       ? `${baseClasses} ${activeClasses}`
@@ -59,6 +87,23 @@ export default function PartnerLayout({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Aktif sayfaya göre menüleri otomatik aç
+  useEffect(() => {
+    const orderPages = ['active-orders', 'past-orders', 'cancelled-orders', 'refund-orders'];
+    const productPages = ['menu', 'categories', 'options', 'tags', 'filters'];
+    const salesPages = ['discounts', 'customers', 'reviews'];
+
+    if (orderPages.some(page => pathname.includes(page))) {
+      setIsOrdersOpen(true);
+    }
+    if (productPages.some(page => pathname.includes(page))) {
+      setIsProductManagementOpen(true);
+    }
+    if (salesPages.some(page => pathname.includes(page))) {
+      setIsSalesManagementOpen(true);
+    }
+  }, [pathname]);
 
   if (!user || (role !== 1 && role !== 3)) {
     return null;
@@ -139,7 +184,7 @@ export default function PartnerLayout({
                 <div>
                   <button
                     onClick={() => setIsOrdersOpen(!isOrdersOpen)}
-                    className="flex items-center w-full px-5 py-4 rounded-xl text-base font-semibold text-gray-300 hover:bg-blue-600/20 hover:text-blue-400 border border-transparent hover:border-blue-500/30 transition-all duration-200 group hover:shadow-lg"
+                    className={getMenuButtonClasses(isOrdersOpen, ['active-orders', 'past-orders', 'cancelled-orders', 'refund-orders'], "hover:bg-blue-600/20 hover:text-blue-400 hover:border-blue-500/30")}
                   >
                     {isOrdersOpen ? (
                       <ChevronDown className="mr-4 h-6 w-6 group-hover:scale-110 transition-transform" />
@@ -153,28 +198,28 @@ export default function PartnerLayout({
                     <div className="ml-8 mt-3 space-y-2">
                       <Link
                         href={`/partner/${partnerId}/active-orders`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-blue-600/20 hover:text-blue-300 border border-transparent hover:border-blue-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/active-orders`, "hover:bg-blue-600/20 hover:text-blue-300 hover:border-blue-500/30")}
                       >
                         <Package className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Aktif Siparişler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/past-orders`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-green-600/20 hover:text-green-300 border border-transparent hover:border-green-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/past-orders`, "hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/30")}
                       >
                         <Package className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Geçmiş Siparişler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/cancelled-orders`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-red-600/20 hover:text-red-300 border border-transparent hover:border-red-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/cancelled-orders`, "hover:bg-red-600/20 hover:text-red-300 hover:border-red-500/30")}
                       >
                         <Package className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>İptal Siparişler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/refund-orders`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-yellow-600/20 hover:text-yellow-300 border border-transparent hover:border-yellow-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/refund-orders`, "hover:bg-yellow-600/20 hover:text-yellow-300 hover:border-yellow-500/30")}
                       >
                         <Package className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>İade Siparişler</span>
@@ -226,7 +271,7 @@ export default function PartnerLayout({
                 <div>
                   <button
                     onClick={() => setIsProductManagementOpen(!isProductManagementOpen)}
-                    className="flex items-center w-full px-5 py-4 rounded-xl text-base font-semibold text-gray-300 hover:bg-green-600/20 hover:text-green-400 border border-transparent hover:border-green-500/30 transition-all duration-200 group hover:shadow-lg"
+                    className={getMenuButtonClasses(isProductManagementOpen, ['menu', 'categories', 'options', 'tags', 'filters'], "hover:bg-green-600/20 hover:text-green-400 hover:border-green-500/30")}
                   >
                     {isProductManagementOpen ? (
                       <ChevronDown className="mr-4 h-6 w-6 group-hover:scale-110 transition-transform" />
@@ -240,35 +285,35 @@ export default function PartnerLayout({
                     <div className="ml-8 mt-3 space-y-2">
                       <Link
                         href={`/partner/${partnerId}/menu`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-green-600/20 hover:text-green-300 border border-transparent hover:border-green-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/menu`, "hover:bg-green-600/20 hover:text-green-300 hover:border-green-500/30")}
                       >
                         <FaTshirt  className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Ürünler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/categories`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-yellow-600/20 hover:text-yellow-300 border border-transparent hover:border-yellow-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/categories`, "hover:bg-yellow-600/20 hover:text-yellow-300 hover:border-yellow-500/30")}
                       >
                         <TbCategory2 className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Kategoriler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/options`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-indigo-600/20 hover:text-indigo-300 border border-transparent hover:border-indigo-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/options`, "hover:bg-indigo-600/20 hover:text-indigo-300 hover:border-indigo-500/30")}
                       >
                         <TbTableOptions  className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Opsiyonlar</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/tags`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-teal-600/20 hover:text-teal-300 border border-transparent hover:border-teal-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/tags`, "hover:bg-teal-600/20 hover:text-teal-300 hover:border-teal-500/30")}
                       >
                         <Tag className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Etiketler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/filters`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-purple-600/20 hover:text-purple-300 border border-transparent hover:border-purple-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/filters`, "hover:bg-purple-600/20 hover:text-purple-300 hover:border-purple-500/30")}
                       >
                         <Filter className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Filtreler</span>
@@ -281,7 +326,7 @@ export default function PartnerLayout({
                 <div>
                   <button
                     onClick={() => setIsSalesManagementOpen(!isSalesManagementOpen)}
-                    className="flex items-center w-full px-5 py-4 rounded-xl text-base font-semibold text-gray-300 hover:bg-orange-600/20 hover:text-orange-400 border border-transparent hover:border-orange-500/30 transition-all duration-200 group hover:shadow-lg"
+                    className={getMenuButtonClasses(isSalesManagementOpen, ['discounts', 'customers', 'reviews'], "hover:bg-orange-600/20 hover:text-orange-400 hover:border-orange-500/30")}
                   >
                     {isSalesManagementOpen ? (
                       <ChevronDown className="mr-4 h-6 w-6 group-hover:scale-110 transition-transform" />
@@ -295,21 +340,21 @@ export default function PartnerLayout({
                     <div className="ml-8 mt-3 space-y-2">
                       <Link
                         href={`/partner/${partnerId}/discounts`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-red-600/20 hover:text-red-300 border border-transparent hover:border-red-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/discounts`, "hover:bg-red-600/20 hover:text-red-300 hover:border-red-500/30")}
                       >
                         <Percent className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>İndirimler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/customers`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-cyan-600/20 hover:text-cyan-300 border border-transparent hover:border-cyan-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/customers`, "hover:bg-cyan-600/20 hover:text-cyan-300 hover:border-cyan-500/30")}
                       >
                         <UserCheck className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Müşteriler</span>
                       </Link>
                       <Link
                         href={`/partner/${partnerId}/reviews`}
-                        className="flex items-center px-4 py-3 rounded-lg text-sm font-medium text-gray-400 hover:bg-amber-600/20 hover:text-amber-300 border border-transparent hover:border-amber-500/30 transition-all duration-200 group"
+                        className={getSubLinkClasses(`/partner/${partnerId}/reviews`, "hover:bg-amber-600/20 hover:text-amber-300 hover:border-amber-500/30")}
                       >
                         <Star className="mr-3 h-5 w-5 group-hover:scale-110 transition-transform" />
                         <span>Değerlendirmeler</span>
