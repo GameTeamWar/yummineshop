@@ -119,7 +119,7 @@ export default function PartnerLayout({
       {/* Main Layout */}
       <div className="flex flex-1">
         {/* Sidebar */}
-        <div className="w-72 bg-gradient-to-b from-gray-800 to-gray-900 dark:from-gray-800 dark:to-gray-900 shadow-xl border-r border-gray-700 flex flex-col h-screen">
+        <div className="w-72 bg-gradient-to-b from-gray-800 to-gray-900 dark:from-gray-800 dark:to-gray-900 shadow-xl border-r border-gray-700 flex flex-col sticky top-0 h-screen">
           {/* Restaurant Info Section */}
           <div className="p-4 border-b border-gray-700 bg-gray-800/50">
             <div className="flex items-center justify-between">
@@ -128,7 +128,7 @@ export default function PartnerLayout({
                   <Building2 className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-semibold text-white">Restoran Adı</h3>
+                  <h3 className="text-sm font-semibold text-white">Mağaza Adı</h3>
                   <p className="text-xs text-gray-400">ID: {partnerId}</p>
                 </div>
               </div>
@@ -136,7 +136,7 @@ export default function PartnerLayout({
                 <Link
                   href={`/partner/${partnerId}/settings`}
                   className="p-2 rounded-lg hover:bg-gray-700 transition-colors group"
-                  title="Restoran Ayarları"
+                  title="Mağaza Ayarları"
                 >
                   <Settings className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
                 </Link>
