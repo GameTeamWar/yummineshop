@@ -25,7 +25,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose, children }) 
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between p-4  border-gray-200 dark:border-gray-700">
           
             <button
               onClick={onClose}
