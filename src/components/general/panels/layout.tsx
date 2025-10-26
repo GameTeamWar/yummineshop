@@ -47,9 +47,7 @@ const Layout: React.FC<LayoutProps> = ({
           showSidebar ? 'lg:ml-0' : ''
         }`}>
           <main className="p-4 sm:p-6 lg:p-8 flex-1 bg-white dark:bg-gray-800 min-h-full">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
+            {children}
           </main>
         </div>
       </div>

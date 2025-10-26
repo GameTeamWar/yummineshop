@@ -32,6 +32,20 @@ async function checkUsers() {
     usersSnapshot.forEach((doc) => {
       const data = doc.data();
       console.log(`👤 Email: ${data.email || 'N/A'} | Role: ${data.role || 'N/A'} | UID: ${doc.id}`);
+
+      // Adres bilgilerini kontrol et
+      if (data.address) {
+        console.log(`   📍 Adres: ${JSON.stringify(data.address, null, 2)}`);
+      } else {
+        console.log(`   📍 Adres: Yok`);
+      }
+
+      // Diğer önemli alanları kontrol et
+      console.log(`   📞 Telefon: ${data.phoneNumber || data.phone || 'Yok'}`);
+      console.log(`   👤 Display Name: ${data.displayName || 'Yok'}`);
+      console.log(`   📝 Bio: ${data.bio || 'Yok'}`);
+      console.log(`   📅 Oluşturulma: ${data.createdAt ? new Date(data.createdAt.toDate ? data.createdAt.toDate() : data.createdAt).toLocaleString('tr-TR') : 'Yok'}`);
+      console.log('   ---');
     });
 
     console.log('\n✅ Users koleksiyonu dolu, şifre sıfırlama çalışmalı.');

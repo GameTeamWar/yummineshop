@@ -27,7 +27,7 @@ const uploadFileToStorage = async (file: File, path: string): Promise<string> =>
 };
 
 interface AuthContextType {
-  user: User | null;
+  user: (User & { profile?: any }) | null;
   role: number | null;
   loading: boolean;
   darkMode: boolean;
@@ -61,7 +61,7 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<(User & { profile?: any }) | null>(null);
   const [role, setRole] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
@@ -96,12 +96,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        setUser(user);
-        // Rolü Firestore'dan al
+        // Firestore'dan profil bilgilerini al
         const userDoc = await getDoc(doc(db, 'users', user.uid));
+        let profileData = {};
+        let userRole = null;
+
         if (userDoc.exists()) {
-          setRole(userDoc.data().role);
+          const data = userDoc.data();
+          profileData = {
+            displayName: data.displayName || data.firstName + ' ' + data.lastName || user.displayName,
+            phoneNumber: data.phoneNumber || data.phone || user.phoneNumber,
+            address: data.address,
+            bio: data.bio,
+            createdAt: data.createdAt,
+            ...data
+          };
+          userRole = data.role;
         }
+
+        // User objesine profil bilgilerini ekle
+        const enhancedUser = {
+          ...user,
+          profile: profileData
+        };
+
+        setUser(enhancedUser);
+        setRole(userRole);
       } else {
         setUser(null);
         setRole(null);

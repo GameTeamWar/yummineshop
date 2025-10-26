@@ -6,7 +6,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import PartnerLayout from '@/components/partner/panels/layout';
+// Folder-level layout (`src/app/partner/[id]/layout.tsx`) already renders the partner sidebar.
+// Avoid wrapping the page with the component `PartnerLayout` to prevent duplicate sidebars.
 
 export default function PartnerPage() {
   const { user, role } = useAuth();
@@ -43,8 +44,7 @@ export default function PartnerPage() {
   // Giriş yapmış partner kullanıcıları için dashboard benzeri sayfa
   if (user && (role === 1 || role === 3)) {
     return (
-      <PartnerLayout>
-        <div className="space-y-8">
+      <div className="space-y-8">
           {/* Page Header */}
           <div className="border-b border-gray-200 dark:border-gray-700 pb-6">
             <h1 className="text-2xl lg:text-3xl font-bold text-white dark:text-gray-100">
@@ -146,7 +146,6 @@ export default function PartnerPage() {
             </div>
           </div>
         </div>
-      </PartnerLayout>
     );
   }
 

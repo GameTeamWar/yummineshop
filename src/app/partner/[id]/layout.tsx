@@ -51,12 +51,12 @@ export default function PartnerLayout({
   ];
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex">
+    <div className="min-h-screen bg-gray-900 dark:bg-gray-900 text-white dark:text-white flex">
       {/* Sidebar */}
-      <div className="w-64 bg-gray-800 shadow-lg">
+      <div className="w-64 bg-gray-800 dark:bg-gray-800 shadow-lg">
         <div className="p-6">
-          <h2 className="text-xl font-bold text-white">Yummine Partner</h2>
-          <p className="text-gray-400 text-sm mt-1">ID: {partnerId}</p>
+          <h2 className="text-xl font-bold text-white dark:text-white">Yummine Partner</h2>
+          <p className="text-gray-400 dark:text-gray-400 text-sm mt-1">ID: {partnerId}</p>
         </div>
         <nav className="mt-6">
           <div className="px-3">
@@ -66,7 +66,7 @@ export default function PartnerLayout({
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                  className="flex items-center px-3 py-2 rounded-md text-sm font-medium text-gray-300 dark:text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white dark:hover:text-white transition-colors"
                 >
                   <Icon className="mr-3 h-5 w-5" />
                   {item.name}
@@ -78,7 +78,7 @@ export default function PartnerLayout({
         <div className="absolute bottom-0 w-64 p-4">
           <button
             onClick={() => router.push('/auth/login')}
-            className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+            className="flex items-center w-full px-3 py-2 rounded-md text-sm font-medium text-gray-300 dark:text-gray-300 hover:bg-gray-700 dark:hover:bg-gray-700 hover:text-white dark:hover:text-white transition-colors"
           >
             <LogOut className="mr-3 h-5 w-5" />
             Çıkış

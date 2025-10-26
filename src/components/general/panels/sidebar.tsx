@@ -19,13 +19,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = false, onClose, children }) 
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 left-0 min-h-screen w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed top-16 left-0 min-h-[calc(100vh-4rem)] w-80 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out z-50 border-r border-gray-200 dark:border-gray-700 ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
-        } lg:translate-x-0 lg:static lg:inset-0 lg:w-auto lg:min-h-screen lg:shadow-none`}
+        } lg:translate-x-0 lg:static lg:inset-0 lg:w-80 lg:min-h-[calc(100vh-4rem)] lg:shadow-none lg:top-0`}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4  border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between px-4 py-0 border-gray-200 dark:border-gray-700">
           
             <button
               onClick={onClose}
