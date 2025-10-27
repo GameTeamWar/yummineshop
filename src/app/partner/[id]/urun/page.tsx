@@ -1,37 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
 import { Plus, Edit, Trash2, Package, DollarSign, Tag, Filter, FolderOpen, Settings, Search, Upload, Image as ImageIcon, Star, TrendingUp, Clock, Zap, ScanLine } from 'lucide-react';
-
-interface Product {
-  id: string; // 8 haneli sayı
-  name: string;
-  price: number;
-  originalPrice?: number; // İndirimli ürünler için
-  category: string;
-  categoryId: string; // Kategori ID'si
-  options: string[]; // Opsiyon ID'leri
-  tags: string[]; // Etiket ID'leri
-  filters: string[]; // Filtre ID'leri
-  image?: string;
-  images: string[]; // Çoklu resim desteği
-  description?: string;
-  stock: number; // Stok miktarı
-  sku?: string; // Stok kodu
-  weight?: number; // Ağırlık (gram)
-  dimensions?: {
-    length: number;
-    width: number;
-    height: number;
-  };
-  material?: string; // Malzeme
-  brand?: string; // Marka
-  isActive: boolean;
-  isFeatured: boolean; // Öne çıkan ürün
-  isNew: boolean; // Yeni ürün
-  createdAt: string;
-  updatedAt: string;
-}
+import { Product, Category, Option, Tag as TagType } from '@/types';
+import { toast } from 'react-toastify';
 
 interface ProductStats {
   totalProducts: number;
@@ -47,7 +20,14 @@ interface ProductStats {
 }
 
 export default function MenuPage() {
+  const params = useParams();
+  const partnerId = params.id as string;
+
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [options, setOptions] = useState<Option[]>([]);
+  const [tags, setTags] = useState<TagType[]>([]);
+  const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<ProductStats>({
     totalProducts: 0,
     totalValue: 0,
@@ -63,13 +43,14 @@ export default function MenuPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isBarcodeScannerOpen, setIsBarcodeScannerOpen] = useState(false);
+  const [showStockZeroDialog, setShowStockZeroDialog] = useState(false);
+  const [pendingProductData, setPendingProductData] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
 
   // Form states
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
-  const [productOriginalPrice, setProductOriginalPrice] = useState('');
   const [productCategory, setProductCategory] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [productStock, setProductStock] = useState('');
@@ -84,135 +65,44 @@ export default function MenuPage() {
   const [isFeatured, setIsFeatured] = useState(false);
   const [isNew, setIsNew] = useState(false);
 
-  // Mock data - mağaza ürünleri için
+  // Ürünleri Firebase'den çek
   useEffect(() => {
-    const mockProducts: Product[] = [
-      {
-        id: '10000001',
-        name: 'Kadın Kot Pantolon',
-        price: 299,
-        originalPrice: 399,
-        category: 'Kadın Giyim',
-        categoryId: '20000001',
-        options: ['30000001', '30000002', '30000003'], // Renk, beden, model
-        tags: ['50000001', '50000002'], // En Çok Satan, Yeni Sezon
-        filters: ['40000001', '40000002'], // Kadın, Kot
-        images: [],
-        description: 'Rahat kesim kot pantolon, yüksek bel, dar paça',
-        stock: 25,
-        sku: 'KP001',
-        weight: 450,
-        material: 'Pamuk',
-        brand: 'Yummine',
-        isActive: true,
-        isFeatured: true,
-        isNew: false,
-        createdAt: '2024-01-15',
-        updatedAt: '2024-01-20'
-      },
-      {
-        id: '10000002',
-        name: 'Erkek Spor Ayakkabı',
-        price: 599,
-        category: 'Erkek Giyim',
-        categoryId: '20000002',
-        options: ['30000004', '30000005'], // Renk, numara
-        tags: ['50000003'], // İndirim
-        filters: ['40000003', '40000004'], // Erkek, Spor
-        images: [],
-        description: 'Konforlu koşu ayakkabısı, nefes alan malzemeden',
-        stock: 12,
-        sku: 'EA002',
-        weight: 320,
-        material: 'Sentetik',
-        brand: 'SportMax',
-        isActive: true,
-        isFeatured: false,
-        isNew: true,
-        createdAt: '2024-01-18',
-        updatedAt: '2024-01-18'
-      },
-      {
-        id: '10000003',
-        name: 'Kadın Çanta',
-        price: 189,
-        originalPrice: 249,
-        category: 'Aksesuar',
-        categoryId: '20000003',
-        options: ['30000006'], // Renk
-        tags: ['50000004'], // Sınırlı Stok
-        filters: ['40000005', '40000006'], // Kadın, Çanta
-        images: [],
-        description: 'Şık dizayn omuz çantası, deri görünümlü',
-        stock: 3,
-        sku: 'CC003',
-        weight: 280,
-        material: 'PU Deri',
-        brand: 'FashionBag',
-        isActive: true,
-        isFeatured: true,
-        isNew: false,
-        createdAt: '2024-01-10',
-        updatedAt: '2024-01-22'
-      },
-      {
-        id: '10000004',
-        name: 'Erkek Gömlek',
-        price: 149,
-        category: 'Erkek Giyim',
-        categoryId: '20000002',
-        options: ['30000007', '30000008'], // Renk, beden
-        tags: ['50000005'], // Premium Kalite
-        filters: ['40000003', '40000007'], // Erkek, Gömlek
-        images: [],
-        description: 'Klasik fit gömlek, uzun kollu, pamuklu',
-        stock: 0,
-        sku: 'EG004',
-        weight: 220,
-        material: 'Pamuk',
-        brand: 'ClassicWear',
-        isActive: false,
-        isFeatured: false,
-        isNew: false,
-        createdAt: '2024-01-12',
-        updatedAt: '2024-01-19'
-      },
-      {
-        id: '10000005',
-        name: 'Kadın Elbise',
-        price: 349,
-        category: 'Kadın Giyim',
-        categoryId: '20000001',
-        options: ['30000009', '30000010'], // Renk, beden
-        tags: ['50000006'], // Trend Ürün
-        filters: ['40000001', '40000008'], // Kadın, Elbise
-        images: [],
-        description: 'Şık midi elbise, çiçek desenli, yazlık',
-        stock: 8,
-        sku: 'KE005',
-        weight: 180,
-        material: 'Viskon',
-        brand: 'SummerStyle',
-        isActive: true,
-        isFeatured: false,
-        isNew: true,
-        createdAt: '2024-01-20',
-        updatedAt: '2024-01-20'
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Ürünleri çek
+        const productsRes = await fetch(`/api/products?partnerId=${partnerId}`);
+        const productsData = await productsRes.json();
+        setProducts(productsData);
+
+        // Kategorileri çek
+        const categoriesRes = await fetch(`/api/categories?partnerId=${partnerId}`);
+        const categoriesData = await categoriesRes.json();
+        setCategories(categoriesData);
+
+        // Opsiyonları çek
+        const optionsRes = await fetch(`/api/options?partnerId=${partnerId}`);
+        const optionsData = await optionsRes.json();
+        setOptions(optionsData);
+
+        // Etiketleri çek
+        const tagsRes = await fetch(`/api/tags?partnerId=${partnerId}`);
+        const tagsData = await tagsRes.json();
+        setTags(tagsData);
+
+        calculateStats(productsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
-    ];
+    };
 
-    setProducts(mockProducts);
-    calculateStats(mockProducts);
-  }, []);
-
-  const generateProductId = (): string => {
-    // 8 haneli benzersiz ID oluştur (1 ile başlayan)
-    let id: string;
-    do {
-      id = '1' + Math.floor(1000000 + Math.random() * 9000000).toString();
-    } while (products.some(product => product.id === id));
-    return id;
-  };
+    if (partnerId) {
+      fetchData();
+    }
+  }, [partnerId]);
 
   const calculateStats = (productList: Product[]) => {
     const totalProducts = productList.length;
@@ -222,11 +112,10 @@ export default function MenuPage() {
     const lowStockProducts = productList.filter(p => p.stock > 0 && p.stock <= 5).length;
     const outOfStockProducts = productList.filter(p => p.stock === 0).length;
 
-    // Benzersiz kategoriler, opsiyonlar, etiketler ve filtreler
+    // Benzersiz kategoriler, opsiyonlar, etiketler
     const allCategories = new Set(productList.map(p => p.categoryId));
     const allOptions = new Set(productList.flatMap(p => p.options));
     const allTags = new Set(productList.flatMap(p => p.tags));
-    const allFilters = new Set(productList.flatMap(p => p.filters));
 
     setStats({
       totalProducts,
@@ -238,104 +127,316 @@ export default function MenuPage() {
       totalCategories: allCategories.size,
       totalOptions: allOptions.size,
       totalTags: allTags.size,
-      totalFilters: allFilters.size
+      totalFilters: 0 // Artık filters yok
     });
   };
 
-  const handleAddProduct = () => {
-    if (!productName.trim() || !productPrice || !productCategory) return;
+  const handleAddProduct = async () => {
+    console.log('handleAddProduct called with:', {
+      productName,
+      productPrice,
+      productCategory,
+      productStock,
+      partnerId
+    });
 
-    const newProduct: Product = {
-      id: generateProductId(),
-      name: productName.trim(),
-      price: parseFloat(productPrice),
-      originalPrice: productOriginalPrice ? parseFloat(productOriginalPrice) : undefined,
-      category: productCategory,
-      categoryId: productCategory, // Şimdilik aynı
-      options: selectedOptions,
-      tags: selectedTags,
-      filters: selectedFilters,
-      images: productImages,
-      description: productDescription.trim(),
-      stock: parseInt(productStock) || 0,
-      sku: productSKU.trim(),
-      weight: productWeight ? parseFloat(productWeight) : undefined,
-      material: productMaterial.trim(),
-      brand: productBrand.trim(),
-      isActive: true,
-      isFeatured,
-      isNew,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0]
-    };
+    // Daha detaylı validation
+    if (!productName.trim()) {
+      toast.error('Ürün adı zorunludur!');
+      return;
+    }
 
-    const updatedProducts = [...products, newProduct];
-    setProducts(updatedProducts);
-    calculateStats(updatedProducts);
-    closeModal();
+    if (!productPrice || isNaN(parseFloat(productPrice)) || parseFloat(productPrice) <= 0) {
+      toast.error('Geçerli bir fiyat giriniz!');
+      return;
+    }
+
+    if (!productCategory) {
+      toast.error('Mağaza kategorisi seçiniz!');
+      return;
+    }
+
+    if (!productStock || isNaN(parseInt(productStock)) || parseInt(productStock) < 0) {
+      toast.error('Geçerli bir stok miktarı giriniz!');
+      return;
+    }
+
+    try {
+      const category = categories.find(c => c.id === productCategory);
+      if (!category) {
+        console.error('Category not found:', productCategory);
+        toast.error('Seçilen kategori bulunamadı!');
+        return;
+      }
+
+      const newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
+        name: productName.trim(),
+        price: parseFloat(productPrice),
+        categoryId: productCategory,
+        categoryName: category.name,
+        options: selectedOptions,
+        tags: selectedTags,
+        images: productImages,
+        description: productDescription.trim(),
+        stock: parseInt(productStock) || 0,
+        sku: productSKU.trim(),
+        weight: productWeight ? parseFloat(productWeight) : undefined,
+        material: productMaterial.trim(),
+        brand: productBrand.trim(),
+        isActive: true,
+        isFeatured,
+        isNew,
+        partnerId
+      };
+
+      console.log('Sending product data:', newProduct);
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newProduct),
+      });
+
+      console.log('API Response status:', response.status);
+
+      if (response.ok) {
+        const createdProduct = await response.json();
+        console.log('Created product:', createdProduct);
+        const updatedProducts = [...products, createdProduct];
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        closeModal();
+        toast.success('Ürün başarıyla eklendi!');
+      } else {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        toast.error(`Ürün eklenirken hata oluştu: ${errorData.error || 'Bilinmeyen hata'}`);
+      }
+    } catch (error) {
+      console.error('Error creating product:', error);
+      toast.error(`Ürün eklenirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   };
 
-  const handleEditProduct = () => {
+  const handleEditProduct = async () => {
     if (!editingProduct || !productName.trim() || !productPrice || !productCategory) return;
 
-    const updatedProducts = products.map(product =>
-      product.id === editingProduct.id
-        ? {
-            ...product,
-            name: productName.trim(),
-            price: parseFloat(productPrice),
-            originalPrice: productOriginalPrice ? parseFloat(productOriginalPrice) : undefined,
-            category: productCategory,
-            categoryId: productCategory,
-            options: selectedOptions,
-            tags: selectedTags,
-            filters: selectedFilters,
-            images: productImages,
-            description: productDescription.trim(),
-            stock: parseInt(productStock) || 0,
-            sku: productSKU.trim(),
-            weight: productWeight ? parseFloat(productWeight) : undefined,
-            material: productMaterial.trim(),
-            brand: productBrand.trim(),
-            isFeatured,
-            isNew,
-            updatedAt: new Date().toISOString().split('T')[0]
-          }
-        : product
-    );
+    const currentPrice = parseFloat(productPrice);
+    const previousPrice = editingProduct.price;
+    const newStock = parseInt(productStock) || 0;
+    
+    // Otomatik originalPrice mantığı: fiyat düştüyse önceki fiyatı göster, arttıysa kaldır
+    const originalPrice = currentPrice < previousPrice ? previousPrice : undefined;
 
-    setProducts(updatedProducts);
-    calculateStats(updatedProducts);
-    closeModal();
+    // Stok kontrolü: eğer stok 0'a düşüyorsa ve ürün aktifse, kullanıcıya sor
+    if (newStock === 0 && editingProduct.stock > 0 && editingProduct.isActive) {
+      const productData = {
+        partnerId,
+        id: editingProduct.id,
+        name: productName.trim(),
+        price: currentPrice,
+        originalPrice,
+        category: productCategory,
+        categoryId: productCategory,
+        options: selectedOptions,
+        tags: selectedTags,
+        images: productImages,
+        description: productDescription.trim(),
+        stock: newStock,
+        sku: productSKU.trim(),
+        weight: productWeight ? parseFloat(productWeight) : undefined,
+        material: productMaterial.trim(),
+        brand: productBrand.trim(),
+        isFeatured,
+        isNew,
+        isActive: false // Stok 0 olduğunda ürünü kapat
+      };
+      
+      setPendingProductData(productData);
+      setShowStockZeroDialog(true);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          id: editingProduct.id,
+          name: productName.trim(),
+          price: currentPrice,
+          originalPrice,
+          category: productCategory,
+          categoryId: productCategory,
+          options: selectedOptions,
+          tags: selectedTags,
+          images: productImages,
+          description: productDescription.trim(),
+          stock: newStock,
+          sku: productSKU.trim(),
+          weight: productWeight ? parseFloat(productWeight) : undefined,
+          material: productMaterial.trim(),
+          brand: productBrand.trim(),
+          isFeatured,
+          isNew
+        }),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        const updatedProducts = products.map(product =>
+          product.id === editingProduct.id ? updatedProduct : product
+        );
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        closeModal();
+        toast.success('Ürün başarıyla güncellendi!');
+      } else {
+        console.error('Failed to update product');
+        toast.error('Ürün güncellenirken hata oluştu!');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error(`Ürün güncellenirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   };
 
-  const handleDeleteProduct = (productId: string) => {
-    const updatedProducts = products.filter(p => p.id !== productId);
-    setProducts(updatedProducts);
-    calculateStats(updatedProducts);
+  const handleConfirmStockZero = async (shouldDeactivate: boolean) => {
+    if (!pendingProductData) return;
+
+    try {
+      const productData = {
+        ...pendingProductData,
+        isActive: shouldDeactivate ? false : true
+      };
+
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productData),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        const updatedProducts = products.map(product =>
+          product.id === editingProduct?.id ? updatedProduct : product
+        );
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        closeModal();
+        toast.success(`Ürün başarıyla ${shouldDeactivate ? 'kapatıldı' : 'güncellendi'}!`);
+      } else {
+        console.error('Failed to update product');
+        toast.error('Ürün güncellenirken hata oluştu!');
+      }
+    } catch (error) {
+      console.error('Error updating product:', error);
+      toast.error(`Ürün güncellenirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   };
 
-  const handleToggleActive = (productId: string) => {
-    const updatedProducts = products.map(p =>
-      p.id === productId ? { ...p, isActive: !p.isActive } : p
-    );
-    setProducts(updatedProducts);
-    calculateStats(updatedProducts);
+  const handleDeleteProduct = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/products?id=${productId}&partnerId=${partnerId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        const updatedProducts = products.filter(p => p.id !== productId);
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        toast.success('Ürün başarıyla silindi!');
+      } else {
+        console.error('Failed to delete product');
+        toast.error('Ürün silinirken hata oluştu!');
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      toast.error(`Ürün silinirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   };
 
-  const handleToggleFeatured = (productId: string) => {
-    const updatedProducts = products.map(p =>
-      p.id === productId ? { ...p, isFeatured: !p.isFeatured } : p
-    );
-    setProducts(updatedProducts);
-    calculateStats(updatedProducts);
+  const handleToggleActive = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          id: productId,
+          isActive: !product.isActive
+        }),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        const updatedProducts = products.map(p =>
+          p.id === productId ? updatedProduct : p
+        );
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        toast.success(`Ürün ${!product.isActive ? 'aktif' : 'pasif'} duruma getirildi!`);
+      } else {
+        console.error('Failed to toggle product status');
+        toast.error('Ürün durumu değiştirilirken hata oluştu!');
+      }
+    } catch (error) {
+      console.error('Error toggling product status:', error);
+      toast.error(`Ürün durumu değiştirilirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
+  };
+
+  const handleToggleFeatured = async (productId: string) => {
+    const product = products.find(p => p.id === productId);
+    if (!product) return;
+
+    try {
+      const response = await fetch('/api/products', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          id: productId,
+          isFeatured: !product.isFeatured
+        }),
+      });
+
+      if (response.ok) {
+        const updatedProduct = await response.json();
+        const updatedProducts = products.map(p =>
+          p.id === productId ? updatedProduct : p
+        );
+        setProducts(updatedProducts);
+        calculateStats(updatedProducts);
+        toast.success(`Ürün ${!product.isFeatured ? 'öne çıkan' : 'normal'} duruma getirildi!`);
+      } else {
+        console.error('Failed to toggle product featured status');
+        toast.error('Ürün öne çıkan durumu değiştirilirken hata oluştu!');
+      }
+    } catch (error) {
+      console.error('Error toggling product featured status:', error);
+      toast.error(`Ürün öne çıkan durumu değiştirilirken hata oluştu: ${error instanceof Error ? error.message : 'Bilinmeyen hata'}`);
+    }
   };
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setProductName(product.name);
     setProductPrice(product.price.toString());
-    setProductOriginalPrice(product.originalPrice?.toString() || '');
     setProductCategory(product.categoryId);
     setProductDescription(product.description || '');
     setProductStock(product.stock.toString());
@@ -346,7 +447,6 @@ export default function MenuPage() {
     setProductImages(product.images);
     setSelectedOptions(product.options);
     setSelectedTags(product.tags);
-    setSelectedFilters(product.filters);
     setIsFeatured(product.isFeatured);
     setIsNew(product.isNew);
     setIsAddModalOpen(true);
@@ -356,9 +456,10 @@ export default function MenuPage() {
     setIsAddModalOpen(false);
     setEditingProduct(null);
     setIsBarcodeScannerOpen(false);
+    setShowStockZeroDialog(false);
+    setPendingProductData(null);
     setProductName('');
     setProductPrice('');
-    setProductOriginalPrice('');
     setProductCategory('');
     setProductDescription('');
     setProductStock('');
@@ -369,7 +470,6 @@ export default function MenuPage() {
     setProductImages([]);
     setSelectedOptions([]);
     setSelectedTags([]);
-    setSelectedFilters([]);
     setIsFeatured(false);
     setIsNew(false);
   };
@@ -458,9 +558,11 @@ export default function MenuPage() {
           className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="">Tüm Mağaza Kategorileri</option>
-          <option value="20000001">Kadın Giyim</option>
-          <option value="20000002">Erkek Giyim</option>
-          <option value="20000003">Aksesuar</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -579,7 +681,7 @@ export default function MenuPage() {
                 <tr key={product.id} className="hover:bg-gray-750">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
-                      <div className="flex-shrink-0 h-10 w-10">
+                      <div className="shrink-0 h-10 w-10">
                         {product.images.length > 0 ? (
                           <img
                             className="h-10 w-10 rounded-lg object-cover"
@@ -609,7 +711,7 @@ export default function MenuPage() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="inline-flex px-2 py-1 text-xs font-medium bg-purple-100 text-purple-800 rounded-full">
-                      {product.category}
+                      {product.categoryName}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -773,11 +875,6 @@ export default function MenuPage() {
                         <span className="text-lg font-bold text-white">
                           ₺{productPrice || '0'}
                         </span>
-                        {productOriginalPrice && (
-                          <span className="text-sm text-gray-400 line-through ml-2">
-                            ₺{productOriginalPrice}
-                          </span>
-                        )}
                       </div>
                       <div className="text-xs text-gray-400">
                         12 yorum
@@ -856,9 +953,11 @@ export default function MenuPage() {
                         className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Mağaza kategorisi seçin</option>
-                        <option value="20000001">Kadın Giyim</option>
-                        <option value="20000002">Erkek Giyim</option>
-                        <option value="20000003">Aksesuar</option>
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
                       </select>
                       <p className="text-xs text-gray-500 mt-0.5">Ürün birden fazla mağaza kategorisinde bulunabilir</p>
                     </div>
@@ -868,7 +967,7 @@ export default function MenuPage() {
                 {/* Fiyat ve Stok */}
                 <div className="bg-gray-750 rounded-lg p-6">
                   <h4 className="text-lg font-medium text-white mb-3">Fiyat ve Stok</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-2">
                         Satış Fiyatı (₺) *
@@ -879,19 +978,6 @@ export default function MenuPage() {
                         onChange={(e) => setProductPrice(e.target.value)}
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="0.00"
-                        step="0.01"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-2">
-                        Orijinal Fiyat (₺)
-                      </label>
-                      <input
-                        type="number"
-                        value={productOriginalPrice}
-                        onChange={(e) => setProductOriginalPrice(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="İndirim öncesi fiyat"
                         step="0.01"
                       />
                     </div>
@@ -1056,7 +1142,7 @@ export default function MenuPage() {
                           const files = Array.from(e.target.files || []);
                           files.forEach(file => {
                             if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                              alert(`${file.name} dosyası çok büyük. Maksimum 5MB olabilir.`);
+                              toast.error(`${file.name} dosyası çok büyük. Maksimum 5MB olabilir.`);
                               return;
                             }
 
@@ -1096,8 +1182,8 @@ export default function MenuPage() {
                         <Package className="h-3 w-3" />
                         <span>Ürün ID: {editingProduct.id}</span>
                       </div>
-                      <div>Oluşturulma: {editingProduct.createdAt}</div>
-                      <div>Güncellenme: {editingProduct.updatedAt}</div>
+                      <div>Oluşturulma: {new Date(editingProduct.createdAt).toISOString().split('T')[0]}</div>
+                      <div>Güncellenme: {new Date(editingProduct.updatedAt).toISOString().split('T')[0]}</div>
                     </div>
                   </div>
                 )}
@@ -1113,7 +1199,16 @@ export default function MenuPage() {
               </button>
               <button
                 onClick={editingProduct ? handleEditProduct : handleAddProduct}
-                disabled={!productName.trim() || !productPrice || !productCategory}
+                disabled={
+                  !productName.trim() ||
+                  !productPrice ||
+                  isNaN(parseFloat(productPrice)) ||
+                  parseFloat(productPrice) <= 0 ||
+                  !productCategory ||
+                  !productStock ||
+                  isNaN(parseInt(productStock)) ||
+                  parseInt(productStock) < 0
+                }
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-lg transition-colors font-medium"
               >
                 {editingProduct ? 'Ürünü Kaydet' : 'Ürünü Ekle'}
@@ -1183,6 +1278,56 @@ export default function MenuPage() {
                   className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 >
                   Test Kodu Tara
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Stock Zero Confirmation Dialog */}
+      {showStockZeroDialog && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 border border-gray-700 rounded-lg p-6 max-w-md w-full">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-white">Stok Tükenme Uyarısı</h3>
+              <button
+                onClick={() => setShowStockZeroDialog(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-4 bg-orange-900/20 border border-orange-600/30 rounded-lg">
+                <Package className="h-8 w-8 text-orange-500 shrink-0" />
+                <div>
+                  <p className="text-white font-medium">"{productName}" ürününde stok kalmadı</p>
+                  <p className="text-gray-300 text-sm mt-1">
+                    Bu ürünü mağazanızda görünür tutmak istiyor musunuz?
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm text-gray-400">
+                  Stokta ürün kalmadığında genellikle ürün mağazadan kaldırılır, ancak bazı satıcılar "stokta yok" yazısıyla ürünü görünür tutmayı tercih eder.
+                </p>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleConfirmStockZero(true)}
+                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                >
+                  Ürünü Kapat (Önerilen)
+                </button>
+                <button
+                  onClick={() => handleConfirmStockZero(false)}
+                  className="flex-1 px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+                >
+                  Açık Tut
                 </button>
               </div>
             </div>

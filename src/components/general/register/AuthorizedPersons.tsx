@@ -34,6 +34,13 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
       clearTimeout(emailTimeouts[index]!);
     }
     
+    // Email format kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (value && !emailRegex.test(value)) {
+      // Geçersiz email formatı için hata göster
+      return;
+    }
+    
     // Set new timeout for email validation (1 second delay)
     const timeout = setTimeout(() => {
       if (value && value.includes('@')) {
@@ -55,10 +62,10 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
   return (
     <div className="space-y-6">
       <h3 className="text-xl font-semibold mb-4">Yetkili Kişiler</h3>
-      <p className="text-sm text-gray-300 mb-4">Mağazanızda çalışan yetkili kişileri ekleyin. Her kişiye rolüne göre yetkilendirme maili gönderilecektir.<span className="text-red-500 font-bold"> Panel içi yetkilendirme sağlayacaksınız ve paneli yönetme yetkisine sahip olacaklardır.</span></p>
+      <p className="text-sm text-gray-700 mb-4">Mağazanızda çalışan yetkili kişileri ekleyin. Her kişiye rolüne göre yetkilendirme maili gönderilecektir.<span className="text-red-400 font-bold"> Panel içi yetkilendirme sağlayacaksınız ve paneli yönetme yetkisine sahip olacaklardır.paneliniz üzerinde yetkilendirme (rol atama) ayarlarını yapabilirsiniz.Daha Sonrada yetkilendirme işlemlerini gerçekleştirebilirsiniz.</span></p>
       {authorizedPersons.map((person, index) => (
-        <div key={index} className="bg-gray-700 rounded-lg p-4">
-          <h4 className="text-lg font-semibold mb-2">Yetkili Kişi {index + 1}</h4>
+        <div key={index} className="bg-gray-100 rounded-lg p-4">
+          <h4 className="text-lg font-semibold mb-2 text-gray-600">Yetkili Kişi {index + 1}</h4>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="block text-sm font-medium mb-1">Ad *</label>
@@ -121,8 +128,10 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
                 value={person.email || ""}
                 onChange={e => handleEmailChange(index, e.target.value)}
                 onBlur={e => {
-                  if (e.target.value && e.target.value.includes('@')) {
-                    checkEmailExists(e.target.value, true, index);
+                  const value = e.target.value;
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  if (value && emailRegex.test(value)) {
+                    checkEmailExists(value, true, index);
                   }
                 }}
                 required
@@ -182,7 +191,7 @@ const AuthorizedPersons: React.FC<AuthorizedPersonsProps> = ({
       <button
         type="button"
         onClick={() => setAuthorizedPersons([...authorizedPersons, { firstName: "", lastName: "", phone: "", email: "", role: "", idCard: null }])}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
       >
         + Kişi Ekle
       </button>

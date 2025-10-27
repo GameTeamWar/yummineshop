@@ -10,6 +10,7 @@ interface ConfirmationProps {
     isMainBranch: boolean;
     branchReferenceCode: string;
     hasBranches: boolean;
+    branchPassword?: string;
   };
   authorizedPersons: Array<{
     firstName: string;
@@ -61,10 +62,24 @@ const Confirmation: React.FC<ConfirmationProps> = ({
               <span className="text-gray-900">{storeInfo.branchCount}</span>
             </div>
           )}
-          {storeInfo.hasBranches && (
+          {storeInfo.hasBranches && storeInfo.isMainBranch && storeInfo.branchPassword && (
             <div className="flex justify-between">
-              <span className="text-gray-600">Bu Oluşturulan Hesap Şube Türü:</span>
-              <span className="text-gray-900">{storeInfo.isMainBranch ? "Bu Ana Şube" : "Bu Alt Şube"}</span>
+              <span className="text-gray-600">Şube Ekleme Şifresi:</span>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="text"
+                  readOnly
+                  className="px-2 py-1 rounded bg-gray-200 text-gray-900 text-sm"
+                  value={storeInfo.branchPassword}
+                />
+                <button
+                  type="button"
+                  onClick={() => navigator.clipboard.writeText(storeInfo.branchPassword || '')}
+                  className="px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                >
+                  Kopyala
+                </button>
+              </div>
             </div>
           )}
           <div className="flex justify-between">
@@ -108,10 +123,30 @@ const Confirmation: React.FC<ConfirmationProps> = ({
             alert('Şifre gönderilemedi');
           }
         }}
-        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+        className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 mr-2"
       >
         Test: Şifre Gönder
       </button>
+      {storeInfo.hasBranches && storeInfo.isMainBranch && storeInfo.branchPassword && (
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await sendPasswordEmail({ 
+                to: personEmail, 
+                password: storeInfo.branchPassword || '',
+                additionalData: { type: 'branch_password' }
+              });
+              alert('Şube şifresi gönderildi: ' + storeInfo.branchPassword);
+            } catch (err) {
+              alert('Şube şifresi gönderilemedi');
+            }
+          }}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Şube Şifresini Gönder
+        </button>
+      )}
     </div>
   );
 };

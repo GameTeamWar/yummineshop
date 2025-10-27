@@ -237,6 +237,11 @@ export default function RegisterPage() {
     if (person.phone && !phoneRegex.test(person.phone.replace(/\s/g, ''))) {
       errors.phone = "Geçerli bir telefon numarası giriniz";
     }
+
+    // Branch validation for store registration
+    if (!isCourier && storeInfo.hasBranches && storeInfo.branchCount < 2) {
+      errors.branchCount = "Şube sayısı en az 2 olmalıdır";
+    }
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -247,13 +252,12 @@ export default function RegisterPage() {
     
     if (!storeInfo.storeName.trim()) errors.storeName = "Mağaza adı zorunludur";
     if (!storeInfo.corporateType) errors.corporateType = "Şirket türü zorunludur";
-    if (!storeInfo.taxId.trim()) errors.taxId = `${storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası" : "Vergi Kimlik Numarası"} zorunludur`;
-    if (!storeInfo.storeType) errors.storeType = "Mağaza tipi zorunludur";
-    if (storeInfo.corporateType !== "PRIVATE" && !storeInfo.companyName.trim()) {
-      errors.companyName = "Şirket adı zorunludur";
+    if (storeInfo.corporateType && !storeInfo.taxId.trim()) {
+      errors.taxId = `${storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası" : "Vergi Kimlik Numarası"} zorunludur`;
     }
-    if (storeInfo.hasBranches && storeInfo.branchCount < 2) {
-      errors.branchCount = "Şube sayısı en az 2 olmalıdır";
+    if (!storeInfo.storeType) errors.storeType = "Mağaza tipi zorunludur";
+    if (storeInfo.corporateType && storeInfo.corporateType !== "PRIVATE" && !storeInfo.companyName.trim()) {
+      errors.companyName = "Şirket adı zorunludur";
     }
     
     setFormErrors(errors);
@@ -397,6 +401,16 @@ export default function RegisterPage() {
       setFormErrors(prev => ({ 
         ...prev, 
         [errorKey]: 'E-posta alanı zorunludur' 
+      }));
+      return;
+    }
+
+    // Email format kontrolü
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setFormErrors(prev => ({ 
+        ...prev, 
+        [errorKey]: 'Geçerli bir e-posta adresi giriniz' 
       }));
       return;
     }

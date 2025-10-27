@@ -46,6 +46,10 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
+  const [store, setStore] = useState<any>(storeData || null);
+  const [products, setProducts] = useState<any[]>(productsData || []);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [partnerCollapsed, setPartnerCollapsed] = useState<{[key: string]: boolean}>({});
   const [partnerSearchQueries, setPartnerSearchQueries] = useState<{[key: string]: string}>({});
   const [selectedFilters, setSelectedFilters] = useState<{[key: string]: string[]}>({});
@@ -57,26 +61,37 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
   const [favorites, setFavorites] = useState<number[]>([]);
 
   useEffect(() => {
-    // Favori ürünleri localStorage'dan yükle
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
+    const fetchData = async () => {
+      if (!storeData) {
+        setLoading(true);
+        try {
+          // Get store ID from URL or props
+          const storeId = window.location.pathname.split('/')[2]; // Assuming URL like /store/123
+          
+          // Fetch store data
+          const storeResponse = await fetch(`/api/stores/${storeId}`);
+          if (storeResponse.ok) {
+            const storeData = await storeResponse.json();
+            setStore(storeData);
+          }
 
-    // Dark mode kontrolü
-    const savedDarkMode = localStorage.getItem('darkMode');
-    if (savedDarkMode) {
-      setDarkMode(JSON.parse(savedDarkMode));
-    }
-
-    // Mobile kontrolü
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+          // Fetch products for this store
+          const productsResponse = await fetch(`/api/products?storeId=${storeId}`);
+          if (productsResponse.ok) {
+            const productsData = await productsResponse.json();
+            setProducts(productsData);
+          }
+        } catch (error) {
+          console.error('Error fetching data:', error);
+          setError('Veri yüklenirken hata oluştu');
+        } finally {
+          setLoading(false);
+        }
+      }
     };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+
+    fetchData();
+  }, [storeData]);
 
   // Favori toggle fonksiyonu
   const toggleFavorite = (productId: number) => {
@@ -111,584 +126,7 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
   const [showEditAddressModal, setShowEditAddressModal] = useState(false);
   const [editingAddress, setEditingAddress] = useState<any>(null);
 
-  const store = storeData || {
-    id: 7,
-    name: 'İpekyol Mağazası',
-    rating: 4.8,
-    reviews: 1523,
-    distance: 0.8,
-    delivery: 30,
-    items: 12,
-    badge: 'Popüler',
-    description: 'En güncel moda ve stil ürünlerini burada bulabilirsiniz',
-    logo: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=100&h=100&fit=crop',
-    image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop',
-    partnerOptions: [
-      {
-        type: 'LeafCategory',
-        title: 'Kategori',
-        collapsed: true,
-        searchable: true,
-        searchPlaceholder: 'Kategori Ara',
-        items: [
-          { id: '1030', name: 'Ceket', value: '1030' },
-          { id: '1179', name: 'Sweatshirt', value: '1179' },
-          { id: '70', name: 'Pantolon', value: '70' },
-          { id: '118', name: 'Mont', value: '118' },
-          { id: '1092', name: 'Kazak', value: '1092' },
-          { id: '1019', name: 'Bluz', value: '1019' },
-          { id: '56', name: 'Elbise', value: '56' },
-          { id: '1066', name: 'Hırka', value: '1066' },
-          { id: '120', name: 'Jeans', value: '120' },
-          { id: '75', name: 'Gömlek', value: '75' }
-        ]
-      },
-      {
-        type: 'WebBrand',
-        title: 'Marka',
-        collapsed: true,
-        hasSections: true,
-        sections: [
-          {
-            title: 'Popüler Markalar',
-            items: [
-              { id: '46', name: 'İpekyol', value: '46' }
-            ]
-          },
-          {
-            title: 'Tüm Markalar',
-            items: [
-              { id: '623', name: 'MISS IPEKYOL', value: '623' },
-              { id: '168', name: 'Twist', value: '168' }
-            ]
-          }
-        ]
-      },
-      {
-        type: 'Size',
-        title: 'Beden',
-        collapsed: true,
-        searchable: true,
-        searchPlaceholder: 'Beden Ara',
-        items: [
-          { id: 'xs', name: 'XS', value: 'group-xs' },
-          { id: 's', name: 'S', value: 'group-s' },
-          { id: 'm', name: 'M', value: 'group-m' },
-          { id: 'l', name: 'L', value: 'group-l' },
-          { id: 'xl', name: 'XL', value: 'group-xl' },
-          { id: '2', name: '2', value: '2' },
-          { id: '34', name: '34', value: '34' },
-          { id: '36', name: '36', value: '36' },
-          { id: '38', name: '38', value: '38' },
-          { id: '40', name: '40', value: '40' },
-          { id: 'tek-ebat', name: 'Tek Ebat', value: 'tek-ebat' }
-        ]
-      },
-      {
-        type: 'WebColor',
-        title: 'Renk',
-        collapsed: true,
-        isColorList: true,
-        items: [
-          { id: '1', name: 'Altın', value: '348', colorClass: 'color-1' },
-          { id: '2', name: 'Bej', value: '348', colorClass: 'color-2' },
-          { id: '3', name: 'Beyaz', value: '348', colorClass: 'color-3' },
-          { id: '19', name: 'Bordo', value: '348', colorClass: 'color-19', selected: true },
-          { id: '20', name: 'Ekru', value: '348', colorClass: 'color-20' },
-          { id: '4', name: 'Gri', value: '348', colorClass: 'color-4' },
-          { id: '5', name: 'Gümüş', value: '348', colorClass: 'color-5' },
-          { id: '21', name: 'Haki', value: '348', colorClass: 'color-21' },
-          { id: '6', name: 'Kahverengi', value: '348', colorClass: 'color-6' },
-          { id: '7', name: 'Kırmızı', value: '348', colorClass: 'color-7' },
-          { id: '8', name: 'Lacivert', value: '348', colorClass: 'color-8' },
-          { id: '9', name: 'Mavi', value: '348', colorClass: 'color-9' },
-          { id: '11', name: 'Mor', value: '348', colorClass: 'color-11' },
-          { id: '12', name: 'Pembe', value: '348', colorClass: 'color-12' },
-          { id: '13', name: 'Sarı', value: '348', colorClass: 'color-13' },
-          { id: '14', name: 'Siyah', value: '348', colorClass: 'color-14' },
-          { id: '16', name: 'Turuncu', value: '348', colorClass: 'color-16' },
-          { id: '17', name: 'Yeşil', value: '348', colorClass: 'color-17' },
-          { id: '686230', name: 'Çok Renkli', value: '348', colorClass: 'color-686230' }
-        ]
-      },
-      {
-        type: 'Price',
-        title: 'Fiyat',
-        collapsed: true,
-        isPriceRange: true,
-        priceRanges: [
-          { id: '0-1000', label: '0 TL - 1000 TL', value: '0-1000' },
-          { id: '1000-2000', label: '1000 TL - 2000 TL', value: '1000-2000' },
-          { id: '2000-4000', label: '2000 TL - 4000 TL', value: '2000-4000' },
-          { id: '4000-6000', label: '4000 TL - 6000 TL', value: '4000-6000' },
-          { id: '6000-9000', label: '6000 TL - 9000 TL', value: '6000-9000' },
-          { id: '9000-15000', label: '9000 TL - 15000 TL', value: '9000-15000' }
-        ]
-      },
-      {
-        type: 'Material',
-        title: 'Materyal',
-        collapsed: true,
-        searchable: true,
-        searchPlaceholder: 'Materyal Ara',
-        items: [
-          { id: '212262', name: '%100 Pamuk', value: '212262' },
-          { id: '77', name: 'Akrilik', value: '77' },
-          { id: '3979', name: 'Deri', value: '3979' },
-          { id: '284086', name: 'Dokuma', value: '284086' },
-          { id: '12277', name: 'Elastan', value: '12277' },
-          { id: '86', name: 'Hasır', value: '86' },
-          { id: '195', name: 'Kadife', value: '195' },
-          { id: '710', name: 'Keten', value: '710' },
-          { id: '91', name: 'Kumaş', value: '91' },
-          { id: '9329', name: 'Liyosel', value: '9329' }
-        ]
-      }
-    ]
-  };
-
-  const categories = store.partnerOptions?.find((option: any) => option.type === 'LeafCategory')?.items || [];
-
-  const products = (productsData && productsData.length > 0) ? productsData : [
-    {
-      id: 101,
-      name: 'Ayarlanabilir Bel Şişme Yelek',
-      category: 'jacket',
-      price: 6499,
-      originalPrice: 7999,
-      rating: 5.0,
-      reviews: 1,
-      favorites: 'Çok başarılı',
-      badge: 'AVANTAJLI ÜRÜN',
-      badgeColor: 'purple',
-      images: ['https://picsum.photos/400/400?random=101', 'https://picsum.photos/400/400?random=102', 'https://picsum.photos/400/400?random=103'],
-      sizes: ['34', '36', '38', '40', '42', '44'],
-      colors: ['Koyu Mor', 'Siyah', 'Lacivert'],
-      discount: '7000 TL\'ye 1500 TL İndirim',
-      discount2: 'Sepette 6.499 TL',
-      shipping: '6 gün',
-      description: 'Kaliteli kumaş ile yapılan şişme yelek, kış mevsiminde sizi sıcak tutacak. Modern tasarımı ile hem rahat hem de şık görüneceksiniz.',
-      material: 'Polyester',
-      features: [
-        { label: 'Kalıp', value: 'Regular' },
-        { label: 'Materyal', value: 'Polyester' },
-        { label: 'Astar Durumu', value: 'Astarlı' },
-        { label: 'Yakası Tipi', value: 'Kapşonlu' }
-      ]
-    },
-    {
-      id: 102,
-      name: 'Kumaş Mix Colorblock Sweatshirt',
-      category: 'shirt',
-      price: 4599,
-      originalPrice: 5499,
-      rating: 5.0,
-      reviews: 1,
-      favorites: 'Çok başarılı',
-      badge: 'YENİ ÜRÜN',
-      badgeColor: 'red',
-      images: ['https://picsum.photos/400/400?random=104', 'https://picsum.photos/400/400?random=105', 'https://picsum.photos/400/400?random=106'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Mor', 'Siyah', 'Gri'],
-      discount: '7000 TL\'ye 1500 TL İndirim',
-      discount2: 'Sepette 4.599 TL',
-      shipping: '6 gün',
-      material: 'Pamuk',
-      description: 'Modern colorblock tasarımı ile göze çarpan sweatshirt. Rahat kumaşı ile tüm gün giyebileceğiniz bir parça.'
-    },
-    {
-      id: 103,
-      name: 'Triko Mix Dik Yaka Sweatshirt',
-      category: 'shirt',
-      price: 3999,
-      originalPrice: 4999,
-      rating: 4.7,
-      reviews: 3,
-      favorites: 'Başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=107', 'https://picsum.photos/400/400?random=108', 'https://picsum.photos/400/400?random=109'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Krem', 'Gri', 'Siyah'],
-      discount: '5000 TL\'ye 800 TL İndirim',
-      discount2: 'Sepette 3.999 TL',
-      shipping: '5 gün',
-      description: 'Rahat ve şık dik yaka sweatshirt. Günlük giyim için mükemmel seçim.'
-    },
-    {
-      id: 104,
-      name: 'Payetli Çizgi Desen Gömlek',
-      category: 'shirt',
-      price: 2599,
-      originalPrice: 3299,
-      rating: 3.6,
-      reviews: 5,
-      favorites: 'Orta',
-      badge: 'ÇOK AL AZ ÖDE',
-      badgeColor: 'orange',
-      images: ['https://picsum.photos/400/400?random=110', 'https://picsum.photos/400/400?random=111', 'https://picsum.photos/400/400?random=112'],
-      sizes: ['S', 'M', 'L', 'XL'],
-      colors: ['Siyah', 'Beyaz', 'Pembe'],
-      discount: '3000 TL\'ye 500 TL İndirim',
-      discount2: 'Sepette 2.599 TL',
-      shipping: '4 gün',
-      description: 'Payetli çizgi desen gömlek, özel günler için ideal.'
-    },
-    {
-      id: 105,
-      name: 'Pamuklu Basic Tişört',
-      category: 'textile',
-      price: 899,
-      originalPrice: 1299,
-      rating: 4.8,
-      reviews: 42,
-      favorites: 'Çok başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=113', 'https://picsum.photos/400/400?random=114', 'https://picsum.photos/400/400?random=115'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Beyaz', 'Siyah', 'Gri', 'Mavi', 'Kırmızı'],
-      discount: '2000 TL\'ye 300 TL İndirim',
-      discount2: 'Sepette 899 TL',
-      shipping: '3 gün',
-      description: 'Günlük giyim için temel pamuklu tişört. Rahatlığı ve kalitesi ile tercih edilen bir parça.'
-    },
-    {
-      id: 106,
-      name: 'Skinny Fit Pantolon',
-      category: 'pants',
-      price: 1999,
-      originalPrice: 2999,
-      rating: 4.6,
-      reviews: 18,
-      favorites: 'Başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=106', 'https://picsum.photos/400/400?random=107', 'https://picsum.photos/400/400?random=108'],
-      sizes: ['28', '30', '32', '34', '36', '38'],
-      colors: ['Koyu Mavi', 'Siyah', 'Gri'],
-      discount: '4000 TL\'ye 800 TL İndirim',
-      discount2: 'Sepette 1.999 TL',
-      shipping: '5 gün',
-      description: 'Modern skinny fit pantolon. Her mevsimde giyilebilecek kaliteli bir model.'
-    },
-    {
-      id: 107,
-      name: 'Kadın Kot Pantolon',
-      category: 'pants',
-      price: 2499,
-      originalPrice: 3499,
-      rating: 4.4,
-      reviews: 28,
-      favorites: 'Başarılı',
-      badge: 'SEZON SONU',
-      badgeColor: 'orange',
-      images: ['https://picsum.photos/400/400?random=109', 'https://picsum.photos/400/400?random=110', 'https://picsum.photos/400/400?random=111'],
-      sizes: ['26', '28', '30', '32', '34', '36'],
-      colors: ['Lacivert', 'Siyah', 'Açık Mavi'],
-      discount: '5000 TL\'ye 1000 TL İndirim',
-      discount2: 'Sepette 2.499 TL',
-      shipping: '4 gün',
-      description: 'Rahat kesim kot pantolon. Günlük kullanım için ideal.'
-    },
-    {
-      id: 108,
-      name: 'Yünlü Kazak',
-      category: 'textile',
-      price: 3299,
-      originalPrice: 4299,
-      rating: 4.9,
-      reviews: 15,
-      favorites: 'Çok başarılı',
-      badge: 'PREMIUM',
-      badgeColor: 'purple',
-      images: ['https://picsum.photos/400/400?random=112', 'https://picsum.photos/400/400?random=113', 'https://picsum.photos/400/400?random=114'],
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Bordo', 'Siyah', 'Gri', 'Krem'],
-      discount: '6000 TL\'ye 1000 TL İndirim',
-      discount2: 'Sepette 3.299 TL',
-      shipping: '7 gün',
-      material: 'Yün',
-      description: 'Yüksek kaliteli yünlü kazak. Kış aylarında sıcak tutar.',
-      features: [
-        { label: 'Materyal', value: 'Yün' },
-        { label: 'Kalıp', value: 'Regular' },
-        { label: 'Yıkama', value: 'Kuru Temizleme' }
-      ]
-    },
-    {
-      id: 109,
-      name: 'Deri Ceket',
-      category: 'jacket',
-      price: 8999,
-      originalPrice: 11999,
-      rating: 4.7,
-      reviews: 8,
-      favorites: 'Çok başarılı',
-      badge: 'LÜKS',
-      badgeColor: 'red',
-      images: ['https://picsum.photos/400/400?random=115', 'https://picsum.photos/400/400?random=116', 'https://picsum.photos/400/400?random=117'],
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Siyah', 'Kahve', 'Lacivert'],
-      discount: '10000 TL\'ye 3000 TL İndirim',
-      discount2: 'Sepette 8.999 TL',
-      shipping: '8 gün',
-      description: 'Gerçek deri ceket. Şık ve dayanıklı.',
-      features: [
-        { label: 'Materyal', value: 'Gerçek Deri' },
-        { label: 'Kalıp', value: 'Slim' },
-        { label: 'Astar', value: 'Astarlı' }
-      ]
-    },
-    {
-      id: 110,
-      name: 'Spor Ayakkabı',
-      category: 'accessories',
-      price: 1899,
-      originalPrice: 2499,
-      rating: 4.5,
-      reviews: 67,
-      favorites: 'Başarılı',
-      badge: 'SPOR',
-      badgeColor: 'green',
-      images: ['https://picsum.photos/400/400?random=118', 'https://picsum.photos/400/400?random=119', 'https://picsum.photos/400/400?random=120'],
-      sizes: ['36', '37', '38', '39', '40', '41', '42', '43'],
-      colors: ['Beyaz', 'Siyah', 'Mavi', 'Kırmızı'],
-      discount: '3000 TL\'ye 600 TL İndirim',
-      discount2: 'Sepette 1.899 TL',
-      shipping: '3 gün',
-      description: 'Rahat spor ayakkabı. Günlük kullanım için mükemmel.',
-      features: [
-        { label: 'Taban', value: 'Kaçık' },
-        { label: 'Kullanım', value: 'Spor/Günlük' },
-        { label: 'Materyal', value: 'Suni Deri' }
-      ]
-    },
-    {
-      id: 111,
-      name: 'Çanta',
-      category: 'accessories',
-      price: 1599,
-      originalPrice: 2199,
-      rating: 4.3,
-      reviews: 34,
-      favorites: 'Başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=124', 'https://picsum.photos/400/400?random=125', 'https://picsum.photos/400/400?random=126'],
-      sizes: ['Tek Beden'],
-      colors: ['Siyah', 'Kahve', 'Kırmızı'],
-      discount: '2500 TL\'ye 600 TL İndirim',
-      discount2: 'Sepette 1.599 TL',
-      shipping: '4 gün',
-      description: 'Şık kadın çantası. Günlük kullanım için ideal.'
-    },
-    {
-      id: 112,
-      name: 'Güneş Gözlüğü',
-      category: 'accessories',
-      price: 799,
-      originalPrice: 1199,
-      rating: 4.6,
-      reviews: 89,
-      favorites: 'Çok başarılı',
-      badge: 'GÜNEŞ',
-      badgeColor: 'yellow',
-      images: ['https://picsum.photos/400/400?random=127', 'https://picsum.photos/400/400?random=128', 'https://picsum.photos/400/400?random=129'],
-      sizes: ['Tek Beden'],
-      colors: ['Siyah', 'Kahve', 'Şeffaf'],
-      discount: '1500 TL\'ye 400 TL İndirim',
-      discount2: 'Sepette 799 TL',
-      shipping: '2 gün',
-      description: 'UV korumalı güneş gözlüğü. Gözlerinizi korur.'
-    },
-    {
-      id: 113,
-      name: 'Kadın Mont',
-      category: 'jacket',
-      price: 7499,
-      originalPrice: 9999,
-      rating: 4.8,
-      reviews: 12,
-      favorites: 'Çok başarılı',
-      badge: 'KIŞ SPESYAL',
-      badgeColor: 'blue',
-      images: ['https://picsum.photos/400/400?random=130', 'https://picsum.photos/400/400?random=131', 'https://picsum.photos/400/400?random=132'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Kırmızı', 'Siyah', 'Lacivert', 'Gri'],
-      discount: '8000 TL\'ye 2500 TL İndirim',
-      discount2: 'Sepette 7.499 TL',
-      shipping: '7 gün',
-      description: 'Şık ve sıcak kadın montu. Kış aylarında vazgeçilmez.',
-      features: [
-        { label: 'Materyal', value: 'Polyester' },
-        { label: 'Kalıp', value: 'Regular' },
-        { label: 'Astar', value: 'Kuş Tüyü' }
-      ]
-    },
-    {
-      id: 114,
-      name: 'V Yaka Kazak',
-      category: 'textile',
-      price: 2899,
-      originalPrice: 3899,
-      rating: 4.6,
-      reviews: 23,
-      favorites: 'Başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=133', 'https://picsum.photos/400/400?random=134', 'https://picsum.photos/400/400?random=135'],
-      sizes: ['S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Beyaz', 'Siyah', 'Mavi', 'Pembe'],
-      discount: '4000 TL\'ye 1000 TL İndirim',
-      discount2: 'Sepette 2.899 TL',
-      shipping: '5 gün',
-      description: 'Şık V yaka kazak. Her kombin için uygun.'
-    },
-    {
-      id: 115,
-      name: 'Kot Şort',
-      category: 'pants',
-      price: 1299,
-      originalPrice: 1799,
-      rating: 4.4,
-      reviews: 31,
-      favorites: 'Başarılı',
-      badge: 'YAZ SPESYAL',
-      badgeColor: 'green',
-      images: ['https://picsum.photos/400/400?random=136', 'https://picsum.photos/400/400?random=137', 'https://picsum.photos/400/400?random=138'],
-      sizes: ['26', '28', '30', '32', '34'],
-      colors: ['Lacivert', 'Siyah', 'Açık Mavi'],
-      discount: '2000 TL\'ye 500 TL İndirim',
-      discount2: 'Sepette 1.299 TL',
-      shipping: '3 gün',
-      description: 'Rahat kot şort. Yaz aylarında serin kalın.'
-    },
-    {
-      id: 116,
-      name: 'Bluz',
-      category: 'shirt',
-      price: 1899,
-      originalPrice: 2499,
-      rating: 4.5,
-      reviews: 19,
-      favorites: 'Başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=139', 'https://picsum.photos/400/400?random=140', 'https://picsum.photos/400/400?random=141'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL'],
-      colors: ['Beyaz', 'Pembe', 'Mavi', 'Siyah'],
-      discount: '2500 TL\'ye 600 TL İndirim',
-      discount2: 'Sepette 1.899 TL',
-      shipping: '4 gün',
-      description: 'Şık kadın bluzu. Ofis ve günlük kullanım için ideal.'
-    },
-    {
-      id: 117,
-      name: 'Kemer',
-      category: 'accessories',
-      price: 599,
-      originalPrice: 899,
-      rating: 4.7,
-      reviews: 45,
-      favorites: 'Çok başarılı',
-      badge: null,
-      badgeColor: null,
-      images: ['https://picsum.photos/400/400?random=142', 'https://picsum.photos/400/400?random=143', 'https://picsum.photos/400/400?random=144'],
-      sizes: ['S', 'M', 'L'],
-      colors: ['Siyah', 'Kahve', 'Lacivert'],
-      discount: '1000 TL\'ye 300 TL İndirim',
-      discount2: 'Sepette 599 TL',
-      shipping: '2 gün',
-      description: 'Kaliteli deri kemer. Pantolonunuzla mükemmel uyum.'
-    },
-    {
-      id: 118,
-      name: 'Şapka',
-      category: 'accessories',
-      price: 449,
-      originalPrice: 699,
-      rating: 4.3,
-      reviews: 52,
-      favorites: 'Başarılı',
-      badge: 'YENİ SEZON',
-      badgeColor: 'orange',
-      images: ['https://picsum.photos/400/400?random=145', 'https://picsum.photos/400/400?random=146', 'https://picsum.photos/400/400?random=147'],
-      sizes: ['S', 'M', 'L'],
-      colors: ['Siyah', 'Beyaz', 'Gri', 'Lacivert'],
-      discount: '800 TL\'ye 250 TL İndirim',
-      discount2: 'Sepette 449 TL',
-      shipping: '2 gün',
-      description: 'Şık şapka. Güneşten korur ve tarzınızı tamamlar.'
-    },
-    {
-      id: 119,
-      name: 'Eşofman Takımı',
-      category: 'textile',
-      price: 3499,
-      originalPrice: 4999,
-      rating: 4.8,
-      reviews: 27,
-      favorites: 'Çok başarılı',
-      badge: 'SPOR',
-      badgeColor: 'green',
-      images: ['https://picsum.photos/400/400?random=148', 'https://picsum.photos/400/400?random=149', 'https://picsum.photos/400/400?random=150'],
-      sizes: ['XS', 'S', 'M', 'L', 'XL', 'XXL'],
-      colors: ['Siyah', 'Gri', 'Mavi', 'Kırmızı'],
-      discount: '5000 TL\'ye 1500 TL İndirim',
-      discount2: 'Sepette 3.499 TL',
-      shipping: '5 gün',
-      description: 'Rahat eşofman takımı. Spor ve günlük kullanım için mükemmel.',
-      features: [
-        { label: 'Materyal', value: 'Pamuk Karışımlı' },
-        { label: 'Kullanım', value: 'Spor/Günlük' },
-        { label: 'Set İçeriği', value: 'Üst + Alt' }
-      ]
-    },
-    {
-      id: 120,
-      name: 'Kadın Çizme',
-      category: 'accessories',
-      price: 2999,
-      originalPrice: 3999,
-      rating: 4.6,
-      reviews: 38,
-      favorites: 'Başarılı',
-      badge: 'KIŞ',
-      badgeColor: 'blue',
-      images: ['https://picsum.photos/400/400?random=151', 'https://picsum.photos/400/400?random=152', 'https://picsum.photos/400/400?random=153'],
-      sizes: ['36', '37', '38', '39', '40', '41'],
-      colors: ['Siyah', 'Kahve', 'Lacivert'],
-      discount: '4000 TL\'ye 1000 TL İndirim',
-      discount2: 'Sepette 2.999 TL',
-      shipping: '6 gün',
-      description: 'Şık kadın çizmesi. Kış aylarında hem sıcak hem şık.',
-    },
-    {
-      id: 121,
-      name: 'Akıllı xSaat',
-      category: 'accessories',
-      price: 2499,
-      originalPrice: 3499,
-      rating: 4.8,
-      reviews: 156,
-      favorites: 'Çok başarılı',
-      badge: 'TEKNOLOJİ',
-      badgeColor: 'blue',
-      images: ['https://picsum.photos/400/400?random=121', 'https://picsum.photos/400/400?random=122', 'https://picsum.photos/400/400?random=123'],
-      sizes: ['Tek Beden'],
-      colors: ['Siyah', 'Gümüş', 'Altın'],
-      discount: '4000 TL\'ye 1000 TL İndirim',
-      discount2: 'Sepette 2.499 TL',
-      shipping: '3 gün',
-      description: 'Modern akıllı saat. Fitness takibi, bildirimler ve çok daha fazlası.',
-      features: [
-        { label: 'Ekran', value: 'AMOLED' },
-        { label: 'Batarya', value: '7 Gün' },
-        { label: 'Su Geçirmez', value: '50m' }
-      ]
-    }
-  ];
+  const categories = store?.partnerOptions?.find((option: any) => option.type === 'LeafCategory')?.items || [];
 
   const filteredProducts = products.filter(product => {
     // Eski kategori filtresi (şimdilik tutuyorum)
@@ -1119,19 +557,24 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
                     );
                   })}
                 </div>
-
-                {sortedProducts.length === 0 && (
-                  <div className={`rounded-2xl p-12 text-center ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-neutral-50 border border-neutral-200'}`}>
-                    <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                    <p className="text-lg font-semibold mb-2">Ürün bulunamadı</p>
-                    <p className={`text-sm ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>Kategorileri veya filtreleri değiştirerek deneyin</p>
-                  </div>
-                )}
               </div>
             </div>
           </div>
         </>
       )}
+
+      {/* Ürün bulunamadı mesajı - tam ekran */}
+      {sortedProducts.length === 0 && !currentProduct && (
+        <div className={`fixed inset-0 z-50 flex items-center justify-center ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
+          <div className="text-center max-w-md mx-auto px-4">
+            <Package className="w-24 h-24 mx-auto mb-6 opacity-50" />
+            <p className="text-2xl font-bold mb-4">Ürün bulunamadı</p>
+            <p className={`text-lg ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>Kategorileri veya filtreleri değiştirerek deneyin</p>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Navigation */}
       
       {/* Mobile Navigation */}
       <MobileNavigation
@@ -1150,7 +593,7 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
             }
           });
         }}
-        partnerOptions={store.partnerOptions}
+        partnerOptions={store?.partnerOptions}
         partnerCollapsed={partnerCollapsed}
         setPartnerCollapsed={setPartnerCollapsed}
         partnerSearchQueries={partnerSearchQueries}

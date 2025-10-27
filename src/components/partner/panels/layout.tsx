@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams, usePathname } from 'next/navigation';
 import Layout from '../../general/panels/layout';
 import PartnerSidebar from './sidebar';
+import BranchManagementModal from './BranchManagementModal';
 import { X, Package, Store, BarChart3, Menu } from 'lucide-react';
 
 interface PartnerLayoutProps {
@@ -13,6 +14,7 @@ const PartnerLayout: React.FC<PartnerLayoutProps> = ({ children }) => {
   const pathname = usePathname();
   const partnerId = params.id as string;
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isBranchManagementModalOpen, setIsBranchManagementModalOpen] = useState(false);
 
   // Mobil navigation için aktif sayfa kontrolü
   const getActiveTab = () => {
@@ -33,7 +35,7 @@ const PartnerLayout: React.FC<PartnerLayoutProps> = ({ children }) => {
   return (
     <>
       <Layout 
-        sidebarContent={<PartnerSidebar />} 
+        sidebarContent={<PartnerSidebar onBranchManagementModalOpen={() => setIsBranchManagementModalOpen(true)} />} 
         showSidebar={true}
         headerProps={{
           title: "Yummine",
@@ -60,7 +62,7 @@ const PartnerLayout: React.FC<PartnerLayoutProps> = ({ children }) => {
             
             {/* Kaydırılabilir İçerik */}
             <div className="flex-1 overflow-y-auto">
-              <PartnerSidebar onClose={() => setIsMobileDrawerOpen(false)} />
+              <PartnerSidebar onClose={() => setIsMobileDrawerOpen(false)} onBranchManagementModalOpen={() => setIsBranchManagementModalOpen(true)} />
             </div>
           </div>
         </div>
@@ -118,6 +120,13 @@ const PartnerLayout: React.FC<PartnerLayoutProps> = ({ children }) => {
           </button>
         </div>
       </div>
+
+      {/* Branch Management Modal */}
+      <BranchManagementModal
+        isOpen={isBranchManagementModalOpen}
+        onClose={() => setIsBranchManagementModalOpen(false)}
+        partnerId={partnerId}
+      />
 
     </>
   );

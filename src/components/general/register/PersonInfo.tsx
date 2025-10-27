@@ -8,6 +8,7 @@ interface Person {
   iban: string;
   birthDate: string;
   kepAddress: string;
+  showBranchPassword?: boolean;
 }
 
 interface PersonInfoProps {
@@ -28,9 +29,11 @@ interface PersonInfoProps {
     hasBranches: boolean;
     hasAuthorizedPersons: boolean;
     logo: File | null;
+    branchPassword?: string;
   };
   setStoreInfo?: React.Dispatch<React.SetStateAction<any>>;
   generateBranchReferenceCode?: () => string;
+  generateRandomPassword?: () => string;
 }
 
 const PersonInfo: React.FC<PersonInfoProps> = ({
@@ -42,6 +45,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
   storeInfo,
   setStoreInfo,
   generateBranchReferenceCode,
+  generateRandomPassword,
 }) => {
   const [emailTimeout, setEmailTimeout] = useState<number | null>(null);
 
@@ -194,12 +198,76 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
             <select
               className="w-full px-3 py-2 rounded-md bg-gray-50 text-gray-900 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={storeInfo.isMainBranch ? "main" : "branch"}
-              onChange={e => setStoreInfo((f: any) => ({ ...f, isMainBranch: e.target.value === "main" }))}
+              onChange={e => {
+                const isMain = e.target.value === "main";
+                setStoreInfo((f: any) => ({
+                  ...f,
+                  isMainBranch: isMain
+                }));
+              }}
               required
             >
               <option value="main">Bu Ana Şube</option>
               <option value="branch">Bu Alt Şube</option>
             </select>
+          </div>
+        )}
+        {!isCourier && storeInfo && setStoreInfo && storeInfo.hasBranches && storeInfo.isMainBranch && (
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium mb-1">Şube Ekleme Şifresi *</label>
+            <div className="relative">
+              <input
+                type={person.showBranchPassword ? "text" : "password"}
+                className={`w-full px-3 py-2 pr-12 rounded-md bg-gray-50 text-gray-900 border focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                  formErrors.branchPassword ? 'border-red-500' : 'border-gray-300'
+                }`}
+                value={storeInfo.branchPassword || ""}
+                onChange={e => setStoreInfo((f: any) => ({ ...f, branchPassword: e.target.value }))}
+                placeholder="Güçlü bir şifre belirleyin"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setPerson(p => ({ ...p, showBranchPassword: !p.showBranchPassword }))}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {person.showBranchPassword ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+            {formErrors.branchPassword && <p className="text-red-500 text-xs mt-1">{formErrors.branchPassword}</p>}
+            <div className="mt-2 text-xs text-gray-500">
+              <p>• En az 8 karakter uzunluğunda olmalı</p>
+              <p>• Büyük/küçük harf, rakam ve özel karakter içermeli</p>
+              <p>• Bu şifre yeni şube eklemek için kullanılacak</p>
+            </div>
+            <div className="mt-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-start space-x-3">
+                <div className="shrink-0">
+                  <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-blue-900 mb-2">Ana Şube Bilgilendirmesi</h4>
+                  <ul className="text-sm text-blue-800 space-y-1">
+                    <li>• Bu hesap <strong>ana şube</strong> olarak kaydedilecektir</li>
+                    <li>• Yukarıda belirlediğiniz şifre ile sisteme yeni şubeler ekleyebilirsiniz</li>
+                    <li>• Şifreyi güvenli bir yerde saklayınız, şube ekleme işlemi için gereklidir</li>
+                    <li>• Bu şifre ayrıca kayıt e-posta adresinize gönderilecektir</li>
+                    <li>• Şifre kaybı durumunda müşteri hizmetleri ile iletişime geçiniz</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         )}
         {!isCourier && storeInfo && setStoreInfo && (
@@ -210,7 +278,7 @@ const PersonInfo: React.FC<PersonInfoProps> = ({
                   className="hidden peer"
                   type="checkbox"
                   checked={storeInfo.hasBranches}
-                  onChange={e => setStoreInfo((f: any) => ({ ...f, hasBranches: e.target.checked, branchCount: e.target.checked ? f.branchCount : 1 }))}
+                  onChange={e => setStoreInfo((f: any) => ({ ...f, hasBranches: e.target.checked, branchCount: e.target.checked ? (f.branchCount < 2 ? 2 : f.branchCount) : 1 }))}
                 />
 
                 <span

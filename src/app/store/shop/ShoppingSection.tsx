@@ -79,53 +79,51 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
   const [sortBy, setSortBy] = useState('recommended');
   const [sidebarTopOffset, setSidebarTopOffset] = useState(64); // Default 16 * 4 = 64px
 
+  // API data states
+  const [stores, setStores] = useState<any[]>([]);
+  const [discountedProducts, setDiscountedProducts] = useState<any[]>([]);
+  const [popularProducts, setPopularProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Arama yapıldığında kart pozisyonlarını yeniden ayarla
+
+  // Fetch data from APIs
   useEffect(() => {
-    if (searchQuery.trim()) {
-      // Arama sonuçları kısmına scroll et
-      setTimeout(() => {
-        const searchResultsElement = document.querySelector('[data-search-results]');
-        if (searchResultsElement) {
-          searchResultsElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        // Fetch stores
+        const storesResponse = await fetch('/api/stores');
+        if (storesResponse.ok) {
+          const storesData = await storesResponse.json();
+          setStores(storesData);
         }
-      }, 100);
-    }
-  }, [searchQuery]);
 
-  const stores = [
-    { id: 1, name: 'Stil Fashion', category: 'textile', distance: 0.8, delivery: 30, rating: 4.8, items: 145, badge: 'Popüler', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop' },
-    { id: 2, name: 'Beauty Haven', category: 'cosmetics', distance: 1.2, delivery: 35, rating: 4.6, items: 89, badge: 'Hızlı', price: 'yuksek', storeType: 'avm', image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=300&fit=crop' },
-    { id: 3, name: 'Aksesuar Dünyası', category: 'accessories', distance: 0.5, delivery: 25, rating: 4.9, items: 234, badge: 'En yakın', price: 'dusuk', storeType: 'esnaf', image: 'https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=300&fit=crop' },
-    { id: 4, name: 'Modern Ev', category: 'decor', distance: 1.5, delivery: 40, rating: 4.7, items: 167, badge: 'Yeni', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop' },
-    { id: 5, name: 'Trend Moda', category: 'textile', distance: 2.1, delivery: 45, rating: 4.5, items: 198, badge: 'İndirim', price: 'dusuk', storeType: 'avm', image: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=400&h=300&fit=crop' },
-    { id: 6, name: 'Güzellik Plus', category: 'cosmetics', distance: 0.9, delivery: 28, rating: 4.9, items: 156, badge: 'Popüler', price: 'orta', storeType: 'esnaf', image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop' },
-    { id: 7, name: 'Apple Store', category: 'electronics', distance: 1.0, delivery: 20, rating: 4.9, items: 89, badge: 'Premium', price: 'yuksek', storeType: 'marka', image: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?w=400&h=300&fit=crop' },
-    { id: 8, name: 'Zara', category: 'textile', distance: 0.7, delivery: 25, rating: 4.6, items: 234, badge: 'Trend', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=300&fit=crop' },
-    { id: 9, name: 'Nike', category: 'accessories', distance: 1.3, delivery: 30, rating: 4.7, items: 156, badge: 'Spor', price: 'yuksek', storeType: 'marka', image: 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&h=300&fit=crop' },
-    { id: 10, name: 'Adidas', category: 'accessories', distance: 0.9, delivery: 28, rating: 4.5, items: 198, badge: 'Konfor', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=300&fit=crop' },
-    { id: 11, name: 'Ray-Ban', category: 'accessories', distance: 1.1, delivery: 35, rating: 4.8, items: 67, badge: 'Lüks', price: 'yuksek', storeType: 'marka', image: 'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=400&h=300&fit=crop' },
-    { id: 12, name: 'Casio', category: 'accessories', distance: 0.6, delivery: 22, rating: 4.4, items: 89, badge: 'Kalite', price: 'orta', storeType: 'marka', image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop' },
-    { id: 13, name: 'Gucci', category: 'accessories', distance: 1.4, delivery: 40, rating: 4.9, items: 145, badge: 'Lüks', price: 'yuksek', storeType: 'marka', image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&h=300&fit=crop' },
-  ];
+        // Fetch discounted products
+        const discountedResponse = await fetch('/api/products?discounted=true');
+        if (discountedResponse.ok) {
+          const discountedData = await discountedResponse.json();
+          setDiscountedProducts(discountedData);
+        }
 
-  // Products data
-  const discountedProducts = [
-    { id: 101, name: 'Ayarlanabilir Bel Şişme Yelek', discount: 40, originalPrice: 7999, currentPrice: 4799, images: ['https://picsum.photos/400/400?random=101', 'https://picsum.photos/400/400?random=102', 'https://picsum.photos/400/400?random=103'], store: 'Zara', category: 'textile', rating: 5.0, reviewCount: 1 },
-    { id: 102, name: 'Kumaş Mix Colorblock Sweatshirt', discount: 30, originalPrice: 5499, currentPrice: 3849, images: ['https://picsum.photos/400/400?random=104', 'https://picsum.photos/400/400?random=105', 'https://picsum.photos/400/400?random=106'], store: 'Nike', category: 'textile', rating: 5.0, reviewCount: 1 },
-    { id: 103, name: 'Triko Mix Dik Yaka Sweatshirt', discount: 25, originalPrice: 4999, currentPrice: 3749, images: ['https://picsum.photos/400/400?random=107', 'https://picsum.photos/400/400?random=108', 'https://picsum.photos/400/400?random=109'], store: 'Adidas', category: 'textile', rating: 4.7, reviewCount: 3 },
-    { id: 104, name: 'Payetli Çizgi Desen Gömlek', discount: 35, originalPrice: 3299, currentPrice: 2144, images: ['https://picsum.photos/400/400?random=110', 'https://picsum.photos/400/400?random=111', 'https://picsum.photos/400/400?random=112'], store: 'Ray-Ban', category: 'textile', rating: 3.6, reviewCount: 5 },
-    { id: 105, name: 'Pamuklu Basic Tişört', discount: 20, originalPrice: 1299, currentPrice: 1039, images: ['https://picsum.photos/400/400?random=113', 'https://picsum.photos/400/400?random=114', 'https://picsum.photos/400/400?random=115'], store: 'Casio', category: 'textile', rating: 4.8, reviewCount: 42 },
-    { id: 106, name: 'Skinny Fit Pantolon', discount: 45, originalPrice: 2999, currentPrice: 1649, images: ['https://picsum.photos/400/400?random=106', 'https://picsum.photos/400/400?random=107', 'https://picsum.photos/400/400?random=108'], store: 'Gucci', category: 'textile', rating: 4.6, reviewCount: 18 },
-  ];
+        // Fetch popular products
+        const popularResponse = await fetch('/api/products?popular=true');
+        if (popularResponse.ok) {
+          const popularData = await popularResponse.json();
+          setPopularProducts(popularData);
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setError('Veri yüklenirken hata oluştu');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const popularProducts = [
-    { id: 107, name: 'Yünlü Kazak', images: ['https://picsum.photos/400/400?random=112', 'https://picsum.photos/400/400?random=113', 'https://picsum.photos/400/400?random=114'], price: 3299, store: 'Apple Store', category: 'electronics', rating: 4.9, reviewCount: 15 },
-    { id: 108, name: 'Deri Ceket', images: ['https://picsum.photos/400/400?random=115', 'https://picsum.photos/400/400?random=116', 'https://picsum.photos/400/400?random=117'], price: 8999, store: 'Apple Store', category: 'electronics', rating: 4.7, reviewCount: 8 },
-    { id: 109, name: 'Spor Ayakkabı', images: ['https://picsum.photos/400/400?random=118', 'https://picsum.photos/400/400?random=119', 'https://picsum.photos/400/400?random=120'], price: 1899, store: 'Apple Store', category: 'electronics', rating: 4.5, reviewCount: 67 },
-    { id: 110, name: 'Çanta', images: ['https://picsum.photos/400/400?random=124', 'https://picsum.photos/400/400?random=125', 'https://picsum.photos/400/400?random=126'], price: 1599, store: 'Apple Store', category: 'electronics', rating: 4.3, reviewCount: 34 },
-    { id: 121, name: 'Akıllı Saat', images: ['https://picsum.photos/400/400?random=121', 'https://picsum.photos/400/400?random=122', 'https://picsum.photos/400/400?random=123'], price: 2499, store: 'Apple Store', category: 'electronics', rating: 4.8, reviewCount: 156 },
-  ];
+    fetchData();
+  }, []);
 
   // Lazy loading için state'ler
   const [loadedStores, setLoadedStores] = useState<{[key: string]: any[]}>({
@@ -158,41 +156,6 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
     acc[store.category].push(store);
     return acc;
   }, {} as {[key: string]: any[]});
-
-  // Lazy loading fonksiyonu
-  const loadMoreStores = (category: string) => {
-    if (loadingStates[category] || !hasMore[category]) return;
-
-    setLoadingStates(prev => ({ ...prev, [category]: true }));
-
-    // Simüle edilmiş API çağrısı (gerçekte burada API çağrısı yapılır)
-    setTimeout(() => {
-      const allStoresInCategory = storesByCategory[category] || [];
-      const currentlyLoaded = loadedStores[category].length;
-      const nextBatch = allStoresInCategory.slice(currentlyLoaded, currentlyLoaded + 6);
-
-      setLoadedStores(prev => ({
-        ...prev,
-        [category]: [...prev[category], ...nextBatch]
-      }));
-
-      setHasMore(prev => ({
-        ...prev,
-        [category]: currentlyLoaded + nextBatch.length < allStoresInCategory.length
-      }));
-
-      setLoadingStates(prev => ({ ...prev, [category]: false }));
-    }, 500);
-  };
-
-  // İlk yükleme
-  useEffect(() => {
-    Object.keys(storesByCategory).forEach(category => {
-      if (storesByCategory[category].length > 0) {
-        loadMoreStores(category);
-      }
-    });
-  }, []);
 
   // Sidebar top offset'ini dinamik olarak hesapla
   useEffect(() => {
@@ -297,7 +260,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
         if (entry.isIntersecting) {
           const category = entry.target.getAttribute('data-category');
           if (category) {
-            loadMoreStores(category);
+            // Load more logic removed - showing all stores now
           }
         }
       });
@@ -309,18 +272,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
       threshold: 0.1
     };
 
-    // Her kategori için observer oluştur
-    Object.keys(storesByCategory).forEach(category => {
-      const element = document.getElementById(`load-more-${category}`);
-      if (element && !observerRefs.current[category]) {
-        observerRefs.current[category] = new IntersectionObserver(observerCallback, observerOptions);
-        observerRefs.current[category].observe(element);
-      }
-    });
-
-    return () => {
-      Object.values(observerRefs.current).forEach(observer => observer?.disconnect());
-    };
+    // Intersection Observer logic removed - showing all stores now
   }, [storesByCategory]);
 
 
@@ -1106,13 +1058,13 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                         <span className="text-lg">{categoryIcon}</span>
                         {categoryName}
                         <span className={`ml-2 text-sm font-normal ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                          ({loadedStores[category].length})
+                          ({storesByCategory[category]?.length || 0})
                         </span>
                       </h2>
                     </div>
                     
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                      {loadedStores[category].map((store, index) => (
+                      {storesByCategory[category]?.map((store, index) => (
                         <div key={`store-${category}-${store.id}-${index}`} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
                           <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                             <img src={store.image} alt={store.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
@@ -1152,25 +1104,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                       ))}
                     </div>
 
-                    {/* Load More Trigger */}
-                    {hasMore[category] && (
-                      <div 
-                        id={`load-more-${category}`}
-                        data-category={category}
-                        className="flex justify-center py-8"
-                      >
-                        {loadingStates[category] ? (
-                          <div className={`flex items-center gap-2 ${darkMode ? 'text-neutral-400' : 'text-neutral-600'}`}>
-                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                            <span>Yükleniyor...</span>
-                          </div>
-                        ) : (
-                          <div className={`text-sm ${darkMode ? 'text-neutral-500' : 'text-neutral-400'}`}>
-                            Daha fazla mağaza görmek için aşağı kaydırın
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* All stores loaded - no more loading needed */}
                   </div>
                 );
               })}

@@ -38,6 +38,11 @@ export default function StoreSidebar({
   setSortBy,
   getColorFromClass
 }: StoreSidebarProps) {
+  // Eğer store null ise hiçbir şey render etme
+  if (!store) {
+    return null;
+  }
+
   return (
     <div className="relative lg:col-span-1 lg:sticky top-24 lg:self-start hidden lg:block">
       <div className={`rounded-2xl p-4 sm:p-6 pt-12 transition-colors duration-300 max-h-[calc(100vh-8rem)] overflow-y-auto mt-1 ${darkMode ? 'bg-gray-800 border border-neutral-700' : 'bg-neutral-50 border border-neutral-200'}`}>

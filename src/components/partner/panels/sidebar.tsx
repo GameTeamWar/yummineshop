@@ -4,12 +4,16 @@ import Link from 'next/link';
 import { Store, Settings, LogOut, Filter, Folder, BarChart3, Package, Building2, Users, Tag, Percent, UserCheck, ChevronDown, ChevronRight, Star, TrendingUp, Clock, CreditCard, User, Menu, X } from 'lucide-react';
 import { FaTshirt } from "react-icons/fa";
 import { TbCategory2,TbTableOptions  } from "react-icons/tb";
+import { MdOutlineAddHomeWork } from "react-icons/md";
+import { StoreSettings, Branch } from '@/types';
+import BranchManagementModal from './BranchManagementModal';
 
 interface PartnerSidebarProps {
   onClose?: () => void;
+  onBranchManagementModalOpen?: () => void;
 }
 
-const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose }) => {
+const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose, onBranchManagementModalOpen }) => {
   const params = useParams();
   const pathname = usePathname();
   const partnerId = params.id as string;
@@ -18,6 +22,10 @@ const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose }) => {
   const [isOrdersOpen, setIsOrdersOpen] = useState(false);
   const [isUserManagementOpen, setIsUserManagementOpen] = useState(false);
   const [isStoreOpen, setIsStoreOpen] = useState(true);
+  const [isBranchDropdownOpen, setIsBranchDropdownOpen] = useState(false);
+  const [selectedBranch, setSelectedBranch] = useState<string>('Ana Şube');
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings | null>(null);
 
   // Aktif link kontrolü
   const isActive = (href: string) => {
@@ -84,21 +92,42 @@ const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose }) => {
     }
   }, [pathname]);
 
+  // Mağaza ayarlarını çek
+  useEffect(() => {
+    const fetchStoreSettings = async () => {
+      try {
+        const response = await fetch(`/api/store-settings?partnerId=${partnerId}`);
+        const data = await response.json();
+        setStoreSettings(data);
+        setIsStoreOpen(data.isOpen);
+      } catch (error) {
+        console.error('Error fetching store settings:', error);
+      }
+    };
+
+    if (partnerId) {
+      fetchStoreSettings();
+    }
+  }, [partnerId]);
+
   return (
     <div className="flex flex-col h-full">
       {/* Restaurant Info Section */}
       <div className="p-4 border-b border-gray-700 bg-gray-800/50">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            
+          <button
+            onClick={() => setIsBranchDropdownOpen(!isBranchDropdownOpen)}
+            className="flex items-center space-x-3 flex-1 text-left hover:bg-gray-700/50 rounded-lg p-2 transition-colors group"
+          >
             <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <Building2 className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <h3 className="text-sm font-semibold text-white">Mağaza Adı</h3>
-              <p className="text-xs text-gray-400">ID: {partnerId}</p>
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-white">{storeSettings?.storeName || 'Mağaza Adı'}</h3>
+              <p className="text-xs text-gray-400">{selectedBranch}</p>
             </div>
-          </div>
+            <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isBranchDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
           <div className="flex items-center space-x-2">
             <Link
               href={`/partner/${partnerId}/settings`}
@@ -107,9 +136,84 @@ const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose }) => {
             >
               <Settings className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
             </Link>
-           
+            <button
+              onClick={() => onBranchManagementModalOpen?.()}
+              className="p-2 rounded-lg hover:bg-gray-700 transition-colors group"
+              title="Şube Yönetimi"
+            >
+              <MdOutlineAddHomeWork className="w-5 h-5 text-gray-400 group-hover:text-white transition-colors" />
+            </button>
           </div>
         </div>
+
+        {/* Branch Selection Dropdown */}
+        {isBranchDropdownOpen && (
+          <div className="mt-2 bg-gray-700 rounded-lg border border-gray-600 overflow-hidden">
+            {branches.length > 0 ? (
+              branches.map((branch) => (
+                <button
+                  key={branch.id}
+                  onClick={() => {
+                    setSelectedBranch(branch.name);
+                    setIsBranchDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-600 transition-colors ${
+                    selectedBranch === branch.name ? 'bg-blue-600/20 text-blue-300' : 'text-gray-300'
+                  }`}
+                >
+                  {branch.name}
+                </button>
+              ))
+            ) : (
+              <>
+                <button
+                  onClick={() => {
+                    setSelectedBranch('Ana Şube');
+                    setIsBranchDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-600 transition-colors ${
+                    selectedBranch === 'Ana Şube' ? 'bg-blue-600/20 text-blue-300' : 'text-gray-300'
+                  }`}
+                >
+                  Ana Şube
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedBranch('Şube 1 - Kadıköy');
+                    setIsBranchDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-600 transition-colors ${
+                    selectedBranch === 'Şube 1 - Kadıköy' ? 'bg-blue-600/20 text-blue-300' : 'text-gray-300'
+                  }`}
+                >
+                  Şube 1 - Kadıköy
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedBranch('Şube 2 - Beşiktaş');
+                    setIsBranchDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-600 transition-colors ${
+                    selectedBranch === 'Şube 2 - Beşiktaş' ? 'bg-blue-600/20 text-blue-300' : 'text-gray-300'
+                  }`}
+                >
+                  Şube 2 - Beşiktaş
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedBranch('Şube 3 - Üsküdar');
+                    setIsBranchDropdownOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-600 transition-colors ${
+                    selectedBranch === 'Şube 3 - Üsküdar' ? 'bg-blue-600/20 text-blue-300' : 'text-gray-300'
+                  }`}
+                >
+                  Şube 3 - Üsküdar
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       <nav className="mt-6 flex-1 px-3 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800 hover:scrollbar-thumb-gray-500 max-h-[calc(100vh-180px)] flex flex-col">
@@ -294,7 +398,29 @@ const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose }) => {
                 <span className="text-sm font-medium text-gray-200">Mağaza Durumu</span>
               </div>
               <button
-                onClick={() => setIsStoreOpen(!isStoreOpen)}
+                onClick={async () => {
+                  const newStatus = !isStoreOpen;
+                  setIsStoreOpen(newStatus);
+                  
+                  if (storeSettings) {
+                    try {
+                      await fetch(`/api/store-settings/${storeSettings.id}`, {
+                        method: 'PUT',
+                        headers: {
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          ...storeSettings,
+                          isOpen: newStatus,
+                        }),
+                      });
+                    } catch (error) {
+                      console.error('Error updating store status:', error);
+                      // Hata durumunda geri al
+                      setIsStoreOpen(!newStatus);
+                    }
+                  }
+                }}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 ${
                   isStoreOpen ? 'bg-green-500' : 'bg-gray-600'
                 }`}

@@ -31,6 +31,7 @@ interface StoreRegistrationProps {
     hasBranches: boolean;
     hasAuthorizedPersons: boolean;
     logo: File | null;
+    branchPassword?: string;
   };
   setStoreInfo: React.Dispatch<React.SetStateAction<any>>;
   logoPreview: string | null;
@@ -114,6 +115,7 @@ const StoreRegistration: React.FC<StoreRegistrationProps> = ({
             storeInfo={storeInfo}
             setStoreInfo={setStoreInfo}
             generateBranchReferenceCode={generateBranchReferenceCode}
+            generateRandomPassword={generateRandomPassword}
           />
         );
       case "Mağaza Bilgileri":

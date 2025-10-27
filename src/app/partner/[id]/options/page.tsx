@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Settings, Palette, Hash, Search, Filter } from 'lucide-react';
+import { useParams } from 'next/navigation';
+import { Plus, Edit, Trash2, Settings, Palette, Hash, Search, Filter, List, Grid3X3 } from 'lucide-react';
 
 interface Option {
   id: string; // 8 haneli sayı
@@ -20,13 +21,54 @@ interface Category {
   name: string;
 }
 
+interface StatCardProps {
+  title: string;
+  value: number | string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  subtitle?: string;
+  onClick?: () => void;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, color, subtitle, onClick }) => (
+  <div
+    className={`bg-gray-800 border border-gray-700 rounded-lg p-6 ${onClick ? 'cursor-pointer hover:border-gray-600 transition-colors' : ''}`}
+    onClick={onClick}
+  >
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-400">{title}</p>
+        <p className={`text-2xl font-bold ${color}`}>{value}</p>
+        {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+      </div>
+      <Icon className={`h-8 w-8 ${color.replace('text-', 'text-')}`} />
+    </div>
+  </div>
+);
+
 export default function OptionsPage() {
+  const params = useParams();
+  const partnerId = params.id as string;
   const [options, setOptions] = useState<Option[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingOption, setEditingOption] = useState<Option | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'card'>('list');
+
+  // View mode'u localStorage'dan yükle
+  useEffect(() => {
+    const savedViewMode = localStorage.getItem('options-view-mode');
+    if (savedViewMode === 'list' || savedViewMode === 'card') {
+      setViewMode(savedViewMode);
+    }
+  }, []);
+
+  // View mode değiştiğinde localStorage'a kaydet
+  useEffect(() => {
+    localStorage.setItem('options-view-mode', viewMode);
+  }, [viewMode]);
 
   // Form states
   const [optionName, setOptionName] = useState('');
@@ -34,279 +76,139 @@ export default function OptionsPage() {
   const [optionType, setOptionType] = useState<'color' | 'size' | 'material' | 'brand' | 'other'>('color');
   const [optionValue, setOptionValue] = useState('');
 
-  // Mock data - mağaza filtreleme seçenekleri için
+  // Opsiyonları Firebase'den çek
   useEffect(() => {
-    const mockCategories: Category[] = [
-      { id: '10000001', name: 'Kadın Giyim' },
-      { id: '10000002', name: 'Erkek Giyim' },
-      { id: '10000003', name: 'Çocuk Giyim' },
-      { id: '10000004', name: 'Ayakkabı' },
-      { id: '10000005', name: 'Aksesuar' }
-    ];
+    const fetchData = async () => {
+      try {
+        // Kategorileri çek
+        const categoriesRes = await fetch(`/api/categories?partnerId=${partnerId}`);
+        const categoriesData = await categoriesRes.json();
+        setCategories(categoriesData);
 
-    const mockOptions: Option[] = [
-      // Renk seçenekleri
-      {
-        id: '20000001',
-        name: 'Kırmızı',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'color',
-        value: '#FF0000',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 15
-      },
-      {
-        id: '20000002',
-        name: 'Mavi',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'color',
-        value: '#0000FF',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 23
-      },
-      {
-        id: '20000003',
-        name: 'Siyah',
-        categoryId: '10000002',
-        categoryName: 'Erkek Giyim',
-        type: 'color',
-        value: '#000000',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 31
-      },
-      {
-        id: '20000004',
-        name: 'Beyaz',
-        categoryId: '10000002',
-        categoryName: 'Erkek Giyim',
-        type: 'color',
-        value: '#FFFFFF',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 18
-      },
-      // Beden seçenekleri
-      {
-        id: '20000005',
-        name: 'S',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'size',
-        value: 'S',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 12
-      },
-      {
-        id: '20000006',
-        name: 'M',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'size',
-        value: 'M',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 28
-      },
-      {
-        id: '20000007',
-        name: 'L',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'size',
-        value: 'L',
-        isActive: true,
-        sortOrder: 3,
-        productCount: 19
-      },
-      {
-        id: '20000008',
-        name: 'XL',
-        categoryId: '10000002',
-        categoryName: 'Erkek Giyim',
-        type: 'size',
-        value: 'XL',
-        isActive: true,
-        sortOrder: 3,
-        productCount: 14
-      },
-      // Ayakkabı numaraları
-      {
-        id: '20000009',
-        name: '36',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'size',
-        value: '36',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 8
-      },
-      {
-        id: '20000010',
-        name: '37',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'size',
-        value: '37',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 12
-      },
-      {
-        id: '20000011',
-        name: '38',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'size',
-        value: '38',
-        isActive: true,
-        sortOrder: 3,
-        productCount: 15
-      },
-      // Malzeme seçenekleri
-      {
-        id: '20000012',
-        name: 'Pamuk',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'material',
-        value: 'Pamuk',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 22
-      },
-      {
-        id: '20000013',
-        name: 'Polyester',
-        categoryId: '10000001',
-        categoryName: 'Kadın Giyim',
-        type: 'material',
-        value: 'Polyester',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 16
-      },
-      {
-        id: '20000014',
-        name: 'Deri',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'material',
-        value: 'Deri',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 25
-      },
-      // Marka seçenekleri
-      {
-        id: '20000015',
-        name: 'Nike',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'brand',
-        value: 'Nike',
-        isActive: true,
-        sortOrder: 1,
-        productCount: 18
-      },
-      {
-        id: '20000016',
-        name: 'Adidas',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'brand',
-        value: 'Adidas',
-        isActive: true,
-        sortOrder: 2,
-        productCount: 22
-      },
-      {
-        id: '20000017',
-        name: 'Puma',
-        categoryId: '10000004',
-        categoryName: 'Ayakkabı',
-        type: 'brand',
-        value: 'Puma',
-        isActive: false,
-        sortOrder: 3,
-        productCount: 0
+        // Opsiyonları çek
+        const optionsRes = await fetch(`/api/options?partnerId=${partnerId}`);
+        const optionsData = await optionsRes.json();
+        setOptions(optionsData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
       }
-    ];
-
-    setCategories(mockCategories);
-    setOptions(mockOptions);
-  }, []);
-
-  const generateOptionId = (): string => {
-    // 8 haneli benzersiz ID oluştur (2 ile başlayan)
-    let id: string;
-    do {
-      id = '2' + Math.floor(1000000 + Math.random() * 9000000).toString();
-    } while (options.some(opt => opt.id === id));
-    return id;
-  };
-
-  const handleAddOption = () => {
-    if (!optionName.trim() || !categoryId) return;
-
-    const selectedCategory = categories.find(cat => cat.id === categoryId);
-    if (!selectedCategory) return;
-
-    const newOption: Option = {
-      id: generateOptionId(),
-      name: optionName.trim(),
-      categoryId,
-      categoryName: selectedCategory.name,
-      type: optionType,
-      value: optionValue.trim(),
-      isActive: true,
-      sortOrder: options.filter(opt => opt.categoryId === categoryId && opt.type === optionType).length + 1,
-      productCount: 0
     };
 
-    setOptions([...options, newOption]);
-    closeModal();
+    if (partnerId) {
+      fetchData();
+    }
+  }, [partnerId]);
+
+  const handleAddOption = async () => {
+    if (!optionName.trim() || !categoryId) return;
+
+    try {
+      const response = await fetch('/api/options', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          name: optionName.trim(),
+          categoryId,
+          type: optionType,
+          value: optionValue.trim()
+        }),
+      });
+
+      if (response.ok) {
+        const newOption = await response.json();
+        setOptions([...options, newOption]);
+        closeModal();
+      } else {
+        console.error('Failed to add option');
+      }
+    } catch (error) {
+      console.error('Error adding option:', error);
+    }
   };
 
-  const handleEditOption = () => {
+  const handleEditOption = async () => {
     if (!editingOption || !optionName.trim() || !categoryId) return;
 
-    const selectedCategory = categories.find(cat => cat.id === categoryId);
-    if (!selectedCategory) return;
+    try {
+      const response = await fetch('/api/options', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          id: editingOption.id,
+          name: optionName.trim(),
+          categoryId,
+          type: optionType,
+          value: optionValue.trim()
+        }),
+      });
 
-    const updatedOptions = options.map(opt =>
-      opt.id === editingOption.id
-        ? {
-            ...opt,
-            name: optionName.trim(),
-            categoryId,
-            categoryName: selectedCategory.name,
-            type: optionType,
-            value: optionValue.trim()
-          }
-        : opt
-    );
-
-    setOptions(updatedOptions);
-    closeModal();
+      if (response.ok) {
+        const updatedOption = await response.json();
+        const updatedOptions = options.map(opt =>
+          opt.id === editingOption.id ? updatedOption : opt
+        );
+        setOptions(updatedOptions);
+        closeModal();
+      } else {
+        console.error('Failed to update option');
+      }
+    } catch (error) {
+      console.error('Error updating option:', error);
+    }
   };
 
-  const handleDeleteOption = (optionId: string) => {
-    const updatedOptions = options.filter(opt => opt.id !== optionId);
-    setOptions(updatedOptions);
+  const handleDeleteOption = async (optionId: string) => {
+    try {
+      const response = await fetch(`/api/options?id=${optionId}&partnerId=${partnerId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        const updatedOptions = options.filter(opt => opt.id !== optionId);
+        setOptions(updatedOptions);
+      } else {
+        console.error('Failed to delete option');
+      }
+    } catch (error) {
+      console.error('Error deleting option:', error);
+    }
   };
 
-  const handleToggleActive = (optionId: string) => {
-    const updatedOptions = options.map(opt =>
-      opt.id === optionId ? { ...opt, isActive: !opt.isActive } : opt
-    );
-    setOptions(updatedOptions);
+  const handleToggleActive = async (optionId: string) => {
+    const option = options.find(opt => opt.id === optionId);
+    if (!option) return;
+
+    try {
+      const response = await fetch('/api/options', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          partnerId,
+          id: optionId,
+          isActive: !option.isActive
+        }),
+      });
+
+      if (response.ok) {
+        const updatedOption = await response.json();
+        const updatedOptions = options.map(opt =>
+          opt.id === optionId ? updatedOption : opt
+        );
+        setOptions(updatedOptions);
+      } else {
+        console.error('Failed to toggle option status');
+      }
+    } catch (error) {
+      console.error('Error toggling option status:', error);
+    }
   };
 
   const openEditModal = (option: Option) => {
@@ -403,7 +305,7 @@ export default function OptionsPage() {
 
   const totalOptions = options.length;
   const activeOptions = options.filter(opt => opt.isActive).length;
-  const totalProducts = options.reduce((sum, opt) => sum + opt.productCount, 0);
+  const totalProducts = options.reduce((sum, opt) => sum + (opt.productCount || 0), 0);
   const categoriesWithOptions = new Set(options.map(opt => opt.categoryId)).size;
 
   return (
@@ -419,13 +321,40 @@ export default function OptionsPage() {
               Ürünlerinizde kullanılacak renk, beden, malzeme ve marka filtrelerini yönetin
             </p>
           </div>
-          <button
-            onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-          >
-            <Plus className="h-5 w-5 mr-2" />
-            Seçenek Ekle
-          </button>
+          <div className="flex items-center space-x-3">
+            {/* View Mode Toggle */}
+            <div className="flex items-center bg-gray-700 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-600'
+                }`}
+                title="Liste Görünümü"
+              >
+                <List className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('card')}
+                className={`p-2 rounded-md transition-colors ${
+                  viewMode === 'card'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-600'
+                }`}
+                title="Kart Görünümü"
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+            </div>
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Seçenek Ekle
+            </button>
+          </div>
         </div>
       </div>
 
@@ -457,162 +386,265 @@ export default function OptionsPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Toplam Seçenek</p>
-              <p className="text-2xl font-bold text-blue-600">{totalOptions}</p>
-            </div>
-            <Settings className="h-8 w-8 text-blue-500" />
-          </div>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Aktif Seçenekler</p>
-              <p className="text-2xl font-bold text-green-600">{activeOptions}</p>
-            </div>
-            <Settings className="h-8 w-8 text-green-500" />
-          </div>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Kategori Sayısı</p>
-              <p className="text-2xl font-bold text-purple-600">{categoriesWithOptions}</p>
-            </div>
-            <Filter className="h-8 w-8 text-purple-500" />
-          </div>
-        </div>
-        <div className="bg-gray-800 border border-gray-700 rounded-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">Toplam Ürün</p>
-              <p className="text-2xl font-bold text-orange-600">{totalProducts}</p>
-            </div>
-            <Settings className="h-8 w-8 text-orange-500" />
-          </div>
-        </div>
+        <StatCard
+          title="Toplam Seçenek"
+          value={totalOptions}
+          icon={Settings}
+          color="text-blue-600"
+        />
+        <StatCard
+          title="Aktif Seçenekler"
+          value={activeOptions}
+          icon={Settings}
+          color="text-green-600"
+        />
+        <StatCard
+          title="Kategori Sayısı"
+          value={categoriesWithOptions}
+          icon={Filter}
+          color="text-purple-600"
+          onClick={() => window.location.href = `/partner/${partnerId}/categories`}
+        />
+        <StatCard
+          title="Toplam Ürün"
+          value={totalProducts}
+          icon={Settings}
+          color="text-orange-600"
+          onClick={() => window.location.href = `/partner/${partnerId}/urun`}
+        />
       </div>
 
       {/* Options by Category */}
-      <div className="space-y-6">
-        {Object.entries(getOptionsByCategory()).map(([categoryId, categoryOptions]) => {
-          const category = categories.find(cat => cat.id === categoryId);
-          if (!category) return null;
+      {viewMode === 'list' ? (
+        <div className="space-y-6">
+          {Object.entries(getOptionsByCategory()).map(([categoryId, categoryOptions]) => {
+            const category = categories.find(cat => cat.id === categoryId);
+            if (!category) return null;
 
-          return (
-            <div key={categoryId} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
-              {/* Category Header */}
-              <div className="p-6 border-b border-gray-700 bg-gray-750">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{category.name}</h3>
-                    <p className="text-sm text-gray-400">
-                      {categoryOptions.length} filtreleme seçeneği
-                    </p>
-                  </div>
-                  <div className="text-sm text-gray-400">
-                    {categoryOptions.filter(opt => opt.isActive).length} aktif
-                  </div>
-                </div>
-              </div>
-
-              {/* Options Grid */}
-              <div className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {categoryOptions.map((option) => (
-                    <div
-                      key={option.id}
-                      className={`p-4 border rounded-lg transition-all ${
-                        option.isActive
-                          ? 'border-gray-600 bg-gray-750 hover:border-gray-500'
-                          : 'border-red-700 bg-gray-800 opacity-75'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center space-x-2">
-                          <div className={`p-1.5 rounded ${
-                            option.type === 'color' ? 'bg-purple-600' :
-                            option.type === 'size' ? 'bg-blue-600' :
-                            option.type === 'material' ? 'bg-green-600' :
-                            option.type === 'brand' ? 'bg-orange-600' :
-                            'bg-gray-600'
-                          }`}>
-                            {getTypeIcon(option.type)}
-                          </div>
-                          <div>
-                            <h4 className={`font-medium ${option.isActive ? 'text-white' : 'text-gray-400'}`}>
-                              {option.name}
-                            </h4>
-                            <p className="text-xs text-gray-500">{getTypeLabel(option.type)}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleToggleActive(option.id)}
-                          className={`w-3 h-3 rounded-full ${
-                            option.isActive ? 'bg-green-500' : 'bg-red-500'
-                          }`}
-                          title={option.isActive ? 'Aktif' : 'Pasif'}
-                        />
-                      </div>
-
-                      <div className="mb-3">
-                        {option.type === 'color' ? (
-                          renderColorValue(option.value)
-                        ) : (
-                          <span className="text-sm text-gray-400">{option.value}</span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-gray-500">
-                        <span>{option.productCount} ürün</span>
-                        <span>ID: {option.id}</span>
-                      </div>
-
-                      <div className="flex items-center justify-end space-x-2 mt-3">
-                        <button
-                          onClick={() => openEditModal(option)}
-                          className="p-1 text-blue-600 hover:text-blue-400 transition-colors"
-                          title="Düzenle"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteOption(option.id)}
-                          className="p-1 text-red-600 hover:text-red-400 transition-colors"
-                          title="Sil"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+            return (
+              <div key={categoryId} className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+                {/* Category Header */}
+                <div className="p-6 border-b border-gray-700 bg-gray-750">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-white">{category.name}</h3>
+                      <p className="text-sm text-gray-400">
+                        {categoryOptions.length} filtreleme seçeneği
+                      </p>
                     </div>
-                  ))}
+                    <div className="text-sm text-gray-400">
+                      {categoryOptions.filter(opt => opt.isActive).length} aktif
+                    </div>
+                  </div>
                 </div>
 
-                {categoryOptions.length === 0 && (
-                  <div className="text-center py-8 text-gray-400">
-                    <Filter className="mx-auto h-8 w-8 mb-2" />
-                    <p>Bu kategoride henüz seçenek yok</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
+                {/* Options Grid */}
+                <div className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categoryOptions.map((option) => (
+                      <div
+                        key={option.id}
+                        className={`p-4 border rounded-lg transition-all ${
+                          option.isActive
+                            ? 'border-gray-600 bg-gray-750 hover:border-gray-500'
+                            : 'border-red-700 bg-gray-800 opacity-75'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <div className={`p-1.5 rounded ${
+                              option.type === 'color' ? 'bg-purple-600' :
+                              option.type === 'size' ? 'bg-blue-600' :
+                              option.type === 'material' ? 'bg-green-600' :
+                              option.type === 'brand' ? 'bg-orange-600' :
+                              'bg-gray-600'
+                            }`}>
+                              {getTypeIcon(option.type)}
+                            </div>
+                            <div>
+                              <h4 className={`font-medium ${option.isActive ? 'text-white' : 'text-gray-400'}`}>
+                                {option.name}
+                              </h4>
+                              <p className="text-xs text-gray-500">{getTypeLabel(option.type)}</p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleToggleActive(option.id)}
+                            className={`w-3 h-3 rounded-full ${
+                              option.isActive ? 'bg-green-500' : 'bg-red-500'
+                            }`}
+                            title={option.isActive ? 'Aktif' : 'Pasif'}
+                          />
+                        </div>
 
-        {Object.keys(getOptionsByCategory()).length === 0 && (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
-            <Filter className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-300">
-              {searchTerm || selectedType !== 'all' ? 'Aramanızla eşleşen seçenek bulunamadı' : 'Henüz seçenek yok'}
-            </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {searchTerm || selectedType !== 'all' ? 'Farklı bir arama terimi deneyin' : 'İlk filtrenizi eklemek için yukarıdaki butona tıklayın.'}
-            </p>
-          </div>
-        )}
-      </div>
+                        <div className="mb-3">
+                          {option.type === 'color' ? (
+                            renderColorValue(option.value)
+                          ) : (
+                            <span className="text-sm text-gray-400">{option.value}</span>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{option.productCount} ürün</span>
+                          <span>ID: {option.id}</span>
+                        </div>
+
+                        <div className="flex items-center justify-end space-x-2 mt-3">
+                          <button
+                            onClick={() => openEditModal(option)}
+                            className="p-1 text-blue-600 hover:text-blue-400 transition-colors"
+                            title="Düzenle"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteOption(option.id)}
+                            className="p-1 text-red-600 hover:text-red-400 transition-colors"
+                            title="Sil"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {categoryOptions.length === 0 && (
+                    <div className="text-center py-8 text-gray-400">
+                      <Filter className="mx-auto h-8 w-8 mb-2" />
+                      <p>Bu kategoride henüz seçenek yok</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {Object.keys(getOptionsByCategory()).length === 0 && (
+            <div className="bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
+              <Filter className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-300">
+                {searchTerm || selectedType !== 'all' ? 'Aramanızla eşleşen seçenek bulunamadı' : 'Henüz seçenek yok'}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm || selectedType !== 'all' ? 'Farklı bir arama terimi deneyin' : 'İlk filtrenizi eklemek için yukarıdaki butona tıklayın.'}
+              </p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {getFilteredOptions().map((option) => {
+            const category = categories.find(cat => cat.id === option.categoryId);
+
+            return (
+              <div
+                key={option.id}
+                className={`bg-gray-800 border rounded-lg overflow-hidden hover:border-gray-600 transition-colors cursor-pointer ${
+                  option.isActive ? 'border-gray-700' : 'border-red-700 opacity-75'
+                }`}
+                onClick={() => handleToggleActive(option.id)}
+              >
+                {/* Card Header */}
+                <div className="p-4 border-b border-gray-700">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className={`p-2 rounded-lg ${
+                      option.type === 'color' ? 'bg-purple-600' :
+                      option.type === 'size' ? 'bg-blue-600' :
+                      option.type === 'material' ? 'bg-green-600' :
+                      option.type === 'brand' ? 'bg-orange-600' :
+                      'bg-gray-600'
+                    }`}>
+                      {getTypeIcon(option.type)}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleActive(option.id);
+                        }}
+                        className={`w-3 h-3 rounded-full ${
+                          option.isActive ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                        title={option.isActive ? 'Aktif' : 'Pasif'}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(option);
+                        }}
+                        className="p-1.5 text-blue-600 hover:text-blue-400 transition-colors rounded"
+                        title="Düzenle"
+                      >
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteOption(option.id);
+                        }}
+                        className="p-1.5 text-red-600 hover:text-red-400 transition-colors rounded"
+                        title="Sil"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className={`text-lg font-semibold mb-1 ${option.isActive ? 'text-white' : 'text-gray-400'}`}>
+                      {option.name}
+                    </h3>
+                    <p className="text-sm text-gray-400 mb-2">{getTypeLabel(option.type)}</p>
+                    <div className="text-xs text-gray-500">Kategori: {category?.name}</div>
+                    <div className="text-xs text-gray-500 font-mono">ID: {option.id}</div>
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-4">
+                  <div className="space-y-3">
+                    {/* Value Display */}
+                    <div className="flex justify-center">
+                      {option.type === 'color' ? (
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-8 h-8 rounded border border-gray-600"
+                            style={{ backgroundColor: option.value }}
+                          />
+                          <span className="text-sm text-gray-400 font-mono">{option.value}</span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-gray-400 bg-gray-700 px-3 py-1 rounded">
+                          {option.value}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="bg-gray-700 rounded p-3 text-center">
+                      <div className="text-lg font-bold text-blue-400">{option.productCount}</div>
+                      <div className="text-xs text-gray-400">Ürün</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {getFilteredOptions().length === 0 && (
+            <div className="col-span-full bg-gray-800 border border-gray-700 rounded-lg p-12 text-center">
+              <Filter className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-300">
+                {searchTerm || selectedType !== 'all' ? 'Aramanızla eşleşen seçenek bulunamadı' : 'Henüz seçenek yok'}
+              </h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {searchTerm || selectedType !== 'all' ? 'Farklı bir arama terimi deneyin' : 'İlk filtrenizi eklemek için yukarıdaki butona tıklayın.'}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Add/Edit Option Modal */}
       {isAddModalOpen && (

@@ -11,6 +11,7 @@ interface StoreInfoType {
   hasBranches: boolean;
   hasAuthorizedPersons: boolean;
   logo: File | null;
+  branchPassword?: string;
 }
 
 interface StoreInfoProps {

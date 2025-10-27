@@ -14,7 +14,7 @@ interface StoreInfoBarProps {
     delivery: number;
     items: number;
     logo?: string;
-  };
+  } | null;
   darkMode: boolean;
   showBackButton?: boolean;
   showSortSelector?: boolean;
@@ -44,6 +44,11 @@ export default function StoreInfoBar({
       setFavoriteStores(JSON.parse(savedFavoriteStores));
     }
   }, []);
+
+  // Eğer store null ise hiçbir şey render etme
+  if (!store) {
+    return null;
+  }
 
   // Mağaza favorisi toggle fonksiyonu
   const toggleStoreFavorite = () => {
