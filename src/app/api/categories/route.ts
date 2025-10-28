@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { adminDb } from '@/lib/firebaseAdmin';
 import { Category } from '@/types';
 
+// Kategori ismini title case'e çeviren fonksiyon
+const toTitleCase = (str: string) => {
+  return str.toLowerCase().replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -62,6 +67,7 @@ export async function POST(request: NextRequest) {
 
     const categoryData = {
       ...body,
+      name: toTitleCase(body.name), // Kategori adını title case'e çevir
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -102,6 +108,7 @@ export async function PUT(request: NextRequest) {
 
     await categoryRef.update({
       ...updateData,
+      ...(updateData.name && { name: toTitleCase(updateData.name) }), // Kategori adı varsa title case'e çevir
       updatedAt: new Date(),
     });
 

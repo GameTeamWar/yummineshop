@@ -59,6 +59,8 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
   const [currentImages, setCurrentImages] = useState<{[key: number]: number}>({});
   const [isMobile, setIsMobile] = useState(false);
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [allCategories, setAllCategories] = useState<any[]>([]);
+  const [categoryRules, setCategoryRules] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,6 +82,19 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
           if (productsResponse.ok) {
             const productsData = await productsResponse.json();
             setProducts(productsData);
+          }
+
+          // Fetch categories and rules
+          const categoriesResponse = await fetch('/api/categories');
+          if (categoriesResponse.ok) {
+            const categoriesData = await categoriesResponse.json();
+            setAllCategories(categoriesData);
+          }
+
+          const rulesResponse = await fetch('/api/category-rules');
+          if (rulesResponse.ok) {
+            const rulesData = await rulesResponse.json();
+            setCategoryRules(rulesData);
           }
         } catch (error) {
           console.error('Error fetching data:', error);
@@ -137,11 +152,51 @@ export default function StoreDetailPage({ storeData, productsData, cart = {}, ad
     // Dinamik kategori filtresi (LeafCategory)
     const selectedCategories = selectedFilters['LeafCategory'] || [];
     if (selectedCategories.length > 0) {
-      const categoryMatch = selectedCategories.some(selectedCat =>
+      // Önce doğrudan kategori eşleşmesi kontrol et
+      let categoryMatch = selectedCategories.some(selectedCat =>
         product.category === selectedCat ||
         product.category?.toLowerCase().includes(selectedCat.toLowerCase()) ||
         selectedCat.toLowerCase().includes(product.category?.toLowerCase())
       );
+
+      // Eğer doğrudan eşleşme yoksa, kategori kurallarını kontrol et
+      if (!categoryMatch) {
+        for (const selectedCat of selectedCategories) {
+          // Bu kategorinin bulunduğu kuralları bul
+          const relatedRules = categoryRules.filter(rule => rule.categoryIds.includes(selectedCat));
+          
+          for (const rule of relatedRules) {
+            if (rule.ruleType === 'cross-display') {
+              // Çapraz gösterim kuralı: kuraldaki diğer kategorilerde de ürün gösterilsin
+              const otherCategoriesInRule = rule.categoryIds.filter(id => id !== selectedCat);
+              categoryMatch = otherCategoriesInRule.some(ruleCatId => {
+                const ruleCategory = allCategories.find(cat => cat.id === ruleCatId);
+                return ruleCategory && (
+                  product.category === ruleCategory.name ||
+                  product.category?.toLowerCase().includes(ruleCategory.name.toLowerCase()) ||
+                  ruleCategory.name.toLowerCase().includes(product.category?.toLowerCase())
+                );
+              });
+            } else if (rule.ruleType === 'parent-child') {
+              // Üst-alt ilişkisi: parent kategoriler child kategorilerin ürünlerini göstersin
+              const otherCategoriesInRule = rule.categoryIds.filter(id => id !== selectedCat);
+              categoryMatch = otherCategoriesInRule.some(ruleCatId => {
+                const ruleCategory = allCategories.find(cat => cat.id === ruleCatId);
+                return ruleCategory && (
+                  product.category === ruleCategory.name ||
+                  product.category?.toLowerCase().includes(ruleCategory.name.toLowerCase()) ||
+                  ruleCategory.name.toLowerCase().includes(product.category?.toLowerCase())
+                );
+              });
+            }
+            
+            if (categoryMatch) break;
+          }
+          
+          if (categoryMatch) break;
+        }
+      }
+
       if (!categoryMatch) {
         return false;
       }

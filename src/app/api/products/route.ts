@@ -6,13 +6,34 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const partnerId = searchParams.get('partnerId');
+    const discounted = searchParams.get('discounted');
+    const popular = searchParams.get('popular');
+    const category = searchParams.get('category');
+    const limit = parseInt(searchParams.get('limit') || '20');
 
-    if (!partnerId) {
-      return NextResponse.json({ error: 'Partner ID required' }, { status: 400 });
+    let query = adminDb.collection('products').where('isActive', '==', true);
+
+    // Partner ID filtresi (mağaza ürünleri için)
+    if (partnerId) {
+      query = query.where('partnerId', '==', partnerId);
     }
 
-    const productsRef = adminDb.collection('products');
-    const snapshot = await productsRef.where('partnerId', '==', partnerId).get();
+    // İndirimli ürünler filtresi
+    if (discounted === 'true') {
+      query = query.where('originalPrice', '>', 0);
+    }
+
+    // Popüler ürünler filtresi (şimdilik rating'e göre - gerçek uygulamada view count'a göre olabilir)
+    if (popular === 'true') {
+      query = query.where('rating', '>=', 4.0);
+    }
+
+    // Kategori filtresi
+    if (category) {
+      query = query.where('categoryName', '==', category);
+    }
+
+    const snapshot = await query.limit(limit).get();
 
     const products: Product[] = [];
     snapshot.forEach((doc) => {

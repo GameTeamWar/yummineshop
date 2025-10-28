@@ -61,11 +61,6 @@ export default function LoginPage() {
         pauseOnHover: true,
         draggable: true,
       });
-      
-      // Check if user was viewing a product page
-      const redirectPath = localStorage.getItem('redirectAfterAuth') || '/';
-      localStorage.removeItem('redirectAfterAuth');
-      router.push(redirectPath);
     } catch (err: any) {
       setError(err.message);
     } finally {

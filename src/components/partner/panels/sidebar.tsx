@@ -356,19 +356,32 @@ const PartnerSidebar: React.FC<PartnerSidebarProps> = ({ onClose, onBranchManage
             </div>
           )}
 
-          {/* Kullanıcı Yönetimi */}
-          <button
-            onClick={() => setIsUserManagementOpen(!isUserManagementOpen)}
-            className={getMenuButtonClasses(isUserManagementOpen, ['sub-users', 'roles'], "hover:bg-gray-700")}
+          {/* Mağaza Ayarları */}
+          <Link
+            href={`/partner/settings`}
+            className={getLinkClasses(`/partner/settings`, "hover:bg-gray-700")}
+          >
+            <Settings className="mr-3 h-5 w-5" />
+            <span>Mağaza Ayarları</span>
+          </Link>
+
+          {/* Profil Yönetimi */}
+          <Link
+            href={`/partner/${partnerId}/profile`}
+            className={getLinkClasses(`/partner/${partnerId}/profile`, "hover:bg-gray-700")}
           >
             <User className="mr-3 h-5 w-5" />
-            <span>Kullanıcı Yönetimi</span>
-            {isUserManagementOpen ? (
-              <ChevronDown className="ml-auto h-4 w-4" />
-            ) : (
-              <ChevronRight className="ml-auto h-4 w-4" />
-            )}
-          </button>
+            <span>Profil Yönetimi</span>
+          </Link>
+
+          {/* Mağaza Ürünleri */}
+          <Link
+            href={`/partner/products`}
+            className={getLinkClasses(`/partner/products`, "hover:bg-gray-700")}
+          >
+            <Store className="mr-3 h-5 w-5" />
+            <span>Mağaza Ürünleri</span>
+          </Link>
           {isUserManagementOpen && (
             <div className="ml-6 mt-2 space-y-1">
               <Link

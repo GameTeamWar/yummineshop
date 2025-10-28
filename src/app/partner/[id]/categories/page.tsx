@@ -3,18 +3,9 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { Plus, Edit, Trash2, FolderOpen, Package, Search, ChevronDown, ChevronRight, Hash, List, Grid3X3 } from 'lucide-react';
-
-interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  parentId?: string;
-  filterType: 'checkbox' | 'radio' | 'dropdown';
-  hasSearch: boolean;
-  isActive: boolean;
-  productCount?: number;
-  hasSubcategories?: boolean;
-}
+// Heroicons import - tüm outline iconları için
+import * as HeroIcons from '@heroicons/react/24/outline';
+import { Category } from '@/types';
 
 interface StatCardProps {
   title: string;
@@ -70,6 +61,65 @@ export default function CategoriesPage() {
   const [parentCategoryId, setParentCategoryId] = useState('');
   const [filterType, setFilterType] = useState<'checkbox' | 'radio' | 'dropdown'>('checkbox');
   const [hasSearch, setHasSearch] = useState(false);
+
+  // Icon render fonksiyonu - SVG icon'lar ve URL'ler için
+  const renderIcon = (iconName: string, color?: string) => {
+    const iconColor = color || '#666';
+
+    // Eğer icon bir URL ise (SVG URL'i)
+    if (iconName && (iconName.startsWith('http') || iconName.startsWith('data:image/svg'))) {
+      return (
+        <div
+          className="w-5 h-5 flex items-center justify-center"
+          style={{
+            maskImage: `url(${iconName})`,
+            maskSize: 'contain',
+            maskRepeat: 'no-repeat',
+            maskPosition: 'center',
+            backgroundColor: iconColor,
+            WebkitMaskImage: `url(${iconName})`,
+            WebkitMaskSize: 'contain',
+            WebkitMaskRepeat: 'no-repeat',
+            WebkitMaskPosition: 'center'
+          }}
+        />
+      );
+    }
+
+    // Mevcut switch case - hardcoded SVG icon'lar için
+    const iconStyle = { color: iconColor };
+
+    // Heroicons dynamic rendering
+    if (iconName) {
+      // Kebab-case'i PascalCase'e çevir (puzzle-piece -> PuzzlePiece)
+      const pascalCaseIcon = iconName
+        .split('-')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join('');
+      const IconComponent = (HeroIcons as any)[pascalCaseIcon + 'Icon'];
+
+      if (IconComponent) {
+        return (
+          <div className="w-5 h-5 flex items-center justify-center" style={iconStyle}>
+            <IconComponent className="w-5 h-5" />
+          </div>
+        );
+      }
+    }
+
+    // Default plus icon
+    const PlusIcon = (HeroIcons as any)['PlusIcon'];
+    return (
+      <div className="w-5 h-5 flex items-center justify-center" style={iconStyle}>
+        {PlusIcon ? <PlusIcon className="w-5 h-5" /> : (
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10" opacity="0.2"/>
+            <path d="M12 6v6m0 0v6m0-6h6m-6 0H6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+          </svg>
+        )}
+      </div>
+    );
+  };
 
   // Kategorileri Firebase'den çek
   useEffect(() => {
@@ -394,7 +444,7 @@ export default function CategoriesPage() {
                         </button>
                       )}
                       <div className={`p-2 rounded-lg ${category.isActive ? 'bg-blue-600' : 'bg-red-600'}`}>
-                        <FolderOpen className="h-5 w-5 text-white" />
+                        {renderIcon(category.icon, category.color)}
                       </div>
                       <div>
                         <div className="flex items-center space-x-2">
@@ -456,7 +506,7 @@ export default function CategoriesPage() {
                         <div key={subcategory.id} className="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
                           <div className="flex items-center space-x-3">
                             <div className={`p-1.5 rounded ${subcategory.isActive ? 'bg-green-600' : 'bg-red-600'}`}>
-                              <FolderOpen className="h-3 w-3 text-white" />
+                              {renderIcon(subcategory.icon, subcategory.color)}
                             </div>
                             <div>
                               <div className="flex items-center space-x-2">
@@ -535,7 +585,7 @@ export default function CategoriesPage() {
                 <div className="p-4 border-b border-gray-700">
                   <div className="flex items-center justify-between mb-3">
                     <div className={`p-2 rounded-lg ${category.isActive ? 'bg-blue-600' : 'bg-red-600'}`}>
-                      <FolderOpen className="h-5 w-5 text-white" />
+                      {renderIcon(category.icon, category.color)}
                     </div>
                     <div className="flex items-center space-x-2">
                       <button
@@ -664,7 +714,7 @@ export default function CategoriesPage() {
                 <div className="bg-gray-800 border border-gray-600 rounded-lg p-4">
                   <div className="flex items-center space-x-4 mb-3">
                     <div className={`p-2 rounded-lg ${true ? 'bg-blue-600' : 'bg-red-600'}`}>
-                      <FolderOpen className="h-5 w-5 text-white" />
+                      {renderIcon('plus', '#ffffff')}
                     </div>
                     <div>
                       <h5 className="text-sm font-medium text-white">

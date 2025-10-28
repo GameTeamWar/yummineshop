@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
-import { GoogleMap, useLoadScript } from '@react-google-maps/api';
+import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
 
@@ -36,64 +36,82 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
   });
 
   const mapRef = useRef<google.maps.Map | null>(null);
-  const markerRef = useRef<google.maps.marker.AdvancedMarkerElement | null>(null);
 
-  // Create custom marker content
-  const createMarkerContent = () => {
-    const content = document.createElement("div");
-    content.innerHTML = `
-      <div style="
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background-color: #3B82F6;
-        border: 3px solid white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-      ">
-        <div style="
-          width: 16px;
-          height: 16px;
-          border-radius: 50%;
-          background-color: white;
-        "></div>
-      </div>
-    `;
-    return content;
+  // Create custom marker icon
+  const createMarkerIcon = () => {
+    return {
+      url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+        <svg width="40" height="48" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="20" cy="20" r="18" fill="#EF4444" stroke="white" stroke-width="3"/>
+          <circle cx="20" cy="20" r="8" fill="white"/>
+          <path d="M20 44C20 44 8 32 8 20C8 14.477 12.477 10 18 10H22C27.523 10 32 14.477 32 20C32 32 20 44 20 44Z" fill="#EF4444"/>
+        </svg>
+      `),
+      scaledSize: new google.maps.Size(40, 48),
+      anchor: new google.maps.Point(20, 48),
+    };
   };
 
   // Update marker when address coordinates change
   useEffect(() => {
-    if (mapRef.current && isLoaded && window.google && window.google.maps && window.google.maps.marker) {
-      // Remove existing marker
-      if (markerRef.current) {
-        markerRef.current.map = null;
-        markerRef.current = null;
-      }
-
-      // Create new marker if coordinates exist
+    if (mapRef.current && isLoaded && window.google && window.google.maps) {
+      // Center map on marker when coordinates exist
       if (address.latitude && address.longitude) {
-        const marker = new window.google.maps.marker.AdvancedMarkerElement({
-          map: mapRef.current,
-          position: { lat: address.latitude, lng: address.longitude },
-          content: createMarkerContent(),
-        });
-        markerRef.current = marker;
+        mapRef.current.panTo({ lat: address.latitude, lng: address.longitude });
       }
     }
   }, [address.latitude, address.longitude, isLoaded]);
 
-  // Cleanup marker on unmount
-  useEffect(() => {
-    return () => {
-      if (markerRef.current) {
-        markerRef.current.map = null;
-        markerRef.current = null;
+  // Reverse geocoding function to get address from coordinates
+  const reverseGeocode = async (lat: number, lng: number) => {
+    if (!window.google || !window.google.maps) return;
+
+    const geocoder = new window.google.maps.Geocoder();
+    const latlng = { lat, lng };
+
+    try {
+      const response = await geocoder.geocode({ location: latlng });
+      if (response.results && response.results[0]) {
+        const addressComponents = response.results[0].address_components;
+        const formattedAddress = response.results[0].formatted_address;
+
+        // Parse address components
+        let province = '';
+        let district = '';
+        let neighborhood = '';
+        let street = '';
+        let detailedAddress = formattedAddress;
+
+        addressComponents.forEach((component: google.maps.GeocoderAddressComponent) => {
+          const types = component.types;
+
+          if (types.includes('administrative_area_level_1')) {
+            province = component.long_name;
+          } else if (types.includes('administrative_area_level_2')) {
+            district = component.long_name;
+          } else if (types.includes('administrative_area_level_4') || types.includes('sublocality')) {
+            neighborhood = component.long_name;
+          } else if (types.includes('route')) {
+            street = component.long_name;
+          }
+        });
+
+        // Update address state with geocoded data
+        setAddress(prev => ({
+          ...prev,
+          province: province || prev.province,
+          district: district || prev.district,
+          neighborhood: neighborhood || prev.neighborhood,
+          street: street || prev.street,
+          detailedAddress: detailedAddress || prev.detailedAddress,
+          latitude: lat,
+          longitude: lng,
+        }));
       }
-    };
-  }, []);
+    } catch (error) {
+      console.error('Reverse geocoding error:', error);
+    }
+  };
 
   return (
     <div className="space-y-6" suppressHydrationWarning>
@@ -119,11 +137,8 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
                   const lat = e.latLng.lat?.();
                   const lng = e.latLng.lng?.();
                   if (typeof lat === 'number' && typeof lng === 'number') {
-                    setAddress(f => ({
-                      ...f,
-                      latitude: lat,
-                      longitude: lng,
-                    }));
+                    // Reverse geocode to get address details
+                    reverseGeocode(lat, lng);
                   }
                 }
               }}
@@ -132,6 +147,13 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
                 clickableIcons: false,
               }}
             >
+              {address.latitude && address.longitude && (
+                <Marker
+                  position={{ lat: address.latitude, lng: address.longitude }}
+                  icon={createMarkerIcon()}
+                  animation={google.maps.Animation.DROP}
+                />
+              )}
             </GoogleMap>
             {/* Sadece Konumumu Bul butonu */}
             <button
@@ -141,13 +163,12 @@ const AddressInfo: React.FC<AddressInfoProps> = ({
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (position) => {
-                      setAddress(f => ({
-                        ...f,
-                        latitude: position.coords.latitude,
-                        longitude: position.coords.longitude,
-                      }));
+                      const lat = position.coords.latitude;
+                      const lng = position.coords.longitude;
+                      // Reverse geocode to get address details
+                      reverseGeocode(lat, lng);
                       // Başarılı konum alma sonrası kullanıcıya bilgi ver
-                      console.log('Konum başarıyla alındı:', position.coords.latitude, position.coords.longitude);
+                      console.log('Konum başarıyla alındı:', lat, lng);
                     },
                     (error) => {
                       console.error('Konum alma hatası:', error);

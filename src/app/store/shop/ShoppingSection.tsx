@@ -1064,7 +1064,7 @@ const ShoppingPage = ({ darkMode, searchQuery, setSearchQuery, isMobile }: Shopp
                     </div>
                     
                     <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-                      {storesByCategory[category]?.map((store, index) => (
+                      {storesByCategory[category]?.map((store: any, index: number) => (
                         <div key={`store-${category}-${store.id}-${index}`} className={`rounded-2xl border overflow-hidden transition-all duration-300 hover:shadow-2xl cursor-pointer group ${darkMode ? 'bg-gray-800 border-neutral-700 hover:border-neutral-600' : 'bg-white border-neutral-200 hover:border-neutral-300'}`}>
                           <div className={`h-40 relative overflow-hidden transition-colors duration-300 ${darkMode ? 'bg-linear-to-br from-neutral-800 to-neutral-700' : 'bg-linear-to-br from-neutral-200 to-neutral-300'}`}>
                             <img src={store.image} alt={store.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />

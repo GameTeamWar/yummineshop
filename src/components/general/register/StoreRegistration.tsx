@@ -32,6 +32,7 @@ interface StoreRegistrationProps {
     hasAuthorizedPersons: boolean;
     logo: File | null;
     branchPassword?: string;
+    categories?: string[];
   };
   setStoreInfo: React.Dispatch<React.SetStateAction<any>>;
   logoPreview: string | null;

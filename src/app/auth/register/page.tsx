@@ -88,10 +88,11 @@ export default function RegisterPage() {
     kepAddress: "",
   });
 
-  // Google Maps
+  // Google Maps - Sadece bir kez yükle
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
     libraries: GOOGLE_MAPS_LIBRARIES,
+    id: 'google-maps-script', // Script ID'si ile çakışmayı önle
   });
 
   // Firebase'den çekilen location verileri
@@ -115,6 +116,7 @@ export default function RegisterPage() {
     hasBranches: false,
     hasAuthorizedPersons: false,
     logo: null as File | null,
+    categories: [] as string[],
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [authorizedPersons, setAuthorizedPersons] = useState<Array<{ firstName: string; lastName: string; phone: string; email: string; role: string; idCard: File | null }>>([]);
@@ -255,7 +257,9 @@ export default function RegisterPage() {
     if (storeInfo.corporateType && !storeInfo.taxId.trim()) {
       errors.taxId = `${storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası" : "Vergi Kimlik Numarası"} zorunludur`;
     }
-    if (!storeInfo.storeType) errors.storeType = "Mağaza tipi zorunludur";
+    if (!storeInfo.categories || storeInfo.categories.length === 0) {
+      errors.categories = "En az bir kategori seçmelisiniz";
+    }
     if (storeInfo.corporateType && storeInfo.corporateType !== "PRIVATE" && !storeInfo.companyName.trim()) {
       errors.companyName = "Şirket adı zorunludur";
     }
@@ -482,7 +486,8 @@ export default function RegisterPage() {
           iban: person.iban,
           ibanOwnerBirthDate: person.birthDate,
           kepAddress: person.kepAddress,
-          storeType: storeInfo.storeType,
+          storeType: storeInfo.categories?.[0] || "",
+          categories: storeInfo.categories,
           branchCount: storeInfo.branchCount,
           isMainBranch: storeInfo.isMainBranch,
           corporateType: storeInfo.corporateType,

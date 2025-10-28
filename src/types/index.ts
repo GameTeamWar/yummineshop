@@ -19,6 +19,8 @@ export interface Product {
   };
   material?: string;
   brand?: string;
+  rating?: number;
+  reviewCount?: number;
   isActive: boolean;
   isFeatured: boolean;
   isNew: boolean;
@@ -33,6 +35,7 @@ export interface Category {
   description?: string;
   parentId?: string;
   hasSubcategories: boolean;
+  subcategories?: Category[];
   productCount: number;
   isActive: boolean;
   filterType: 'checkbox' | 'radio' | 'dropdown';
@@ -41,6 +44,10 @@ export interface Category {
   createdAt: Date;
   updatedAt: Date;
   partnerId: string;
+  icon?: string;
+  color?: string;
+  courierCompatible?: boolean;
+  order?: number; // Admin panelinde kullanılan sıralama field'ı
 }
 
 export interface Option {
@@ -102,6 +109,99 @@ export interface Branch {
   address: string;
   phone?: string;
   isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Store {
+  id: string;
+  name: string;
+  ownerId: string;
+  status: 'pending' | 'approved' | 'rejected' | 'banned' | 'needs_correction';
+  email?: string;
+  phone?: string;
+  address?: string;
+  category?: string;
+  categories?: string[]; // Ürün kategorileri ID'leri
+  storeType?: 'esnaf' | 'avm' | 'marka';
+  description?: string;
+  image?: string;
+  logo?: string; // Logo URL'i
+  rating?: number;
+  items?: number;
+  distance?: number;
+  delivery?: number;
+  badge?: string;
+  isActive?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
+  // Yeni alanlar
+  taxId?: string;
+  companyName?: string;
+  corporateType?: 'PRIVATE' | 'LIMITED' | 'INCORPORATED';
+  iban?: string;
+  birthDate?: string;
+  kepAddress?: string;
+  branchCount?: number;
+  isMainBranch?: boolean;
+  branchReferenceCode?: string;
+  hasBranches?: boolean;
+  hasAuthorizedPersons?: boolean;
+  logoURL?: string;
+  ownerName?: string; // Mağaza sahibi adı
+  location?: { // Detaylı adres bilgileri
+    province?: string;
+    district?: string;
+    neighborhood?: string;
+    street?: string;
+    detailedAddress?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  authorizedPersons?: Array<{
+    firstName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    role: string;
+    idCard?: string;
+  }>;
+  documents?: {
+    idCard?: string;
+    driversLicense?: string;
+    taxCertificate?: string;
+  };
+  // Onay süreci için
+  correctionRequests?: Array<{
+    id: string;
+    requestedBy: string; // Admin ID
+    requestedAt: Date;
+    fields: string[]; // Düzeltilecek alanlar
+    description: string; // Düzeltme açıklaması
+    status: 'pending' | 'completed' | 'cancelled';
+    corrections?: Array<{
+      field: string;
+      oldValue: any;
+      newValue: any;
+      correctedAt: Date;
+    }>;
+  }>;
+  approvedBy?: string; // Admin ID
+  approvedAt?: Date;
+  rejectionReason?: string;
+  siteCategory?: string; // Site ana kategorisi
+  siteCategoryId?: string;
+}
+
+export interface SiteCategory {
+  id: string;
+  name: string;
+  description?: string;
+  icon?: string;
+  color?: string;
+  isActive: boolean;
+  sortOrder: number;
+  storeCount: number;
   createdAt: Date;
   updatedAt: Date;
 }

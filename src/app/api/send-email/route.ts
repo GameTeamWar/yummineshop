@@ -27,6 +27,8 @@ export async function POST(request: NextRequest) {
       ? `Yummine Mağaza Yetkilendirmesi - ${additionalData.storeName}`
       : additionalData?.isPasswordReset
       ? "Yummine Şifre Sıfırlama - Yeni Giriş Bilgileriniz"
+      : additionalData?.isSuperpass
+      ? "Yummine Superpass Kodu - Güvenlik Doğrulaması"
       : "Yummine Partner Kaydı Başarılı - Giriş Bilgileriniz";
 
     // SendGrid ile email gönder
@@ -241,6 +243,75 @@ function generateRegistrationEmailContent(email: string, additionalData?: any): 
             </p>
 
             <p>Herhangi bir sorunuz olursa, mağaza sahibi ile iletişime geçebilirsiniz.</p>
+
+            <div class="footer">
+              <p>Bu email Yummine tarafından gönderilmiştir.<br>
+              © ${new Date().getFullYear()} Yummine. Tüm hakları saklıdır.</p>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  // Superpass email template
+  if (additionalData?.isSuperpass) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Yummine Superpass Kodu</title>
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+          .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+          .superpass-code { background: #fff; border: 3px solid #dc2626; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center; }
+          .code { font-size: 24px; font-weight: bold; color: #dc2626; font-family: monospace; letter-spacing: 2px; }
+          .warning { background: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 5px; margin: 20px 0; }
+          .footer { text-align: center; margin-top: 30px; color: #666; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>🔐 Superpass Kodu</h1>
+            <p>Güvenlik doğrulaması için kodunuz</p>
+          </div>
+
+          <div class="content">
+            <h2>Merhaba Yönetici!</h2>
+            <p><strong>${additionalData.action}</strong> işlemi için superpass kodu oluşturuldu.</p>
+
+            <div class="superpass-code">
+              <h3>🔑 Superpass Kodunuz</h3>
+              <div class="code">${additionalData.superpassCode}</div>
+              <p style="color: #dc2626; font-weight: bold; margin-top: 10px;">Bu kod 10 dakika geçerlidir.</p>
+            </div>
+
+            <h3>📋 İşlem Detayları</h3>
+            <ul>
+              <li><strong>İşlem:</strong> ${additionalData.action}</li>
+              <li><strong>Kategori Sayısı:</strong> ${additionalData.categoryCount}</li>
+              <li><strong>Oluşturulma Zamanı:</strong> ${new Date().toLocaleString('tr-TR')}</li>
+              <li><strong>Son Geçerlilik:</strong> ${new Date(additionalData.expiresAt).toLocaleString('tr-TR')}</li>
+            </ul>
+
+            <div class="warning">
+              <h4>⚠️ Önemli Güvenlik Bilgileri</h4>
+              <ul>
+                <li>Bu kod sadece bir kez kullanılabilir.</li>
+                <li>Kod süresi dolduğunda otomatik olarak geçersiz olur.</li>
+                <li>Kodu kimseyle paylaşmayın.</li>
+                <li>Şüpheli bir durum fark ederseniz hemen güvenlik ekibini bilgilendirin.</li>
+              </ul>
+            </div>
+
+            <p style="text-align: center; margin: 30px 0;">
+              <strong>Bu email Yummine güvenlik sistemi tarafından otomatik olarak gönderilmiştir.</strong>
+            </p>
 
             <div class="footer">
               <p>Bu email Yummine tarafından gönderilmiştir.<br>

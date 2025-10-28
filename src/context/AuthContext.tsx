@@ -7,6 +7,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { auth, db, storage } from '@/lib/firebase';
 import { useNotifications } from '@/hooks/useNotifications';
 import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
 // Güçlü şifre oluşturma fonksiyonu
 const generateStrongPassword = (): string => {
@@ -35,6 +36,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, role: number, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
+  getAuthHeaders: () => Promise<{ Authorization?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>({
@@ -46,6 +48,7 @@ const AuthContext = createContext<AuthContextType | undefined>({
   login: async () => {},
   register: async () => {},
   logout: async () => {},
+  getAuthHeaders: async () => ({}),
 });
 
 export const useAuth = () => {
@@ -71,6 +74,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
     return false;
   });
+
+  const router = useRouter();
 
   // Bildirimleri başlat
   useNotifications();
@@ -138,7 +143,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+      // Kullanıcının rolünü Firestore'dan al ve yönlendirme yap
+      const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const userRole = userData.role;
+
+        // Role göre yönlendirme
+        setTimeout(() => {
+          switch (userRole) {
+            case 0: // Normal kullanıcı
+              router.push('/');
+              break;
+            case 1: // Partner
+              router.push(`/partner/${userCredential.user.uid}`);
+              break;
+            case 2: // Admin
+              router.push('/admin');
+              break;
+            case 3: // Courier
+              router.push('/courier');
+              break;
+            default:
+              router.push('/');
+          }
+        }, 100); // Kısa bir gecikme ile state güncellemesini bekle
+      }
     } catch (error: any) {
       // Firebase hata kodlarını kullanıcı dostu mesajlara dönüştür
       let errorMessage = 'Giriş yapılırken bir hata oluştu.';
@@ -322,6 +354,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       console.log('User data saved to Firestore');
 
+      // Mağaza rolüyle kayıt ise otomatik mağaza oluştur
+      if (role === 1) {
+        try {
+          const storeData = {
+            name: additionalData?.storeName || `${additionalData?.firstName} ${additionalData?.lastName} Mağazası`,
+            ownerId: user.uid,
+            ownerName: `${additionalData?.firstName} ${additionalData?.lastName}`, // Mağaza sahibi adı
+            status: 'pending', // Admin onayı bekler
+            email: email,
+            phone: additionalData?.phone || additionalData?.phoneNumber,
+            address: `${additionalData?.province || ''} ${additionalData?.district || ''} ${additionalData?.neighborhood || ''} ${additionalData?.street || ''} ${additionalData?.detailedAddress || ''}`.trim(),
+            category: additionalData?.category || 'general',
+            storeType: additionalData?.storeType || 'esnaf',
+            description: additionalData?.description,
+            logo: logoURL, // Logo URL'si
+            isActive: false, // Admin onayı bekler
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            // Eksik olan mağaza bilgileri
+            taxId: additionalData?.taxId,
+            companyName: additionalData?.companyName,
+            corporateType: additionalData?.corporateType,
+            iban: additionalData?.iban,
+            branchCount: additionalData?.branchCount || 1,
+            isMainBranch: additionalData?.isMainBranch || false,
+            branchReferenceCode: additionalData?.branchReferenceCode,
+            hasBranches: additionalData?.hasBranches || false,
+            hasAuthorizedPersons: additionalData?.hasAuthorizedPersons || false,
+            // Belgeler
+            documents: {
+              idCard: processedDocuments.idCard,
+              driversLicense: processedDocuments.driversLicense,
+              taxCertificate: processedDocuments.taxCertificate,
+            },
+            // Yetkili kişiler
+            authorizedPersons: processedAuthorizedPersons,
+            // Adres detayları
+            location: {
+              province: additionalData?.province,
+              district: additionalData?.district,
+              neighborhood: additionalData?.neighborhood,
+              street: additionalData?.street,
+              detailedAddress: additionalData?.detailedAddress,
+              latitude: additionalData?.latitude,
+              longitude: additionalData?.longitude,
+            },
+          };
+
+          const storeResponse = await fetch('/api/stores', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(storeData)
+          });
+
+          if (storeResponse.ok) {
+            const storeResult = await storeResponse.json();
+            console.log('Store created successfully:', storeResult);
+
+            // Kullanıcıya mağaza ID'sini ekle
+            await setDoc(doc(db, 'users', user.uid), {
+              ...userData,
+              storeId: storeResult.id,
+            });
+          } else {
+            console.error('Store creation failed');
+          }
+        } catch (storeError) {
+          console.error('Store creation error:', storeError);
+          // Mağaza oluşturma hatası olsa bile kullanıcı kaydı devam etsin
+        }
+      }
+
       // Mağaza ise şube izin sistemi için giriş oluştur
       if (role === 1 && additionalData?.branchReferenceCode) {
         await setDoc(doc(db, 'branch_permissions', additionalData.branchReferenceCode), {
@@ -350,14 +454,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       switch (error.code) {
         case 'auth/email-already-in-use':
-          errorMessage = 'Bu e-posta adresi zaten kullanımda. Farklı bir e-posta adresi deneyin.';
+          errorMessage = 'Bu e-posta adresi zaten kullanımda. Giriş yapmak mı istiyorsunuz?';
           toast.error(errorMessage, {
             position: "top-right",
-            autoClose: 5000,
+            autoClose: 8000,
             hideProgressBar: false,
             closeOnClick: true,
             pauseOnHover: true,
             draggable: true,
+            onClick: () => {
+              // Kullanıcıya login sayfasına yönlendirme önerisi
+              window.location.href = '/auth/login';
+            }
           });
           break;
         case 'auth/invalid-email':
@@ -410,6 +518,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const getAuthHeaders = async (): Promise<{ Authorization?: string }> => {
+    if (user) {
+      const token = await user.getIdToken();
+      return { Authorization: `Bearer ${token}` };
+    }
+    return {};
+  };
+
   const value = {
     user,
     role,
@@ -419,6 +535,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
+    getAuthHeaders,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

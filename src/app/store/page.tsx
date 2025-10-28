@@ -35,13 +35,12 @@ interface BranchPermission {
   rejectedAt?: Date;
 }
 
-interface BranchData {
-  mainBranchEmail: string;
-  mainBranchName: string;
-  branchReferenceCode: string;
-  totalBranches: number;
-  permissionRequests: BranchPermission[];
-  approvedBranches: any[];
+interface Category {
+  id: string;
+  name: string;
+  icon?: string;
+  color?: string;
+  isActive?: boolean;
 }
 
 export default function StorePanel() {
@@ -49,6 +48,7 @@ export default function StorePanel() {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'branches'>('products');
   const [showAddProduct, setShowAddProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -74,8 +74,25 @@ export default function StorePanel() {
 
     fetchProducts();
     fetchOrders();
+    fetchCategories();
     fetchBranchData();
   }, [user, role, router]);
+
+  const fetchCategories = async () => {
+    try {
+      const categoriesSnapshot = await getDocs(collection(db, 'categories'));
+      const categoriesData = categoriesSnapshot.docs
+        .map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        } as Category))
+        .filter(cat => cat.isActive !== false)
+        .sort((a, b) => a.name.localeCompare(b.name));
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Kategoriler alınırken hata:', error);
+    }
+  };
 
   const fetchProducts = async () => {
     if (!user) return;
@@ -351,13 +368,18 @@ export default function StorePanel() {
                         value={newProduct.stock}
                         onChange={(e) => setNewProduct(prev => ({ ...prev, stock: Number(e.target.value) }))}
                       />
-                      <input
-                        type="text"
-                        placeholder="Kategori"
+                      <select
                         className="border rounded px-3 py-2"
                         value={newProduct.category}
                         onChange={(e) => setNewProduct(prev => ({ ...prev, category: e.target.value }))}
-                      />
+                      >
+                        <option value="">Kategori Seçin</option>
+                        {categories.map(category => (
+                          <option key={category.id} value={category.id}>
+                            {category.name}
+                          </option>
+                        ))}
+                      </select>
                       <input
                         type="text"
                         placeholder="Barkod"
