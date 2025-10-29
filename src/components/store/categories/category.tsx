@@ -15,6 +15,9 @@ interface Category {
   subcategories?: Category[];
   courierCompatible?: boolean;
   isActive?: boolean;
+  parentCategories?: string[]; // Bu kategorinin ait olduğu üst kategoriler
+  childCategories?: string[]; // Bu kategorinin alt kategorileri
+  order?: number;
 }
 
 interface CategoryProps {
@@ -35,6 +38,7 @@ const Category: React.FC<CategoryProps> = ({
   const [isProductDropdownOpen, setIsProductDropdownOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Kategori ismini title case'e çeviren fonksiyon
   const toTitleCase = (str: string) => {
@@ -115,18 +119,26 @@ const Category: React.FC<CategoryProps> = ({
             id: doc.id,
             ...doc.data()
           } as Category))
-          .filter(cat => cat.isActive !== false) // Sadece aktif kategorileri göster
-          .sort((a, b) => {
-            // Order field'ına göre sırala, yoksa alfabetik sırala
-            if (a.order !== undefined && b.order !== undefined) {
-              return a.order - b.order;
-            }
-            if (a.order !== undefined) return -1;
-            if (b.order !== undefined) return 1;
-            return a.name.localeCompare(b.name);
-          }); // Order'a göre sıralama
+          .filter(cat => cat.isActive !== false); // Sadece aktif kategorileri göster
 
-        setCategories(categoriesData);
+        // Ana kategorileri ve alt kategorileri ayır
+        const parentCategories = categoriesData.filter(cat => !categoriesData.some(otherCat => otherCat.childCategories?.includes(cat.id)));
+        const childCategories = categoriesData.filter(cat => categoriesData.some(otherCat => otherCat.childCategories?.includes(cat.id)));
+
+        // Ana kategorilere alt kategorilerini ekle
+        const categoriesWithSubcategories = parentCategories.map(parent => ({
+          ...parent,
+          subcategories: childCategories.filter(child => parent.childCategories?.includes(child.id))
+        }));
+
+        // Hiyerarşik sıralama
+        const sortedCategories = categoriesWithSubcategories.sort((a, b) => {
+          const aOrder = a.order || 0;
+          const bOrder = b.order || 0;
+          return aOrder - bOrder;
+        });
+
+        setCategories(sortedCategories);
         setLoadingCategories(false);
       },
       (error) => {
@@ -186,6 +198,18 @@ const Category: React.FC<CategoryProps> = ({
     }
   };
 
+  const toggleCategoryExpansion = (categoryId: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryId)) {
+        newSet.delete(categoryId);
+      } else {
+        newSet.add(categoryId);
+      }
+      return newSet;
+    });
+  };
+
   // Desktop sidebar categories
   if (!isMobile) {
     return (
@@ -201,33 +225,70 @@ const Category: React.FC<CategoryProps> = ({
           ) : (
             <div className="space-y-2">
               {categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center justify-between gap-3 ${
-                    selectedCategory === category.id
-                      ? darkMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-500 text-white'
-                      : darkMode
+                <div key={category.id}>
+                  <button
+                    onClick={() => {
+                      if (category.subcategories && category.subcategories.length > 0) {
+                        toggleCategoryExpansion(category.id);
+                      } else {
+                        handleCategoryClick(category.id);
+                      }
+                    }}
+                    className={`w-full text-left px-4 py-3 rounded-lg transition-all duration-300 flex items-center justify-between gap-3 ${
+                      selectedCategory === category.id
+                        ? darkMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-500 text-white'
+                        : darkMode
                         ? 'text-neutral-300 hover:bg-neutral-700 hover:text-white'
                         : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-950'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    {renderIcon(category.icon || '', category.color)}
-                    <span className="font-medium">{category.name}</span>
-                  </div>
-                </button>
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      {renderIcon(category.icon || '', category.color)}
+                      <span className="font-medium">{category.name}</span>
+                    </div>
+                    {category.subcategories && category.subcategories.length > 0 && (
+                      <ChevronDown
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          expandedCategories.has(category.id) ? 'rotate-180' : ''
+                        }`}
+                      />
+                    )}
+                  </button>
+
+                  {/* Alt Kategoriler */}
+                  {category.subcategories && category.subcategories.length > 0 && expandedCategories.has(category.id) && (
+                    <div className="ml-6 mt-2 space-y-1">
+                      {category.subcategories.map(subcategory => (
+                        <button
+                          key={subcategory.id}
+                          onClick={() => handleCategoryClick(subcategory.id)}
+                          className={`w-full text-left px-4 py-2 rounded-lg transition-all duration-300 flex items-center gap-3 text-sm ${
+                            selectedCategory === subcategory.id
+                              ? darkMode
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-500 text-white'
+                              : darkMode
+                              ? 'text-neutral-400 hover:bg-neutral-700 hover:text-white'
+                              : 'text-neutral-600 hover:bg-neutral-100 hover:text-neutral-950'
+                          }`}
+                        >
+                          <div className="w-2 h-2 bg-gray-400 rounded-full flex-shrink-0"></div>
+                          {renderIcon(subcategory.icon || '', subcategory.color)}
+                          <span>{subcategory.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
         </div>
       </div>
     );
-  }
-
-  // Mobile category bar
+  }  // Mobile category bar
   return (
     <>
       {isMobile && !searchQuery.trim() && (
@@ -238,22 +299,54 @@ const Category: React.FC<CategoryProps> = ({
               <div className="text-sm text-gray-500 px-4 py-2">Kategoriler yükleniyor...</div>
             ) : (
               categories.map(category => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className={`shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
-                    selectedCategory === category.id
-                      ? darkMode
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-blue-500 text-white'
-                      : darkMode
+                <div key={category.id} className="flex-shrink-0">
+                  <button
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap flex items-center gap-2 ${
+                      selectedCategory === category.id
+                        ? darkMode
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-blue-500 text-white'
+                        : darkMode
                         ? 'bg-neutral-700 text-white hover:bg-neutral-600'
                         : 'bg-neutral-100 text-neutral-950 hover:bg-neutral-200'
-                  }`}
-                >
-                  {renderIcon(category.icon || '', category.color)}
-                  <span>{category.name}</span>
-                </button>
+                    }`}
+                  >
+                    {renderIcon(category.icon || '', category.color)}
+                    <span>{category.name}</span>
+                  </button>
+
+                  {/* Alt kategoriler için küçük noktalar */}
+                  {category.subcategories && category.subcategories.length > 0 && (
+                    <div className="flex gap-1 mt-1 ml-4">
+                      {category.subcategories.slice(0, 3).map(subcategory => (
+                        <button
+                          key={subcategory.id}
+                          onClick={() => handleCategoryClick(subcategory.id)}
+                          className={`w-6 h-6 rounded-full text-xs transition-all duration-300 flex items-center justify-center ${
+                            selectedCategory === subcategory.id
+                              ? darkMode
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-blue-500 text-white'
+                              : darkMode
+                              ? 'bg-neutral-600 text-neutral-300 hover:bg-neutral-500'
+                              : 'bg-neutral-200 text-neutral-600 hover:bg-neutral-300'
+                          }`}
+                          title={subcategory.name}
+                        >
+                          {renderIcon(subcategory.icon || '', subcategory.color)}
+                        </button>
+                      ))}
+                      {category.subcategories.length > 3 && (
+                        <div className={`w-6 h-6 rounded-full text-xs flex items-center justify-center ${
+                          darkMode ? 'bg-neutral-600 text-neutral-300' : 'bg-neutral-200 text-neutral-600'
+                        }`}>
+                          +{category.subcategories.length - 3}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ))
             )}
           </div>

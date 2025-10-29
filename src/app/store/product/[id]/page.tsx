@@ -506,6 +506,15 @@ export default function ProductPage() {
   // Favori state'i
   const [isFavorited, setIsFavorited] = useState(false);
 
+  // Arama state'i - benzer ürünler için
+  const [similarProductsSearch, setSimilarProductsSearch] = useState('');
+
+  // Arama state'i - yorumlar için
+  const [reviewsSearch, setReviewsSearch] = useState('');
+
+  // Arama state'i - sorular için
+  const [questionsSearch, setQuestionsSearch] = useState('');
+
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 1024);
     checkMobile();
@@ -1118,6 +1127,21 @@ export default function ProductPage() {
                   </div>
                 </div>
 
+                {/* Yorum Arama Input'u */}
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    value={reviewsSearch}
+                    onChange={(e) => setReviewsSearch(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                        : 'bg-white border-gray-300 focus:border-blue-500'
+                    }`}
+                    placeholder="Yorumlarda ara..."
+                  />
+                </div>
+
                 {/* Yorum Ekleme Formu */}
                 <div className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                   <h4 className="font-semibold mb-4">Yorumunuzu Paylaşın</h4>
@@ -1289,7 +1313,11 @@ export default function ProductPage() {
                 </div>
 
                 <div className="space-y-6">
-                  {reviews.slice(0, showAllReviews ? reviews.length : 3).map((review: any) => (
+                  {reviews
+                    .filter(review => review.comment.toLowerCase().includes(reviewsSearch.toLowerCase()) ||
+                                    review.user.toLowerCase().includes(reviewsSearch.toLowerCase()))
+                    .slice(0, showAllReviews ? reviews.length : 3)
+                    .map((review: any) => (
                     <div key={review.id} className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
                       <div className="flex items-start justify-between mb-4">
                         <div className="flex items-center gap-3">
@@ -1378,6 +1406,21 @@ export default function ProductPage() {
               <div className="space-y-6">
                 <h3 className="text-2xl font-bold">Soru & Cevap</h3>
 
+                {/* Soru Arama Input'u */}
+                <div className="mb-6">
+                  <input
+                    type="text"
+                    value={questionsSearch}
+                    onChange={(e) => setQuestionsSearch(e.target.value)}
+                    className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                      darkMode
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                        : 'bg-white border-gray-300 focus:border-blue-500'
+                    }`}
+                    placeholder="Sorularda ara..."
+                  />
+                </div>
+
                 {/* Alt Sekmeler */}
                 <div className="flex border-b border-gray-200 dark:border-gray-700">
                   <button
@@ -1456,6 +1499,9 @@ export default function ProductPage() {
                 <div className="space-y-6">
                   {questions
                     .filter(q => q.type === questionTab)
+                    .filter(q => q.question.toLowerCase().includes(questionsSearch.toLowerCase()) ||
+                               q.user.toLowerCase().includes(questionsSearch.toLowerCase()) ||
+                               (q.answer && q.answer.toLowerCase().includes(questionsSearch.toLowerCase())))
                     .slice(0, showAllQuestions ? questions.length : 5)
                     .map((question: any) => (
                     <div key={question.id} className={`p-6 rounded-2xl ${darkMode ? 'bg-gray-700' : 'bg-gray-50'} border ${darkMode ? 'border-gray-600' : 'border-gray-200'}`}>
@@ -1545,8 +1591,25 @@ export default function ProductPage() {
               </div>
             </div>
 
+            {/* Arama Input'u */}
+            <div className="mb-6">
+              <input
+                type="text"
+                value={similarProductsSearch}
+                onChange={(e) => setSimilarProductsSearch(e.target.value)}
+                className={`w-full px-4 py-3 rounded-xl border transition-colors ${
+                  darkMode
+                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500'
+                    : 'bg-white border-gray-300 focus:border-blue-500'
+                }`}
+                placeholder="Benzer ürünlerde ara..."
+              />
+            </div>
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {getVisibleSimilarProducts().map((similarProduct: any) => (
+              {getVisibleSimilarProducts()
+                .filter(product => product.name.toLowerCase().includes(similarProductsSearch.toLowerCase()))
+                .map((similarProduct: any) => (
                 <div
                   key={similarProduct.id}
                   onClick={() => router.push(`/product/${similarProduct.id}`)}
