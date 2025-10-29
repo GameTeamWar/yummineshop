@@ -2121,7 +2121,7 @@ export default function AdminCategoriesPage() {
                         {superpassData.action === 'single'
                           ? 'Kategori silme işlemi için'
                           : `${superpassData.categoryIds.length} kategori silme işlemi için`
-                        } superpass kodu yumminecom@gmail.com adresine gönderildi.
+                        } superpass kodu YETKİLİ MAİL adresine gönderildi.
                       </p>
                       <p className="mt-2">
                         Superpass kodu 10 dakika geçerlidir.

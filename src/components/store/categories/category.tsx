@@ -292,7 +292,7 @@ const Category: React.FC<CategoryProps> = ({
   return (
     <>
       {isMobile && !searchQuery.trim() && (
-        <div className={`sticky top-[3.39rem] pt-5 z-10 mb-12 pb-4 border-b ${darkMode ? 'bg-gray-900 border-neutral-700' : 'bg-white border-neutral-200'} backdrop-blur-sm bg-opacity-95`}>
+        <div className={`sticky top-[3.39rem] pt-5 z-10 mb-12 pb-4 border-b ${darkMode ? 'bg-gray-800 border-neutral-700' : 'bg-white border-neutral-200'} backdrop-blur-sm bg-opacity-95`}>
           {/* Mağaza Kategorileri - Mobile */}
           <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
             {loadingCategories ? (
