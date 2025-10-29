@@ -51,7 +51,7 @@ const Layout: React.FC<LayoutProps> = ({
         )}
 
         {/* Main content */}
-        <div className={`flex-1 transition-all duration-300 ${
+        <div className={`flex-1 transition-all duration-300  ${
           showSidebar ? 'lg:ml-0' : ''
         }`}>
           <main className="p-4 sm:p-6 lg:p-8 flex-1 bg-white dark:bg-gray-800 min-h-full">
