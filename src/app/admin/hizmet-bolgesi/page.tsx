@@ -209,24 +209,42 @@ export default function ServiceAreaPage() {
   };
 
   const handleStoreSelect = (store: Store) => {
-    setSelectedStore(store);
-    setSelectedCourier(null);
-    setSelectedCustomer(null);
-    setActiveMode('store-service');
+    if (selectedStore?.id === store.id) {
+      // Aynı mağaza tekrar tıklandı, seçimi kaldır
+      setSelectedStore(null);
+    } else {
+      // Farklı mağaza seçildi
+      setSelectedStore(store);
+      setSelectedCourier(null);
+      setSelectedCustomer(null);
+      setActiveMode('store-service');
+    }
   };
 
   const handleCourierSelect = (courier: Courier) => {
-    setSelectedCourier(courier);
-    setSelectedStore(null);
-    setSelectedCustomer(null);
-    setActiveMode('courier-zones');
+    if (selectedCourier?.id === courier.id) {
+      // Aynı kurye tekrar tıklandı, seçimi kaldır
+      setSelectedCourier(null);
+    } else {
+      // Farklı kurye seçildi
+      setSelectedCourier(courier);
+      setSelectedStore(null);
+      setSelectedCustomer(null);
+      setActiveMode('courier-zones');
+    }
   };
 
   const handleCustomerSelect = (customer: Customer) => {
-    setSelectedCustomer(customer);
-    setSelectedStore(null);
-    setSelectedCourier(null);
-    setActiveMode('customer-block');
+    if (selectedCustomer?.id === customer.id) {
+      // Aynı müşteri tekrar tıklandı, seçimi kaldır
+      setSelectedCustomer(null);
+    } else {
+      // Farklı müşteri seçildi
+      setSelectedCustomer(customer);
+      setSelectedStore(null);
+      setSelectedCourier(null);
+      setActiveMode('customer-block');
+    }
   };
 
   const handleServiceAreaUpdate = async (storeId: string, serviceArea: Store['serviceArea']) => {

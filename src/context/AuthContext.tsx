@@ -28,7 +28,7 @@ const uploadFileToStorage = async (file: File, path: string): Promise<string> =>
 };
 
 interface AuthContextType {
-  user: (User & { profile?: any }) | null;
+  user: User | null;
   role: number | null;
   loading: boolean;
   darkMode: boolean;
@@ -37,6 +37,7 @@ interface AuthContextType {
   register: (email: string, password: string, role: number, additionalData?: any) => Promise<void>;
   logout: () => Promise<void>;
   getAuthHeaders: () => Promise<{ Authorization?: string }>;
+  getProfile: () => any;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>({
@@ -49,6 +50,7 @@ const AuthContext = createContext<AuthContextType | undefined>({
   register: async () => {},
   logout: async () => {},
   getAuthHeaders: async () => ({}),
+  getProfile: () => ({}),
 });
 
 export const useAuth = () => {
@@ -64,10 +66,11 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<(User & { profile?: any }) | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('darkMode') === 'true';
@@ -119,16 +122,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           userRole = data.role;
         }
 
-        // User objesine profil bilgilerini ekle
-        const enhancedUser = {
-          ...user,
-          profile: profileData
-        };
-
-        setUser(enhancedUser);
+        // User objesini ve profil bilgilerini ayrı ayrı sakla
+        setUser(user);
+        setUserProfile(profileData);
         setRole(userRole);
       } else {
         setUser(null);
+        setUserProfile(null);
         setRole(null);
       }
       setLoading(false);
@@ -367,6 +367,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             address: `${additionalData?.province || ''} ${additionalData?.district || ''} ${additionalData?.neighborhood || ''} ${additionalData?.street || ''} ${additionalData?.detailedAddress || ''}`.trim(),
             category: additionalData?.category || 'general',
             storeType: additionalData?.storeType || 'esnaf',
+            categories: additionalData?.categories || [], // Ana kategoriler
+            subCategories: additionalData?.subCategories || [], // Alt kategoriler
             description: additionalData?.description,
             logo: logoURL, // Logo URL'si
             isActive: false, // Admin onayı bekler
@@ -494,6 +496,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     await signOut(auth);
+    setUserProfile(null);
   };
 
   // Kayıt sonrası email gönderme fonksiyonu
@@ -526,6 +529,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return {};
   };
 
+  const getProfile = () => {
+    return userProfile;
+  };
+
   const value = {
     user,
     role,
@@ -536,6 +543,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     getAuthHeaders,
+    getProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

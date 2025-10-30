@@ -5,6 +5,24 @@ import { useParams } from 'next/navigation';
 import { Plus, Edit, Trash2, Package, DollarSign, Tag, Filter, FolderOpen, Settings, Search, Upload, Image as ImageIcon, Star, TrendingUp, Clock, Zap, ScanLine } from 'lucide-react';
 import { Product, Category, Option, Tag as TagType } from '@/types';
 import { toast } from 'react-toastify';
+import { useAuth } from '@/context/AuthContext';
+
+// Kategori verilerini içe aktar
+
+// Yardımcı fonksiyonlar
+const getSubCategoriesForMainCategory = (mainCategoryId: string, storeCategories: any[]) => {
+  const mainCategory = storeCategories.find(cat => cat.id === mainCategoryId);
+  if (!mainCategory || !mainCategory.childCategories) return [];
+  
+  return storeCategories.filter(cat => mainCategory.childCategories!.includes(cat.id));
+};
+
+const getProductCategoriesForSubCategory = (subCategoryId: string, storeCategories: any[]) => {
+  const subCategory = storeCategories.find(cat => cat.id === subCategoryId);
+  if (!subCategory || !subCategory.productCategories) return [];
+  
+  return subCategory.productCategories;
+};
 
 interface ProductStats {
   totalProducts: number;
@@ -22,9 +40,11 @@ interface ProductStats {
 export default function MenuPage() {
   const params = useParams();
   const partnerId = params.id as string;
+  const { getAuthHeaders, user, getProfile } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [storeMainCategory, setStoreMainCategory] = useState<string>(''); // Mağaza ana kategorisi
   const [options, setOptions] = useState<Option[]>([]);
   const [tags, setTags] = useState<TagType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +72,8 @@ export default function MenuPage() {
   const [productName, setProductName] = useState('');
   const [productPrice, setProductPrice] = useState('');
   const [productCategory, setProductCategory] = useState('');
+  const [selectedSubCategory, setSelectedSubCategory] = useState(''); // Alt kategori (kadın giyim, erkek giyim vb.)
+  const [selectedProductCategory, setSelectedProductCategory] = useState(''); // Ürün kategorisi (üst giyim, alt giyim vb.)
   const [productDescription, setProductDescription] = useState('');
   const [productStock, setProductStock] = useState('');
   const [productSKU, setProductSKU] = useState('');
@@ -61,25 +83,106 @@ export default function MenuPage() {
   const [productImages, setProductImages] = useState<string[]>([]);
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedFilters, setSelectedFilters] = useState<string[]>([]);
+  const [storeNotFound, setStoreNotFound] = useState(false);
   const [isFeatured, setIsFeatured] = useState(false);
   const [isNew, setIsNew] = useState(false);
 
-  // Ürünleri Firebase'den çek
+  // storeMainCategory değiştiğinde log ekle
+  useEffect(() => {
+    console.log('storeMainCategory changed:', storeMainCategory);
+    console.log('categories:', categories);
+  }, [storeMainCategory, categories]);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
+
+        // Check if user is accessing their own store
+        if (!user) {
+          console.error('User not logged in');
+          toast.error('Lütfen önce giriş yapın');
+          return;
+        }
+
+        if (user.uid !== partnerId) {
+          console.error('User is not authorized to access this store:', { userId: user.uid, partnerId });
+          toast.error('Bu mağazaya erişim yetkiniz yok');
+          return;
+        }
+
+        const profile = getProfile();
+        console.log('User profile:', profile);
+        console.log('User storeId:', profile?.storeId);
 
         // Ürünleri çek
         const productsRes = await fetch(`/api/products?partnerId=${partnerId}`);
         const productsData = await productsRes.json();
         setProducts(productsData);
 
-        // Kategorileri çek
-        const categoriesRes = await fetch(`/api/categories?partnerId=${partnerId}`);
-        const categoriesData = await categoriesRes.json();
-        setCategories(categoriesData);
+        // Mağaza bilgilerini çek (ana kategoriler için)
+        const headers = await getAuthHeaders();
+        if (!headers.Authorization) {
+          console.error('No authorization token found');
+          setCategories([]);
+          setStoreMainCategory('');
+          return;
+        }
+
+        try {
+          const storeRes = await fetch(`/api/stores/${partnerId}`, {
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!storeRes.ok) {
+            if (storeRes.status === 404) {
+              console.error('Store not found for user:', partnerId);
+              setCategories([]);
+              setStoreMainCategory('');
+              setStoreNotFound(true);
+              toast.error('Mağaza bulunamadı. Mağaza kaydınız henüz onaylanmamış olabilir.');
+              return;
+            }
+            console.error('Store API error:', storeRes.status, storeRes.statusText);
+            setCategories([]);
+            setStoreMainCategory('');
+            return;
+          }
+
+          const storeData = await storeRes.json();
+          console.log('Store data:', storeData);
+          console.log('Store categories:', storeData.categories);
+          console.log('Store categories type:', typeof storeData.categories);
+          console.log('Store categories length:', storeData.categories?.length);
+
+          // Mağaza kategorilerini kullan
+          if (storeData.categories && Array.isArray(storeData.categories) && storeData.categories.length > 0) {
+            console.log('Setting categories:', storeData.categories);
+            setCategories(storeData.categories);
+            // Mağaza ana kategorisini belirle (ilk seçilen kategori)
+            const firstCategory = storeData.categories[0];
+            console.log('First category:', firstCategory);
+            if (firstCategory && firstCategory.id) {
+              setStoreMainCategory(firstCategory.id);
+              console.log('Setting store main category to:', firstCategory.id);
+            } else {
+              console.error('First category has no id:', firstCategory);
+              setStoreMainCategory('');
+            }
+          } else {
+            console.log('No categories found, setting empty');
+            // Eğer mağaza kategorisi yoksa boş array kullan
+            setCategories([]);
+            setStoreMainCategory('');
+          }
+        } catch (error) {
+          console.error('Error fetching store data:', error);
+          setCategories([]);
+          setStoreMainCategory('');
+        }
 
         // Opsiyonları çek
         const optionsRes = await fetch(`/api/options?partnerId=${partnerId}`);
@@ -99,10 +202,10 @@ export default function MenuPage() {
       }
     };
 
-    if (partnerId) {
+    if (partnerId && user) {
       fetchData();
     }
-  }, [partnerId]);
+  }, [partnerId, user?.uid, getProfile]);
 
   const calculateStats = (productList: Product[]) => {
     const totalProducts = productList.length;
@@ -135,7 +238,9 @@ export default function MenuPage() {
     console.log('handleAddProduct called with:', {
       productName,
       productPrice,
-      productCategory,
+      storeMainCategory,
+      selectedSubCategory,
+      selectedProductCategory,
       productStock,
       partnerId
     });
@@ -151,8 +256,8 @@ export default function MenuPage() {
       return;
     }
 
-    if (!productCategory) {
-      toast.error('Mağaza kategorisi seçiniz!');
+    if (!selectedProductCategory) {
+      toast.error('Ürün kategorisi seçiniz!');
       return;
     }
 
@@ -162,17 +267,17 @@ export default function MenuPage() {
     }
 
     try {
-      const category = categories.find(c => c.id === productCategory);
+      const category = categories.find(c => c.id === storeMainCategory);
       if (!category) {
-        console.error('Category not found:', productCategory);
-        toast.error('Seçilen kategori bulunamadı!');
+        console.error('Category not found:', storeMainCategory);
+        toast.error('Mağaza ana kategorisi bulunamadı!');
         return;
       }
 
       const newProduct: Omit<Product, 'id' | 'createdAt' | 'updatedAt'> = {
         name: productName.trim(),
         price: parseFloat(productPrice),
-        categoryId: productCategory,
+        categoryId: selectedProductCategory, // Ürün kategorisini kullan
         categoryName: category.name,
         options: selectedOptions,
         tags: selectedTags,
@@ -221,7 +326,7 @@ export default function MenuPage() {
   };
 
   const handleEditProduct = async () => {
-    if (!editingProduct || !productName.trim() || !productPrice || !productCategory) return;
+    if (!editingProduct || !productName.trim() || !productPrice || !selectedProductCategory) return;
 
     const currentPrice = parseFloat(productPrice);
     const previousPrice = editingProduct.price;
@@ -238,8 +343,8 @@ export default function MenuPage() {
         name: productName.trim(),
         price: currentPrice,
         originalPrice,
-        category: productCategory,
-        categoryId: productCategory,
+        category: selectedProductCategory, // Ürün kategorisini kullan
+        categoryId: selectedProductCategory, // Ürün kategorisini kullan
         options: selectedOptions,
         tags: selectedTags,
         images: productImages,
@@ -271,8 +376,8 @@ export default function MenuPage() {
           name: productName.trim(),
           price: currentPrice,
           originalPrice,
-          category: productCategory,
-          categoryId: productCategory,
+          category: selectedProductCategory, // Ürün kategorisini kullan
+          categoryId: selectedProductCategory, // Ürün kategorisini kullan
           options: selectedOptions,
           tags: selectedTags,
           images: productImages,
@@ -437,7 +542,30 @@ export default function MenuPage() {
     setEditingProduct(product);
     setProductName(product.name);
     setProductPrice(product.price.toString());
-    setProductCategory(product.categoryId);
+    
+    // 3-tier kategori sistemini ayarla
+    // Önce ürün kategorisini mağaza kategorilerinden bul
+    let foundSubCategory = '';
+    let foundProductCategory = '';
+
+    // Mağaza ana kategorisinin alt kategorilerini dolaş
+    if (storeMainCategory) {
+      const mainCategory = categories.find(cat => cat.id === storeMainCategory);
+      if (mainCategory && mainCategory.childCategories) {
+        for (const subCatId of mainCategory.childCategories) {
+          const subCat = categories.find(cat => cat.id === subCatId);
+          if (subCat && subCat.productCategories && subCat.productCategories.includes(product.categoryId)) {
+            foundSubCategory = subCat.id;
+            foundProductCategory = product.categoryId;
+            break;
+          }
+        }
+      }
+    }
+
+    setSelectedSubCategory(foundSubCategory);
+    setSelectedProductCategory(foundProductCategory);
+    
     setProductDescription(product.description || '');
     setProductStock(product.stock.toString());
     setProductSKU(product.sku || '');
@@ -461,6 +589,8 @@ export default function MenuPage() {
     setProductName('');
     setProductPrice('');
     setProductCategory('');
+    setSelectedSubCategory(''); // Alt kategori sıfırla
+    setSelectedProductCategory(''); // Ürün kategori sıfırla
     setProductDescription('');
     setProductStock('');
     setProductSKU('');
@@ -945,21 +1075,65 @@ export default function MenuPage() {
                     </div>
                     <div className="md:col-span-2">
                       <label className="block text-sm font-medium text-gray-300 mb-1">
-                        Mağaza Kategorisi * (Max 3 kategori)
+                        Ürün Kategorisi *
                       </label>
-                      <select
-                        value={productCategory}
-                        onChange={(e) => setProductCategory(e.target.value)}
-                        className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Mağaza kategorisi seçin</option>
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.name}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="text-xs text-gray-500 mt-0.5">Ürün birden fazla mağaza kategorisinde bulunabilir</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        {/* Ana Kategori - Mağaza kayıt olurken seçilen kategori (değiştirilemez) */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">
+                            Ana Kategori
+                          </label>
+                          <div className="w-full px-2 py-1.5 bg-gray-600 border border-gray-500 rounded-lg text-white text-sm">
+                            {storeNotFound ? 'Mağaza onay bekliyor' : storeMainCategory ? categories.find(cat => cat.id === storeMainCategory)?.name || storeMainCategory : 'Kategori yükleniyor...'}
+                          </div>
+                        </div>
+
+                        {/* Alt Kategori */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">
+                            Alt Kategori
+                          </label>
+                          <select
+                            value={selectedSubCategory}
+                            onChange={(e) => {
+                              setSelectedSubCategory(e.target.value);
+                              setSelectedProductCategory(''); // Ürün kategorisini sıfırla
+                            }}
+                            disabled={!storeMainCategory}
+                            className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="">Seçin</option>
+                            {storeMainCategory && getSubCategoriesForMainCategory(storeMainCategory, categories).map((subCat: any) => (
+                              <option key={subCat.id} value={subCat.id}>
+                                {subCat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Ürün Kategorisi */}
+                        <div>
+                          <label className="block text-xs font-medium text-gray-400 mb-1">
+                            Ürün Kategorisi
+                          </label>
+                          <select
+                            value={selectedProductCategory}
+                            onChange={(e) => setSelectedProductCategory(e.target.value)}
+                            disabled={!selectedSubCategory}
+                            className="w-full px-2 py-1.5 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="">Seçin</option>
+                            {selectedSubCategory && getProductCategoriesForSubCategory(selectedSubCategory, categories).map((prodCat: any) => (
+                              <option key={prodCat} value={prodCat}>
+                                {prodCat.split('-').map((word: string) => 
+                                  word.charAt(0).toUpperCase() + word.slice(1)
+                                ).join(' ')}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">Mağaza kategoriniz: {storeNotFound ? 'Onay bekliyor' : storeMainCategory ? categories.find(cat => cat.id === storeMainCategory)?.name || storeMainCategory : 'Yükleniyor...'}</p>
                     </div>
                   </div>
                 </div>
@@ -1204,7 +1378,7 @@ export default function MenuPage() {
                   !productPrice ||
                   isNaN(parseFloat(productPrice)) ||
                   parseFloat(productPrice) <= 0 ||
-                  !productCategory ||
+                  !selectedProductCategory ||
                   !productStock ||
                   isNaN(parseInt(productStock)) ||
                   parseInt(productStock) < 0

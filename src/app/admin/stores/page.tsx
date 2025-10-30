@@ -3,12 +3,43 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, updateDoc, doc, addDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, addDoc, getDoc, deleteDoc, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/panels/layout';
 import { Store, SiteCategory } from '@/types';
 import { toast } from 'react-toastify';
 import StoreLocationMap from '@/components/admin/StoreLocationMap';
+
+// Mağaza durumu sabitleri
+const STORE_STATUS = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+  BANNED: 'banned',
+  NEEDS_CORRECTION: 'needs_correction'
+} as const;
+
+const STORE_STATUS_LABELS = {
+  [STORE_STATUS.PENDING]: 'Bekliyor',
+  [STORE_STATUS.APPROVED]: 'Onaylandı',
+  [STORE_STATUS.REJECTED]: 'Reddedildi',
+  [STORE_STATUS.BANNED]: 'Yasaklı',
+  [STORE_STATUS.NEEDS_CORRECTION]: 'Düzeltme Bekliyor'
+} as const;
+
+const STORE_STATUS_COLORS = {
+  [STORE_STATUS.PENDING]: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
+  [STORE_STATUS.APPROVED]: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  [STORE_STATUS.REJECTED]: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+  [STORE_STATUS.BANNED]: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
+  [STORE_STATUS.NEEDS_CORRECTION]: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200'
+} as const;
+
+// Aktiflik durumu için renkler
+const ACTIVE_STATUS_COLORS = {
+  active: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+  inactive: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
+} as const;
 
 interface StoreApprovalModalProps {
   store: Store;
@@ -33,6 +64,7 @@ export default function AdminStoresPage() {
   const [storeOrders, setStoreOrders] = useState<any[]>([]);
   const [storeFinance, setStoreFinance] = useState<any>({});
   const [categories, setCategories] = useState<SiteCategory[]>([]);
+  const [activeTab, setActiveTab] = useState<'yeni' | 'aktif' | 'pasif' | 'iptal'>('yeni');
 
   useEffect(() => {
     if (!user || role !== 0) {
@@ -40,7 +72,6 @@ export default function AdminStoresPage() {
       return;
     }
 
-    fetchStores();
     fetchCategories();
 
     // Real-time updates için onSnapshot ekle
@@ -207,6 +238,36 @@ export default function AdminStoresPage() {
     setIsOwnerModalOpen(true);
   };
 
+  const getFilteredStores = () => {
+    switch (activeTab) {
+      case 'yeni':
+        return stores.filter(store => store.status === 'pending' || store.status === 'needs_correction');
+      case 'aktif':
+        return stores.filter(store => store.status === 'approved' && store.isActive === true);
+      case 'pasif':
+        return stores.filter(store => store.status === 'approved' && store.isActive === false);
+      case 'iptal':
+        return stores.filter(store => store.status === 'rejected' || store.status === 'banned');
+      default:
+        return stores;
+    }
+  };
+
+  const getTabCount = (tab: 'yeni' | 'aktif' | 'pasif' | 'iptal') => {
+    switch (tab) {
+      case 'yeni':
+        return stores.filter(store => store.status === 'pending' || store.status === 'needs_correction').length;
+      case 'aktif':
+        return stores.filter(store => store.status === 'approved' && store.isActive === true).length;
+      case 'pasif':
+        return stores.filter(store => store.status === 'approved' && store.isActive === false).length;
+      case 'iptal':
+        return stores.filter(store => store.status === 'rejected' || store.status === 'banned').length;
+      default:
+        return 0;
+    }
+  };
+
   if (!user || role !== 0) {
     return null;
   }
@@ -215,12 +276,61 @@ export default function AdminStoresPage() {
     return <div className="text-gray-900 dark:text-white">Yükleniyor...</div>;
   }
 
+  const filteredStores = getFilteredStores();
+
   return (
     <AdminLayout>
       <div className="space-y-6">
         <div className="bg-white dark:bg-gray-800 shadow-lg rounded-xl border border-gray-200 dark:border-gray-700">
           <div className="px-4 py-5 sm:p-6">
             <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-6">Mağaza Yönetimi</h2>
+            
+            {/* Tab Navigation */}
+            <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => setActiveTab('yeni')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'yeni'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Yeni ({getTabCount('yeni')})
+                </button>
+                <button
+                  onClick={() => setActiveTab('aktif')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'aktif'
+                      ? 'border-green-500 text-green-600 dark:text-green-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Aktif ({getTabCount('aktif')})
+                </button>
+                <button
+                  onClick={() => setActiveTab('pasif')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'pasif'
+                      ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  Pasif ({getTabCount('pasif')})
+                </button>
+                <button
+                  onClick={() => setActiveTab('iptal')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'iptal'
+                      ? 'border-red-500 text-red-600 dark:text-red-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
+                >
+                  İptal Edilen ({getTabCount('iptal')})
+                </button>
+              </nav>
+            </div>
+
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
                 <thead className="bg-gray-50 dark:bg-gray-700">
@@ -232,46 +342,163 @@ export default function AdminStoresPage() {
                       Durum
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Tür
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Oluşturulma
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                       İşlemler
                     </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  {stores.map((store) => (
+                  {filteredStores.map((store) => (
                     <tr key={store.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                        {store.name}
+                        <div className="flex items-center">
+                          {store.logo && (
+                            <img
+                              src={store.logo}
+                              alt="Logo"
+                              className="w-8 h-8 rounded-full mr-3 object-cover"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium">{store.name}</div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">{store.email}</div>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {store.status === 'approved' ? 'Onaylandı' :
-                         store.status === 'pending' ? 'Bekliyor' :
-                         store.status === 'rejected' ? 'Reddedildi' :
-                         store.status === 'needs_correction' ? 'Düzeltme Bekliyor' :
-                         store.status === 'banned' ? 'Yasaklı' : 'Bilinmiyor'}
+                        <div className="flex flex-col space-y-1">
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            store.status === STORE_STATUS.APPROVED && store.isActive === true
+                              ? ACTIVE_STATUS_COLORS.active
+                              : store.status === STORE_STATUS.APPROVED && store.isActive === false
+                              ? ACTIVE_STATUS_COLORS.inactive
+                              : STORE_STATUS_COLORS[store.status as keyof typeof STORE_STATUS_COLORS] || 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                          }`}>
+                            {store.status === STORE_STATUS.APPROVED && store.isActive === true
+                              ? 'Aktif'
+                              : store.status === STORE_STATUS.APPROVED && store.isActive === false
+                              ? 'Pasif'
+                              : STORE_STATUS_LABELS[store.status as keyof typeof STORE_STATUS_LABELS] || 'Bilinmiyor'}
+                          </span>
+                          {store.categoryName && (
+                            <span className="text-xs text-gray-400 dark:text-gray-500">
+                              {store.categoryName}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                          store.storeType === 'esnaf' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' :
+                          store.storeType === 'avm' ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' :
+                          store.storeType === 'marka' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                          'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200'
+                        }`}>
+                          {store.storeType === 'esnaf' ? 'Esnaf' :
+                           store.storeType === 'avm' ? 'AVM' :
+                           store.storeType === 'marka' ? 'Marka' : 'Bilinmiyor'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <div className="text-xs">
+                          {store.createdAt && (
+                            <div>
+                              {store.createdAt instanceof Date ? store.createdAt.toLocaleDateString('tr-TR') : 'Bilinmiyor'}
+                            </div>
+                          )}
+                          {store.approvedAt && (
+                            <div className="text-green-600 dark:text-green-400">
+                              Onay: {store.approvedAt instanceof Date ? store.approvedAt.toLocaleDateString('tr-TR') : ''}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        {store.status === 'pending' && (
-                          <button
-                            onClick={() => openApprovalModal(store)}
-                            className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
-                          >
-                            İncele ve Onayla
-                          </button>
+                        {activeTab === 'yeni' && (
+                          <>
+                            {(store.status === 'pending' || store.status === 'needs_correction') && (
+                              <button
+                                onClick={() => openApprovalModal(store)}
+                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                              >
+                                İncele ve Onayla
+                              </button>
+                            )}
+                            {store.status === 'needs_correction' && (
+                              <button
+                                onClick={() => updateStoreStatus(store.id, 'pending')}
+                                className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm"
+                              >
+                                Geri İncelemeye Al
+                              </button>
+                            )}
+                          </>
                         )}
-                        {store.status === 'rejected' && (
+                        {activeTab === 'aktif' && store.status === 'approved' && store.isActive === true && (
+                          <>
+                            <button
+                              onClick={() => openApprovalModal(store)}
+                              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm"
+                            >
+                              İncele
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateDoc(doc(db, 'stores', store.id), { isActive: false });
+                                  toast.success('Mağaza pasifleştirildi');
+                                } catch (error) {
+                                  console.error('Mağaza pasifleştirme hatası:', error);
+                                  toast.error('Mağaza pasifleştirilirken hata oluştu');
+                                }
+                              }}
+                              className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm ml-2"
+                            >
+                              Pasif Et
+                            </button>
+                            <button
+                              onClick={() => updateStoreStatus(store.id, 'banned')}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm ml-2"
+                            >
+                              İptal Et
+                            </button>
+                          </>
+                        )}
+                        {activeTab === 'pasif' && store.status === 'approved' && (
+                          <>
+                            <button
+                              onClick={() => updateStoreStatus(store.id, 'banned')}
+                              className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                            >
+                              İptal Et
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await updateDoc(doc(db, 'stores', store.id), { isActive: true });
+                                  toast.success('Mağaza aktifleştirildi');
+                                } catch (error) {
+                                  console.error('Mağaza aktifleştirme hatası:', error);
+                                  toast.error('Mağaza aktifleştirilirken hata oluştu');
+                                }
+                              }}
+                              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm ml-2"
+                            >
+                              Aktif
+                            </button>
+                          </>
+                        )}
+                        {activeTab === 'iptal' && (store.status === 'rejected' || store.status === 'banned') && (
                           <button
                             onClick={() => updateStoreStatus(store.id, 'pending')}
-                            className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm"
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
                           >
                             Geri İncelemeye Al
-                          </button>
-                        )}
-                        {store.status === 'approved' && (
-                          <button
-                            onClick={() => updateStoreStatus(store.id, 'pending')}
-                            className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
-                          >
-                            Geri Çevir
                           </button>
                         )}
                         <button
@@ -303,6 +530,14 @@ export default function AdminStoresPage() {
                   ))}
                 </tbody>
               </table>
+              {filteredStores.length === 0 && (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                  {activeTab === 'yeni' && 'Yeni mağaza başvurusu bulunmuyor.'}
+                  {activeTab === 'aktif' && 'Aktif mağaza bulunmuyor.'}
+                  {activeTab === 'pasif' && 'Pasif mağaza bulunmuyor.'}
+                  {activeTab === 'iptal' && 'İptal edilen mağaza bulunmuyor.'}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -529,6 +764,7 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, on
     corporateType: store.corporateType || 'PRIVATE',
     iban: store.iban || '',
     storeType: store.storeType || 'esnaf',
+    categories: store.categories || [], // Kategoriler
     location: {
       latitude: store.location?.latitude || 0,
       longitude: store.location?.longitude || 0,
@@ -685,6 +921,7 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, on
       corporateType: store.corporateType || 'PRIVATE',
       iban: store.iban || '',
       storeType: store.storeType || 'esnaf',
+      categories: store.categories || [], // Kategoriler
       location: {
         latitude: store.location?.latitude || 0,
         longitude: store.location?.longitude || 0,
@@ -841,6 +1078,20 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, on
                         {store.iban || 'Belirtilmemiş'}
                       </p>
                     </div>
+                    {store.birthDate && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Doğum Tarihi</label>
+                        <p className="text-gray-900 dark:text-white">
+                          {store.birthDate instanceof Date ? store.birthDate.toLocaleDateString('tr-TR') : store.birthDate}
+                        </p>
+                      </div>
+                    )}
+                    {store.kepAddress && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">KEP Adresi</label>
+                        <p className="text-gray-900 dark:text-white font-mono text-sm">{store.kepAddress}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1269,23 +1520,95 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, on
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">İşlemler</h3>
 
             {/* Site Kategorisi Seçimi */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                Kategori *
-              </label>
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Kategori Seçin</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>
-                    {category.icon && renderIcon(category.icon, category.color)} {category.name} ({category.storeCount} mağaza)
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isEditMode ? (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Ürün Kategorileri (Çoklu Seçim)
+                </label>
+                <div className="space-y-3 max-h-96 overflow-y-auto bg-white dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-600">
+                  {categories
+                    .filter(category => category.isActive !== false)
+                    .filter(category => {
+                      // Sadece ana kategorileri göster (alt kategorisi olmayanlar)
+                      return !categories.some(cat => cat.childCategories?.includes(category.id));
+                    })
+                    .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
+                    .map((category) => {
+                      const isSelected = editFormData.categories?.includes(category.id) || false;
+
+                      return (
+                        <label
+                          key={category.id}
+                          className={`flex items-center p-3 rounded-lg cursor-pointer transition-all duration-200 ${
+                            isSelected
+                              ? 'bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700'
+                              : 'bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600'
+                          }`}
+                        >
+                          <div className={`relative flex-shrink-0 w-5 h-5 rounded border-2 transition-all duration-200 ${
+                            isSelected
+                              ? 'border-blue-500 bg-blue-500'
+                              : 'border-gray-300 dark:border-gray-500'
+                          }`}>
+                            {isSelected && (
+                              <svg className="w-3 h-3 text-white absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                            )}
+                          </div>
+                          <div className="ml-3 flex-1">
+                            <div className={`text-sm font-medium transition-colors duration-200 ${
+                              isSelected ? 'text-blue-900 dark:text-blue-100' : 'text-gray-900 dark:text-gray-100'
+                            }`}>
+                              {category.name}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              {category.storeCount || 0} mağaza
+                            </div>
+                          </div>
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const categoryId = category.id;
+                              setEditFormData(prev => {
+                                const currentCategories = prev.categories || [];
+                                if (e.target.checked) {
+                                  return { ...prev, categories: [...currentCategories, categoryId] };
+                                } else {
+                                  return { ...prev, categories: currentCategories.filter(id => id !== categoryId) };
+                                }
+                              });
+                            }}
+                            className="sr-only"
+                          />
+                        </label>
+                      );
+                    })}
+                </div>
+                <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                  Seçilen kategoriler: {editFormData.categories?.length || 0}
+                </div>
+              </div>
+            ) : (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Kategori *
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Kategori Seçin</option>
+                  {categories.map(category => (
+                    <option key={category.id} value={category.id}>
+                      {category.icon && renderIcon(category.icon, category.color)} {category.name} ({category.storeCount} mağaza)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* Düzeltme Talebi */}
             <div className="mb-6">

@@ -18,7 +18,7 @@ const Header: React.FC<HeaderProps> = ({
   onMenuClick
 }) => {
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const { user, role, logout } = useAuth();
+  const { user, role, logout, getProfile } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [dropdownOpen, setDropdownOpen] = React.useState(false);
@@ -36,9 +36,11 @@ const Header: React.FC<HeaderProps> = ({
 
   // Kullanıcı adı belirleme
   const getUserDisplayName = () => {
+    const profile = getProfile();
+    
     // Önce profile'dan displayName'i kontrol et
-    if (user?.profile?.displayName) {
-      return formatDisplayName(user.profile.displayName);
+    if (profile?.displayName) {
+      return formatDisplayName(profile.displayName);
     }
 
     // Sonra Auth'dan displayName'i kontrol et

@@ -34,6 +34,7 @@ export interface Category {
   name: string;
   description?: string;
   parentId?: string;
+  parentName?: string; // Mağaza alt kategorileri için
   hasSubcategories: boolean;
   subcategories?: Category[];
   productCount: number;
@@ -48,6 +49,9 @@ export interface Category {
   color?: string;
   courierCompatible?: boolean;
   order?: number; // Admin panelinde kullanılan sıralama field'ı
+  // Mağaza kategorileri için ek alanlar
+  childCategories?: string[]; // Alt kategori ID'leri
+  productCategories?: string[]; // Ürün kategori ID'leri
 }
 
 export interface Option {
@@ -122,6 +126,7 @@ export interface Store {
   phone?: string;
   address?: string;
   category?: string;
+  categoryName?: string; // Site kategori adı
   categories?: string[]; // Ürün kategorileri ID'leri
   storeType?: 'esnaf' | 'avm' | 'marka';
   description?: string;
@@ -204,4 +209,37 @@ export interface SiteCategory {
   storeCount: number;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  role: number; // 0: Admin, 1: Mağaza, 2: Müşteri, 3: Kurye, 5: Alt Kullanıcı
+  displayName?: string;
+  phoneNumber?: string;
+  address?: string;
+  bio?: string;
+  banned?: boolean;
+  banDuration?: number; // Yasaklama süresi (gün cinsinden)
+  banReason?: string; // Yasaklama sebebi
+  banNote?: string; // Yasaklama notu
+  bannedAt?: Date; // Yasaklama tarihi
+  bannedBy?: string; // Yasaklayan admin ID
+  deleted?: boolean;
+  deletedAt?: Date;
+  createdAt: Date;
+  permissions?: {
+    canViewUsers: boolean;
+    canManageUsers: boolean;
+    canViewStores: boolean;
+    canManageStores: boolean;
+    canViewProducts: boolean;
+    canManageProducts: boolean;
+    canViewOrders: boolean;
+    canManageOrders: boolean;
+    canViewFinance: boolean;
+    canViewAnalytics: boolean;
+    canSendNotifications: boolean;
+    canManageCouriers: boolean;
+  };
 }

@@ -19,7 +19,7 @@ const AddressMap = dynamic(() => import('@/components/general/AddressMap'), {
 });
 
 export default function ProfilePage() {
-  const { user, role } = useAuth();
+  const { user, role, getProfile } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
@@ -341,12 +341,13 @@ export default function ProfilePage() {
 
     // Load user data from profile
     if (user) {
+      const profile = getProfile();
       setFormData({
-        phone: user.profile?.phoneNumber || user.profile?.phone || user.phoneNumber || '',
-        address: parseAddress(user.profile?.address),
-        bio: user.profile?.bio || ''
+        phone: profile?.phoneNumber || profile?.phone || user.phoneNumber || '',
+        address: parseAddress(profile?.address),
+        bio: profile?.bio || ''
       });
-      setProfileImage(user.profile?.profileImage || null);
+      setProfileImage(profile?.profileImage || null);
     }
   }, [user, router]);
 
@@ -474,7 +475,7 @@ export default function ProfilePage() {
               <div className="flex items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <User className="w-5 h-5 text-gray-400 mr-3" />
                 <span className="text-gray-900 dark:text-white">
-                  {formatDisplayName(user.profile?.displayName || user.displayName) || 'Belirtilmemiş'}
+                  {formatDisplayName(getProfile()?.displayName || user.displayName) || 'Belirtilmemiş'}
                 </span>
               </div>
               <p className="text-xs text-red-500 dark:text-red-400 mt-1">

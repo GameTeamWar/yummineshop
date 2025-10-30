@@ -34,6 +34,421 @@ import { toast } from 'react-toastify';
 
 const GOOGLE_MAPS_LIBRARIES: ("places")[] = ['places'];
 
+// Kategori yapısı - create-categories.js'den alınmış
+const CATEGORIES_DATA = [
+  {
+    id: 'giyim',
+    name: "Giyim",
+    childCategories: ['kadin-giyim', 'erkek-giyim', 'cocuk-giyim', 'buyuk-beden']
+  },
+  {
+    id: 'kadin-giyim',
+    name: "Kadın Giyim",
+    childCategories: ['kadin-ust-giyim', 'kadin-alt-giyim', 'kadin-dis-giyim', 'kadin-ic-giyim', 'kadin-elbise-tulum']
+  },
+  {
+    id: 'kadin-ust-giyim',
+    name: "Üst Giyim",
+    productCategories: ['kadin-tisort', 'kadin-bluz', 'kadin-gomlek', 'kadin-sweatshirt', 'kadin-kazak', 'kadin-hirka', 'kadin-atlet-body', 'kadin-crop']
+  },
+  {
+    id: 'kadin-alt-giyim',
+    name: "Alt Giyim",
+    productCategories: ['kadin-pantolon', 'kadin-jean', 'kadin-etek', 'kadin-sort', 'kadin-tayt-takim']
+  },
+  {
+    id: 'kadin-dis-giyim',
+    name: "Dış Giyim",
+    productCategories: ['kadin-mont', 'kadin-kaban-palto', 'kadin-yelek', 'kadin-ceket', 'kadin-trencot-yagmurluk']
+  },
+  {
+    id: 'kadin-ic-giyim',
+    name: "İç Giyim",
+    productCategories: ['kadin-sutyen', 'kadin-kulot', 'kadin-pijama-takimi', 'kadin-gecelik', 'kadin-corap', 'kadin-termal']
+  },
+  {
+    id: 'kadin-elbise-tulum',
+    name: "Elbise & Tulum",
+    productCategories: ['kadin-gunluk-elbise', 'kadin-abiye', 'kadin-gece-elbisesi', 'kadin-tulum', 'kadin-etnik-elbise']
+  },
+  {
+    id: 'erkek-giyim',
+    name: "Erkek Giyim",
+    childCategories: ['erkek-ust-giyim', 'erkek-alt-giyim', 'erkek-dis-giyim', 'erkek-ic-giyim', 'erkek-takim-elbise']
+  },
+  {
+    id: 'erkek-ust-giyim',
+    name: "Üst Giyim",
+    productCategories: ['erkek-tisort', 'erkek-gomlek', 'erkek-polo', 'erkek-sweatshirt', 'erkek-kazak', 'erkek-hirka', 'erkek-atlet']
+  },
+  {
+    id: 'erkek-alt-giyim',
+    name: "Alt Giyim",
+    productCategories: ['erkek-pantolon', 'erkek-jean', 'erkek-sort', 'erkek-esofman-alti']
+  },
+  {
+    id: 'erkek-dis-giyim',
+    name: "Dış Giyim",
+    productCategories: ['erkek-mont', 'erkek-kaban', 'erkek-yelek', 'erkek-ceket', 'erkek-yagmurluk']
+  },
+  {
+    id: 'erkek-ic-giyim',
+    name: "İç Giyim",
+    productCategories: ['erkek-boxer', 'erkek-corap', 'erkek-pijama', 'erkek-ic-camasir', 'erkek-termal']
+  },
+  {
+    id: 'erkek-takim-elbise',
+    name: "Takım Elbise",
+    productCategories: ['erkek-takim', 'erkek-smokin', 'erkek-yelek-takim', 'erkek-gomlek-kravat']
+  },
+  {
+    id: 'cocuk-giyim',
+    name: "Çocuk Giyim",
+    childCategories: ['kiz-cocuk', 'erkek-cocuk', 'bebek-giyim']
+  },
+  {
+    id: 'kiz-cocuk',
+    name: "Kız Çocuk",
+    productCategories: ['kiz-ust-giyim', 'kiz-alt-giyim', 'kiz-elbise', 'kiz-dis-giyim', 'kiz-ic-giyim']
+  },
+  {
+    id: 'erkek-cocuk',
+    name: "Erkek Çocuk",
+    productCategories: ['erkek-cocuk-ust', 'erkek-cocuk-alt', 'erkek-cocuk-dis', 'erkek-cocuk-ic']
+  },
+  {
+    id: 'bebek-giyim',
+    name: "Bebek Giyim",
+    productCategories: ['bebek-tulum', 'bebek-body', 'bebek-ust', 'bebek-alt', 'bebek-dis-giyim', 'bebek-takimlari']
+  },
+  {
+    id: 'buyuk-beden',
+    name: "Büyük Beden",
+    productCategories: ['buyuk-beden-kadin', 'buyuk-beden-erkek']
+  },
+  {
+    id: 'ayakkabi',
+    name: "Ayakkabı & Çanta",
+    childCategories: ['kadin-ayakkabi', 'erkek-ayakkabi', 'cocuk-ayakkabi', 'cantalar']
+  },
+  {
+    id: 'kadin-ayakkabi',
+    name: "Kadın Ayakkabı",
+    productCategories: ['kadin-topuklu', 'kadin-sneaker', 'kadin-sandalet', 'kadin-bot-bootie', 'kadin-babet', 'kadin-terlik', 'kadin-spor-ayakkabi', 'kadin-gunluk-ayakkabi']
+  },
+  {
+    id: 'erkek-ayakkabi',
+    name: "Erkek Ayakkabı",
+    productCategories: ['erkek-sneaker', 'erkek-klasik', 'erkek-bot', 'erkek-sandalet', 'erkek-terlik', 'erkek-spor-ayakkabi', 'erkek-gunluk-ayakkabi', 'erkek-ayakkabi-loafer']
+  },
+  {
+    id: 'cocuk-ayakkabi',
+    name: "Çocuk Ayakkabı",
+    productCategories: ['cocuk-spor', 'cocuk-sneaker', 'cocuk-sandalet', 'cocuk-bot', 'cocuk-ev-ayakkabisi', 'bebek-ayakkabi']
+  },
+  {
+    id: 'cantalar',
+    name: "Çanta",
+    productCategories: ['kadin-omuz-canta', 'kadin-el-canta', 'kadin-sirt-canta', 'kadin-bel-canta', 'erkek-evrak-canta', 'erkek-sirt-canta', 'erkek-bel-canta', 'cocuk-canta', 'valiz-seyahat']
+  },
+  {
+    id: 'aksesuar',
+    name: "Aksesuar & Takı",
+    childCategories: ['kadin-aksesuar', 'erkek-aksesuar', 'taki', 'gozluk-saat']
+  },
+  {
+    id: 'kadin-aksesuar',
+    name: "Kadın Aksesuar",
+    productCategories: ['kadin-kemer', 'kadin-sal-atki', 'kadin-bere-sapka', 'kadin-eldiven', 'kadin-cuzdan', 'kadin-kart-vizitlik']
+  },
+  {
+    id: 'erkek-aksesuar',
+    name: "Erkek Aksesuar",
+    productCategories: ['erkek-kemer', 'erkek-kravat-papyon', 'erkek-sal-atki', 'erkek-bere-sapka', 'erkek-eldiven', 'erkek-cuzdan', 'erkek-kol-dugmesi']
+  },
+  {
+    id: 'taki',
+    name: "Takı",
+    productCategories: ['kolye', 'kupe', 'bileklik', 'yuzuk', 'taki-seti', 'piercing', 'broslar']
+  },
+  {
+    id: 'gozluk-saat',
+    name: "Saat & Gözlük",
+    productCategories: ['kadin-saat', 'erkek-saat', 'akilli-saat', 'kadin-gunes-gozlugu', 'erkek-gunes-gozlugu', 'gozluk-kiliflari']
+  },
+  {
+    id: 'spor-outdoor',
+    name: "Spor & Outdoor",
+    childCategories: ['spor-giyim', 'spor-ayakkabi', 'spor-ekipman', 'outdoor']
+  },
+  {
+    id: 'spor-giyim',
+    name: "Spor Giyim",
+    productCategories: ['kadin-spor', 'erkek-spor', 'spor-sutyen', 'spor-tayt', 'spor-sort', 'spor-tshirt', 'spor-sweatshirt', 'spor-esofman']
+  },
+  {
+    id: 'spor-ayakkabi',
+    name: "Spor Ayakkabı",
+    productCategories: ['kosu-ayakkabi', 'fitness-ayakkabi', 'basketbol-ayakkabi', 'futbol-krampon', 'tenis-ayakkabi', 'outdoor-ayakkabi']
+  },
+  {
+    id: 'spor-ekipman',
+    name: "Spor Ekipman",
+    productCategories: ['spor-canta', 'yoga-matt', 'spor-sise', 'fitness-ekipman', 'top-raket', 'kamp-malzemesi']
+  },
+  {
+    id: 'outdoor',
+    name: "Outdoor",
+    productCategories: ['outdoor-giyim', 'trekking-ayakkabi', 'kamp-ekipman', 'sirt-cantasi', 'termos-matara']
+  },
+  {
+    id: 'kozmetik',
+    name: "Kozmetik & Kişisel Bakım",
+    childCategories: ['makyaj', 'cilt-bakim', 'sac-bakim', 'kisisel-bakim', 'parfum']
+  },
+  {
+    id: 'makyaj',
+    name: "Makyaj",
+    productCategories: ['yuz-makyaj', 'goz-makyaj', 'dudak-makyaj', 'tirnak-bakim', 'makyaj-seti', 'makyaj-firca']
+  },
+  {
+    id: 'cilt-bakim',
+    name: "Cilt Bakım",
+    productCategories: ['yuz-temizleme', 'serum-ampul', 'nemlendirici', 'goz-bakim', 'maske-peeling', 'gunes-koruyucu', 'anti-aging']
+  },
+  {
+    id: 'sac-bakim',
+    name: "Saç Bakım",
+    productCategories: ['sampuan', 'sac-kremi', 'sac-maske', 'sac-yagi', 'sac-boyasi', 'sac-sekillendirici', 'sac-aksesuari']
+  },
+  {
+    id: 'kisisel-bakim',
+    name: "Kişisel Bakım",
+    productCategories: ['vucut-bakim', 'agiz-dis-bakim', 'epilasyon-tiras', 'deodorant', 'el-ayak-bakim', 'banyo-dus', 'hijyen']
+  },
+  {
+    id: 'parfum',
+    name: "Parfüm & Deodorant",
+    productCategories: ['kadin-parfum', 'erkek-parfum', 'unisex-parfum', 'deodorant-spray', 'roll-on', 'parfum-seti']
+  },
+  {
+    id: 'elektronik',
+    name: "Elektronik",
+    childCategories: ['telefon-tablet', 'bilgisayar', 'ses-goruntu', 'giyilebilir-teknoloji', 'oyun-konsol']
+  },
+  {
+    id: 'telefon-tablet',
+    name: "Telefon & Tablet",
+    productCategories: ['telefon-kilif', 'ekran-koruyucu', 'sarj-aleti', 'power-bank', 'kablosuz-sarj', 'telefon-tutucu', 'selfie-cubugu']
+  },
+  {
+    id: 'bilgisayar',
+    name: "Bilgisayar & Tablet",
+    productCategories: ['klavye-mouse', 'laptop-canta', 'laptop-standi', 'usb-hub', 'webcam', 'mousepad', 'canta-kilif']
+  },
+  {
+    id: 'ses-goruntu',
+    name: "Ses & Görüntü",
+    productCategories: ['kulaklik', 'hoparlor', 'mikrofon', 'kulaklık-kilif']
+  },
+  {
+    id: 'giyilebilir-teknoloji',
+    name: "Giyilebilir Teknoloji",
+    productCategories: ['akilli-saat', 'akilli-bileklik', 'vr-gozluk', 'saat-kayisi', 'saat-koruyucu']
+  },
+  {
+    id: 'oyun-konsol',
+    name: "Oyun & Konsol",
+    productCategories: ['oyun-kolu', 'oyun-konsolu-aksesuar', 'gaming-kulaklik', 'gaming-mouse', 'gaming-klavye']
+  },
+  {
+    id: 'ev-yasam',
+    name: "Ev & Yaşam",
+    childCategories: ['ev-tekstil', 'mutfak', 'banyo', 'dekorasyon', 'mobilya']
+  },
+  {
+    id: 'ev-tekstil',
+    name: "Ev Tekstil",
+    productCategories: ['nevresim-takimi', 'pike-yorgan', 'yastik-yorgan', 'havlu', 'perde', 'hali-kilim', 'paspas']
+  },
+  {
+    id: 'mutfak',
+    name: "Mutfak & Sofra",
+    productCategories: ['mutfak-gerec', 'tencere-tava', 'bıcak-seti', 'bardak-fincan', 'tabak-kase', 'saklama-kabi', 'mutfak-tekstil']
+  },
+  {
+    id: 'banyo',
+    name: "Banyo",
+    productCategories: ['banyo-tekstil', 'banyo-aksesuar', 'banyo-organizeri', 'sabunluk-firca']
+  },
+  {
+    id: 'dekorasyon',
+    name: "Dekorasyon",
+    productCategories: ['tablo-cerceve', 'vazo', 'mum-mumluk', 'saat', 'ayna', 'dekoratif-obje', 'yapay-cicek', 'yastik-kilif']
+  },
+  {
+    id: 'mobilya',
+    name: "Mobilya",
+    productCategories: ['koltuk-kanepe', 'masa-sandalye', 'dolap-raf', 'yatak-baza', 'cocuk-mobilya']
+  },
+  {
+    id: 'kitap-hobi',
+    name: "Kitap, Müzik & Hobi",
+    childCategories: ['kitap', 'kirtasiye', 'hobi', 'muzik-enstruman']
+  },
+  {
+    id: 'kitap',
+    name: "Kitap",
+    productCategories: ['roman', 'bilim-kurgu', 'cocuk-kitap', 'edebiyat', 'kisisel-gelisim', 'tarih', 'biyografi', 'siir']
+  },
+  {
+    id: 'kirtasiye',
+    name: "Kırtasiye & Ofis",
+    productCategories: ['defter-bloknot', 'kalem-kaleci', 'dosya-klasor', 'ofis-malzeme', 'ajanda-planlayici']
+  },
+  {
+    id: 'hobi',
+    name: "Hobi & Sanat",
+    productCategories: ['boyama-resim', 'el-isi', 'puzzle', 'koleksiyon', 'model-maket']
+  },
+  {
+    id: 'muzik-enstruman',
+    name: "Müzik & Enstrüman",
+    productCategories: ['gitar', 'klavye-piyano', 'davul-vurmali', 'uzeli-enstruman', 'aksesuar-parcalar']
+  },
+  {
+    id: 'oyuncak-bebek',
+    name: "Anne, Bebek & Oyuncak",
+    childCategories: ['oyuncak', 'bebek-bakim', 'bebek-beslenme', 'anne-bakim']
+  },
+  {
+    id: 'oyuncak',
+    name: "Oyuncak",
+    productCategories: ['bebek-oyuncak', 'oyuncak-bebek', 'lego-yapboz', 'egitici-oyuncak', 'aktivite-oyuncak', 'arac-oyuncak', 'peluş']
+  },
+  {
+    id: 'bebek-bakim',
+    name: "Bebek Bakım",
+    productCategories: ['bez-mendil', 'bakim-hijyen', 'banyo-kupesti', 'emzik-biberon', 'bebek-guvenlik']
+  },
+  {
+    id: 'bebek-beslenme',
+    name: "Bebek Beslenme",
+    productCategories: ['biberon-aksesuar', 'mama-sandalyesi', 'beslenme-seti', 'emzirme']
+  },
+  {
+    id: 'anne-bakim',
+    name: "Anne Bakım",
+    productCategories: ['hamilelik-giyim', 'emzirme-giyim', 'gogus-pompalari', 'anne-bakim-urun']
+  },
+  {
+    id: 'petshop',
+    name: "Pet Shop",
+    childCategories: ['kopek-urun', 'kedi-urun', 'kus-balik']
+  },
+  {
+    id: 'kopek-urun',
+    name: "Köpek Ürünleri",
+    productCategories: ['kopek-mama', 'kopek-tasma', 'kopek-oyuncak', 'kopek-bakim', 'kopek-giyim', 'kopek-yatak']
+  },
+  {
+    id: 'kedi-urun',
+    name: "Kedi Ürünleri",
+    productCategories: ['kedi-mama', 'kedi-kum', 'kedi-oyuncak', 'kedi-bakim', 'kedi-tirmalama', 'kedi-tasima']
+  },
+  {
+    id: 'kus-balik',
+    name: "Kuş & Balık",
+    productCategories: ['kus-yem', 'kafes-aksesuar', 'akvaryum', 'balik-yem']
+  },
+  {
+    id: 'otomotiv',
+    name: "Otomotiv & Motosiklet",
+    childCategories: ['oto-aksesuar', 'oto-bakim', 'oto-yedek', 'motor-aksesuar']
+  },
+  {
+    id: 'oto-aksesuar',
+    name: "Oto Aksesuar",
+    productCategories: ['oto-koltuk-kilif', 'paspas', 'direksiyon-kilif', 'arac-kokusu', 'arac-telefon-tutucu', 'gunes-koruma']
+  },
+  {
+    id: 'oto-bakim',
+    name: "Oto Bakım",
+    productCategories: ['arac-temizlik', 'cila-boya', 'cam-temizlik', 'bakim-seti']
+  },
+  {
+    id: 'oto-yedek',
+    name: "Yedek Parça",
+    productCategories: ['filtre', 'ampul', 'silecek', 'ayna', 'far']
+  },
+  {
+    id: 'motor-aksesuar',
+    name: "Motosiklet",
+    productCategories: ['motor-kask', 'motor-eldiven', 'motor-mont', 'motor-bot', 'motor-koruma']
+  }
+];
+
+// Seçilen ana kategorilere göre alt kategorileri hesaplayan fonksiyon
+function getSubCategoriesForStore(selectedMainCategories: string[]) {
+  const subCategories: any[] = [];
+  
+  selectedMainCategories.forEach(mainCategoryId => {
+    const mainCategory = CATEGORIES_DATA.find(cat => cat.id === mainCategoryId);
+    if (mainCategory) {
+      // Ana kategorinin childCategories'lerini ekle
+      if (mainCategory.childCategories) {
+        mainCategory.childCategories.forEach(childId => {
+          const childCategory = CATEGORIES_DATA.find(cat => cat.id === childId);
+          if (childCategory) {
+            subCategories.push({
+              id: childCategory.id,
+              name: childCategory.name,
+              parentId: mainCategoryId,
+              parentName: mainCategory.name,
+              isActive: true,
+              order: subCategories.length + 1
+            });
+            
+            // Child kategorinin productCategories'lerini de ekle
+            if (childCategory.productCategories) {
+              childCategory.productCategories.forEach(productCatId => {
+                subCategories.push({
+                  id: productCatId,
+                  name: productCatId.split('-').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                  ).join(' '),
+                  parentId: childCategory.id,
+                  parentName: childCategory.name,
+                  isActive: true,
+                  order: subCategories.length + 1
+                });
+              });
+            }
+          }
+        });
+      }
+      
+      // Ana kategorinin doğrudan productCategories'lerini ekle (eğer childCategories yoksa)
+      if (!mainCategory.childCategories && mainCategory.productCategories) {
+        mainCategory.productCategories.forEach(productCatId => {
+          subCategories.push({
+            id: productCatId,
+            name: productCatId.split('-').map(word => 
+              word.charAt(0).toUpperCase() + word.slice(1)
+            ).join(' '),
+            parentId: mainCategoryId,
+            parentName: mainCategory.name,
+            isActive: true,
+            order: subCategories.length + 1
+          });
+        });
+      }
+    }
+  });
+  
+  return subCategories;
+}
+
 export default function RegisterPage() {
   const searchParams = useSearchParams();
   const type = searchParams.get('type');
@@ -256,9 +671,6 @@ export default function RegisterPage() {
     if (!storeInfo.corporateType) errors.corporateType = "Şirket türü zorunludur";
     if (storeInfo.corporateType && !storeInfo.taxId.trim()) {
       errors.taxId = `${storeInfo.corporateType === "PRIVATE" ? "TC Kimlik Numarası" : "Vergi Kimlik Numarası"} zorunludur`;
-    }
-    if (!storeInfo.categories || storeInfo.categories.length === 0) {
-      errors.categories = "En az bir kategori seçmelisiniz";
     }
     if (storeInfo.corporateType && storeInfo.corporateType !== "PRIVATE" && !storeInfo.companyName.trim()) {
       errors.companyName = "Şirket adı zorunludur";
@@ -486,14 +898,16 @@ export default function RegisterPage() {
           iban: person.iban,
           ibanOwnerBirthDate: person.birthDate,
           kepAddress: person.kepAddress,
-          storeType: storeInfo.categories?.[0] || "",
-          categories: storeInfo.categories,
+          storeType: storeInfo.storeType,
+          categories: [], // Kategori seçimi düzenleme modunda yapılacak
+          subCategories: [], // Alt kategoriler düzenleme modunda belirlenecek
           branchCount: storeInfo.branchCount,
           isMainBranch: storeInfo.isMainBranch,
           corporateType: storeInfo.corporateType,
           branchReferenceCode,
           logo: storeInfo.logo,
           authorizedPersons: authorizedPersons,
+          createdAt: new Date(), // Kayıt tarihi
         }),
         ...address,
         ...documents,

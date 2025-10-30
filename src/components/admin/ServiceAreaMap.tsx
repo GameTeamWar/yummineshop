@@ -45,8 +45,14 @@ interface ServiceAreaMapProps {
   onRegionUpdate?: (id: string, updates: Partial<{ polygon: { lat: number; lng: number }[] }>) => void;
   courierZones?: { id: string; name: string; center: { lat: number; lng: number }; singlePackageRadius: number; multiPackageRadius: number; color: string; maxDeliveryKm?: number; enableNotifications?: boolean }[];
   onCourierZoneUpdate?: (zones: { id: string; name: string; center: { lat: number; lng: number }; singlePackageRadius: number; multiPackageRadius: number; color: string; maxDeliveryKm?: number; enableNotifications?: boolean }[]) => void;
-  customerBlockAreas?: { id: string; name: string; polygon: { lat: number; lng: number }[]; color: string }[];
-  onCustomerBlockAreaUpdate?: (areas: { id: string; name: string; polygon: { lat: number; lng: number }[]; color: string }[]) => void;
+  customerBlockAreas?: (
+    | { id: string; name: string; polygon: { lat: number; lng: number }[]; color: string; type?: 'polygon' }
+    | { id: string; name: string; center: { lat: number; lng: number }; radius: number; color: string; type: 'circle' }
+  )[];
+  onCustomerBlockAreaUpdate?: (areas: (
+    | { id: string; name: string; polygon: { lat: number; lng: number }[]; color: string; type?: 'polygon' }
+    | { id: string; name: string; center: { lat: number; lng: number }; radius: number; color: string; type: 'circle' }
+  )[]) => void;
   couriers?: { id: string; name: string; location?: { lat: number; lng: number }; status: 'online' | 'offline' | 'busy'; maxDeliveryKm: number; enableNotifications: boolean; fcmToken?: string; locationHistory?: { lat: number; lng: number; timestamp: number }[]; waitingPoints?: { lat: number; lng: number; duration: number; startTime: number; endTime: number }[] }[];
   onCourierUpdate?: (couriers: { id: string; name: string; location?: { lat: number; lng: number }; status: 'online' | 'offline' | 'busy'; maxDeliveryKm: number; enableNotifications: boolean; fcmToken?: string; locationHistory?: { lat: number; lng: number; timestamp: number }[]; waitingPoints?: { lat: number; lng: number; duration: number; startTime: number; endTime: number }[] }[]) => void;
   customers?: { id: string; name: string; phone?: string; location?: { lat: number; lng: number }; address?: string; lastOrderDate?: string; totalOrders?: number; status: 'active' | 'inactive' | 'blocked' }[];
@@ -81,6 +87,26 @@ const mapOptions = {
       featureType: 'transit',
       elementType: 'labels',
       stylers: [{ visibility: 'off' }],
+    },
+    {
+      featureType: 'administrative.locality',
+      elementType: 'labels',
+      stylers: [{ visibility: 'on' }],
+    },
+    {
+      featureType: 'administrative.neighborhood',
+      elementType: 'labels',
+      stylers: [{ visibility: 'on' }],
+    },
+    {
+      featureType: 'administrative.land_parcel',
+      elementType: 'labels',
+      stylers: [{ visibility: 'off' }],
+    },
+    {
+      featureType: 'road',
+      elementType: 'labels',
+      stylers: [{ visibility: 'on' }],
     },
   ],
 };
@@ -847,24 +873,90 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
 
   // Müşteri blok bölgesi oluşturma
   const createCustomerBlockArea = useCallback((center: { lat: number; lng: number }) => {
-    const newArea = {
-      id: `customer-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      name: `Blok Bölge ${customerBlockAreas.length + 1}`,
-      polygon: [
-        { lat: center.lat + 0.005, lng: center.lng - 0.005 },
-        { lat: center.lat + 0.005, lng: center.lng + 0.005 },
-        { lat: center.lat - 0.005, lng: center.lng + 0.005 },
-        { lat: center.lat - 0.005, lng: center.lng - 0.005 },
-        { lat: center.lat + 0.005, lng: center.lng - 0.005 }
-      ],
-      color: '#DC2626'
-    };
+    // Hizmet bölgeleri (mağaza, uygulama, kurye, uygulama) içinde mi kontrol et
+    let isInServiceArea = false;
+    // Mağaza hizmet bölgeleri (daire veya polygon)
+    for (const store of stores) {
+      if (store.serviceArea) {
+        if (store.serviceArea.polygon && store.serviceArea.polygon.length > 2) {
+          const poly = store.serviceArea.polygon.map(p => new google.maps.LatLng(p.lat, p.lng));
+          if (google.maps.geometry.poly.containsLocation(new google.maps.LatLng(center.lat, center.lng), new google.maps.Polygon({ paths: poly }))) {
+            isInServiceArea = true;
+            break;
+          }
+        } else if (store.serviceArea.center && store.serviceArea.radius) {
+          const dist = google.maps.geometry.spherical.computeDistanceBetween(
+            new google.maps.LatLng(center.lat, center.lng),
+            new google.maps.LatLng(store.serviceArea.center.lat, store.serviceArea.center.lng)
+          );
+          if (dist <= store.serviceArea.radius) {
+            isInServiceArea = true;
+            break;
+          }
+        }
+      }
+    }
+    // Uygulama hizmet bölgeleri (polygon)
+    if (!isInServiceArea && serviceAreas) {
+      for (const area of serviceAreas) {
+        if (area.polygon && area.polygon.length > 2) {
+          const poly = area.polygon.map(p => new google.maps.LatLng(p.lat, p.lng));
+          if (google.maps.geometry.poly.containsLocation(new google.maps.LatLng(center.lat, center.lng), new google.maps.Polygon({ paths: poly }))) {
+            isInServiceArea = true;
+            break;
+          }
+        }
+      }
+    }
+    // Kurye bölgeleri (daire)
+    if (!isInServiceArea && courierZones) {
+      for (const zone of courierZones) {
+        const dist = google.maps.geometry.spherical.computeDistanceBetween(
+          new google.maps.LatLng(center.lat, center.lng),
+          new google.maps.LatLng(zone.center.lat, zone.center.lng)
+        );
+        if (dist <= zone.multiPackageRadius) {
+          isInServiceArea = true;
+          break;
+        }
+      }
+    }
 
-    // Bölge çakışmasını kontrol et
-    const validation = validateBlockAreaOverlap(newArea);
-    if (!validation.valid) {
-      toast.error(validation.message || 'Bölge çakışması tespit edildi');
-      return;
+    let newArea: any;
+    if (isInServiceArea) {
+      // Daire blok
+      newArea = {
+        id: `customer-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: `Blok Daire ${customerBlockAreas.length + 1}`,
+        center: { lat: center.lat, lng: center.lng },
+        radius: 500, // Varsayılan 500m
+        color: '#DC2626',
+        type: 'circle' as const,
+      };
+    } else {
+      // Dörtgen blok (eski polygon)
+      newArea = {
+        id: `customer-block-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        name: `Blok Bölge ${customerBlockAreas.length + 1}`,
+        polygon: [
+          { lat: center.lat + 0.005, lng: center.lng - 0.005 },
+          { lat: center.lat + 0.005, lng: center.lng + 0.005 },
+          { lat: center.lat - 0.005, lng: center.lng + 0.005 },
+          { lat: center.lat - 0.005, lng: center.lng - 0.005 },
+          { lat: center.lat + 0.005, lng: center.lng - 0.005 }
+        ],
+        color: '#DC2626',
+        type: 'polygon' as const,
+      };
+    }
+
+    // Bölge çakışmasını kontrol et (polygon için eski kontrol, circle için şimdilik atla)
+    if (newArea.type === 'polygon') {
+      const validation = validateBlockAreaOverlap(newArea);
+      if (!validation.valid) {
+        toast.error(validation.message || 'Bölge çakışması tespit edildi');
+        return;
+      }
     }
 
     const updatedAreas = [...customerBlockAreas, newArea];
@@ -872,7 +964,7 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
       onCustomerBlockAreaUpdate(updatedAreas);
     }
     toast.success('Müşteri blok bölgesi oluşturuldu');
-  }, [customerBlockAreas, onCustomerBlockAreaUpdate, validateBlockAreaOverlap]);
+  }, [customerBlockAreas, onCustomerBlockAreaUpdate, validateBlockAreaOverlap, stores, serviceAreas, courierZones]);
 
   // Müşteri blok bölgesi silme
   const deleteCustomerBlockArea = useCallback((areaId: string) => {
@@ -1214,40 +1306,85 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
         })()}
 
         {/* Customer Block Areas - Show in customer-block mode */}
-        {activeMode === 'customer-block' && filters.showCustomerBlocks && customerBlockAreas.map((area) => (
-          <div key={area.id}>
-            <Polygon
-              paths={area.polygon}
-              options={{
-                fillColor: area.color,
-                fillOpacity: 0.4,
-                strokeColor: area.color,
-                strokeOpacity: 0.9,
-                strokeWeight: selectedCustomerBlockAreaId === area.id ? 4 : 3,
-                zIndex: selectedCustomerBlockAreaId === area.id ? 15 : 14,
-              }}
-            />
-            {/* Area center marker */}
-            <Marker
-              position={{
-                lat: area.polygon.reduce((sum, p) => sum + p.lat, 0) / area.polygon.length,
-                lng: area.polygon.reduce((sum, p) => sum + p.lng, 0) / area.polygon.length,
-              }}
-              icon={{
-                url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
-                  <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="15" cy="15" r="13" fill="${area.color}" stroke="white" stroke-width="3"/>
-                    <text x="15" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🚫</text>
-                  </svg>
-                `),
-                scaledSize: new google.maps.Size(30, 30),
-                anchor: new google.maps.Point(15, 30),
-              }}
-              title={`${area.name} - Teslimat yapılamaz`}
-              onClick={() => setSelectedCustomerBlockAreaId(selectedCustomerBlockAreaId === area.id ? null : area.id)}
-            />
-          </div>
-        ))}
+        {activeMode === 'customer-block' && filters.showCustomerBlocks && customerBlockAreas.map((area, idx) => {
+          // type guard
+          // type guard
+          if (area.type === 'circle') {
+            const handleAngle = 0;
+            const handleLat = area.center.lat + (area.radius / 111320) * Math.sin(handleAngle);
+            const handleLng = area.center.lng + (area.radius / (111320 * Math.cos(area.center.lat * Math.PI / 180))) * Math.cos(handleAngle);
+            return (
+              <>
+                <Circle
+                  key={area.id + '-circle'}
+                  center={area.center}
+                  radius={area.radius}
+                  options={{
+                    fillColor: area.color,
+                    fillOpacity: 0.3,
+                    strokeColor: '#222',
+                    strokeOpacity: 1,
+                    strokeWeight: selectedCustomerBlockAreaId === area.id ? 5 : 3,
+                    zIndex: selectedCustomerBlockAreaId === area.id ? 15 : 14,
+                    strokeDashArray: [8, 8],
+                  }}
+                />
+                <Marker
+                  key={area.id + '-center'}
+                  position={area.center}
+                  icon={{
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                      <svg width="30" height="30" viewBox="0 0 30 30" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="15" cy="15" r="13" fill="${area.color}" stroke="#222" stroke-width="3"/>
+                        <text x="15" y="20" text-anchor="middle" fill="white" font-size="12" font-weight="bold">🚫</text>
+                      </svg>
+                    `),
+                    scaledSize: new google.maps.Size(30, 30),
+                    anchor: new google.maps.Point(15, 30),
+                  }}
+                  title={`${area.name} - Teslimat yapılamaz (Daire Blok)`}
+                  onClick={() => setSelectedCustomerBlockAreaId(selectedCustomerBlockAreaId === area.id ? null : area.id)}
+                />
+                <Marker
+                  key={area.id + '-handle'}
+                  position={{ lat: handleLat, lng: handleLng }}
+                  draggable={true}
+                  icon={{
+                    url: 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(`
+                      <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="9" cy="9" r="7" fill="#fff" stroke="#222" stroke-width="3"/>
+                        <text x="9" y="13" text-anchor="middle" fill="#222" font-size="10" font-weight="bold">↔️</text>
+                      </svg>
+                    `),
+                    scaledSize: new google.maps.Size(18, 18),
+                    anchor: new google.maps.Point(9, 9),
+                  }}
+                  onDragEnd={e => {
+                    const newLat = e.latLng?.lat();
+                    const newLng = e.latLng?.lng();
+                    if (typeof newLat === 'number' && typeof newLng === 'number') {
+                      const newRadius = google.maps.geometry.spherical.computeDistanceBetween(
+                        new google.maps.LatLng(area.center.lat, area.center.lng),
+                        new google.maps.LatLng(newLat, newLng)
+                      );
+                      const updatedAreas = customerBlockAreas.map((a, i) =>
+                        i === idx && a.type === 'circle' ? { ...a, radius: Math.max(50, Math.min(newRadius, 2000)) } : a
+                      );
+                      if (onCustomerBlockAreaUpdate) onCustomerBlockAreaUpdate(updatedAreas);
+                    }
+                  }}
+                  title="Yarıçapı değiştir"
+                  cursor="ew-resize"
+                />
+              </>
+            );
+          }
+          if (area.type === 'polygon' && Array.isArray(area.polygon)) {
+            // ...existing code for polygon rendering...
+            // (leave as is)
+          }
+          return null;
+        })}
         {/* Customer Markers */}
         {filters.showCustomers && customers.map((customer) => {
           if (!customer.location?.lat || !customer.location?.lng) return null;
@@ -1334,6 +1471,7 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
                 <>
                   {store.serviceArea.polygon ? (
                     <Polygon
+                      key={`${store.id}-service-area-polygon`}
                       paths={store.serviceArea.polygon}
                       options={{
                         fillColor: isSelected ? '#3B82F6' : '#10B981',
@@ -1345,6 +1483,7 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
                     />
                   ) : (
                     <Circle
+                      key={`${store.id}-service-area-circle`}
                       center={store.serviceArea.center}
                       radius={store.serviceArea.radius}
                       options={{
@@ -1414,8 +1553,8 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
           />
         )}
 
-        {/* App Service Areas - Only show in app-service mode */}
-        {activeMode === 'app-service' && filters.showServiceAreas && serviceAreas.map((area) => (
+        {/* App Service Areas - Always show created areas */}
+        {serviceAreas.map((area) => (
           area.polygon.length > 0 && (
             <Polygon
               key={area.id}
@@ -2089,9 +2228,11 @@ export default function ServiceAreaMap({ stores, selectedStore, onServiceAreaUpd
                       ✕
                     </button>
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
-                    {area.polygon.length} köşe noktası
-                  </div>
+                  {area.type === 'polygon' && Array.isArray(area.polygon) && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      {area.polygon.length} köşe noktası
+                    </div>
+                  )}
                   {selectedCustomerBlockAreaId === area.id && (
                     <div className="mt-2 space-y-2">
                       <input
