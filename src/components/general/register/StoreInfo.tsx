@@ -151,6 +151,10 @@ const StoreInfo: React.FC<StoreInfoProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto relative">
                 {categories
                   .filter(category => category.isActive !== false)
+                  .filter(category => {
+                    // Sadece ana kategorileri göster (alt kategorisi olmayanlar)
+                    return !categories.some(cat => cat.childCategories?.includes(category.id));
+                  })
                   .sort((a: any, b: any) => (a.order || 0) - (b.order || 0))
                   .map((category) => {
                     const isSelected = storeInfo.categories?.includes(category.id) || false;

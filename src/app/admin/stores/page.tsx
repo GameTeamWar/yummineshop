@@ -3,7 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { collection, getDocs, updateDoc, doc, addDoc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, updateDoc, doc, addDoc, getDoc, deleteDoc, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/panels/layout';
 import { Store, SiteCategory } from '@/types';
@@ -15,6 +15,8 @@ interface StoreApprovalModalProps {
   onClose: () => void;
   onApprove: (storeId: string, categoryId: string) => void;
   onRequestCorrection: (storeId: string, fields: string[], description: string) => void;
+  onReject: (storeId: string) => void;
+  onEdit: (store: Store) => void;
   categories: SiteCategory[];
 }
 
@@ -24,8 +26,12 @@ export default function AdminStoresPage() {
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isApprovalModalOpen, setIsApprovalModalOpen] = useState(false);
+  const [isSalesModalOpen, setIsSalesModalOpen] = useState(false);
+  const [isFinanceModalOpen, setIsFinanceModalOpen] = useState(false);
+  const [isOwnerModalOpen, setIsOwnerModalOpen] = useState(false);
+  const [storeOrders, setStoreOrders] = useState<any[]>([]);
+  const [storeFinance, setStoreFinance] = useState<any>({});
   const [categories, setCategories] = useState<SiteCategory[]>([]);
 
   useEffect(() => {
@@ -36,17 +42,20 @@ export default function AdminStoresPage() {
 
     fetchStores();
     fetchCategories();
-  }, [user, role, router]);
 
-  const fetchStores = async () => {
-    const storesSnapshot = await getDocs(collection(db, 'stores'));
-    const storesData = storesSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    } as Store));
-    setStores(storesData);
-    setLoading(false);
-  };
+    // Real-time updates için onSnapshot ekle
+    const unsubscribe = onSnapshot(collection(db, 'stores'), (snapshot) => {
+      const storesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Store));
+      setStores(storesData);
+      setLoading(false);
+    });
+
+    // Cleanup function
+    return () => unsubscribe();
+  }, [user, role, router]);
 
   const fetchCategories = async () => {
     const categoriesSnapshot = await getDocs(collection(db, 'categories'));
@@ -80,11 +89,21 @@ export default function AdminStoresPage() {
       });
 
       toast.success('Mağaza başarıyla onaylandı ve yayınlandı');
-      fetchStores();
-      fetchCategories();
+      // onSnapshot sayesinde otomatik güncellenecek
     } catch (error) {
       console.error('Mağaza onaylama hatası:', error);
       toast.error('Mağaza onaylanırken hata oluştu');
+    }
+  };
+
+  const handleRejectStore = async (storeId: string) => {
+    try {
+      await updateDoc(doc(db, 'stores', storeId), { status: 'rejected' });
+      toast.success('Mağaza reddedildi');
+      // onSnapshot sayesinde otomatik güncellenecek
+    } catch (error) {
+      console.error('Mağaza reddetme hatası:', error);
+      toast.error('Mağaza reddedilirken hata oluştu');
     }
   };
 
@@ -111,7 +130,7 @@ export default function AdminStoresPage() {
       });
 
       toast.success('Düzeltme talebi başarıyla gönderildi');
-      fetchStores();
+      // onSnapshot sayesinde otomatik güncellenecek
     } catch (error) {
       console.error('Düzeltme talebi gönderme hatası:', error);
       toast.error('Düzeltme talebi gönderilirken hata oluştu');
@@ -125,19 +144,67 @@ export default function AdminStoresPage() {
 
   const updateStoreStatus = async (storeId: string, status: Store['status']) => {
     await updateDoc(doc(db, 'stores', storeId), { status });
-    fetchStores();
+    // onSnapshot sayesinde otomatik güncellenecek
   };
 
-  const openEditModal = (store: Store) => {
+  const deleteStore = async (storeId: string) => {
+    if (window.confirm('Bu mağazayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.')) {
+      try {
+        await deleteDoc(doc(db, 'stores', storeId));
+        toast.success('Mağaza başarıyla silindi');
+        // onSnapshot sayesinde otomatik güncellenecek
+      } catch (error) {
+        console.error('Mağaza silme hatası:', error);
+        toast.error('Mağaza silinirken hata oluştu');
+      }
+    }
+  };
+
+  const openSalesModal = async (store: Store) => {
     setSelectedStore(store);
-    setIsEditModalOpen(true);
+    try {
+      const ordersQuery = query(collection(db, 'orders'), where('storeId', '==', store.id));
+      const ordersSnapshot = await getDocs(ordersQuery);
+      const ordersData = ordersSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setStoreOrders(ordersData);
+    } catch (error) {
+      console.error('Siparişler getirilirken hata:', error);
+      setStoreOrders([]);
+    }
+    setIsSalesModalOpen(true);
   };
 
-  const updateStore = async (storeId: string, data: Partial<Store>) => {
-    await updateDoc(doc(db, 'stores', storeId), data);
-    fetchStores();
-    setIsEditModalOpen(false);
-    setSelectedStore(null);
+  const openFinanceModal = async (store: Store) => {
+    setSelectedStore(store);
+    try {
+      // Siparişlerden finans hesaplaması
+      const ordersQuery = query(collection(db, 'orders'), where('storeId', '==', store.id));
+      const ordersSnapshot = await getDocs(ordersQuery);
+      const ordersData = ordersSnapshot.docs.map(doc => doc.data());
+      
+      const totalSales = ordersData.reduce((sum: number, order: any) => sum + (order.totalAmount || 0), 0);
+      const totalOrders = ordersData.length;
+      const completedOrders = ordersData.filter((order: any) => order.status === 'delivered').length;
+      
+      setStoreFinance({
+        totalSales,
+        totalOrders,
+        completedOrders,
+        pendingOrders: totalOrders - completedOrders,
+      });
+    } catch (error) {
+      console.error('Finans bilgileri getirilirken hata:', error);
+      setStoreFinance({});
+    }
+    setIsFinanceModalOpen(true);
+  };
+
+  const openOwnerModal = (store: Store) => {
+    setSelectedStore(store);
+    setIsOwnerModalOpen(true);
   };
 
   if (!user || role !== 0) {
@@ -191,24 +258,45 @@ export default function AdminStoresPage() {
                             İncele ve Onayla
                           </button>
                         )}
-                        {store.status === 'needs_correction' && (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">
-                            Düzeltme Talep Edildi
-                          </span>
+                        {store.status === 'rejected' && (
+                          <button
+                            onClick={() => updateStoreStatus(store.id, 'pending')}
+                            className="px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white rounded text-sm"
+                          >
+                            Geri İncelemeye Al
+                          </button>
                         )}
                         {store.status === 'approved' && (
                           <button
-                            onClick={() => updateStoreStatus(store.id, 'banned')}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm"
+                            onClick={() => updateStoreStatus(store.id, 'pending')}
+                            className="px-3 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm"
                           >
-                            Yasakla
+                            Geri Çevir
                           </button>
                         )}
                         <button
-                          onClick={() => openEditModal(store)}
-                          className="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded text-sm"
+                          onClick={() => openSalesModal(store)}
+                          className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm"
                         >
-                          Düzenle
+                          Satışlar
+                        </button>
+                        <button
+                          onClick={() => openFinanceModal(store)}
+                          className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm ml-2"
+                        >
+                          Finans
+                        </button>
+                        <button
+                          onClick={() => openOwnerModal(store)}
+                          className="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm ml-2"
+                        >
+                          Sahip
+                        </button>
+                        <button
+                          onClick={() => deleteStore(store.id)}
+                          className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm ml-2"
+                        >
+                          Sil
                         </button>
                       </td>
                     </tr>
@@ -220,176 +308,6 @@ export default function AdminStoresPage() {
         </div>
       </div>
 
-      {/* Edit Store Modal */}
-      {isEditModalOpen && selectedStore && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Mağaza Düzenle</h3>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const formData = new FormData(e.target as HTMLFormElement);
-              updateStore(selectedStore.id, {
-                name: formData.get('name') as string,
-                email: formData.get('email') as string,
-                phone: formData.get('phone') as string,
-                address: formData.get('address') as string,
-                description: formData.get('description') as string,
-                taxId: formData.get('taxId') as string,
-                companyName: formData.get('companyName') as string,
-                corporateType: formData.get('corporateType') as 'PRIVATE' | 'LIMITED' | 'INCORPORATED',
-                iban: formData.get('iban') as string,
-                storeType: formData.get('storeType') as 'esnaf' | 'avm' | 'marka',
-              });
-            }}>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mağaza Adı</label>
-                    <input
-                      type="text"
-                      name="name"
-                      defaultValue={selectedStore.name || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-posta</label>
-                    <input
-                      type="email"
-                      name="email"
-                      defaultValue={selectedStore.email || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
-                    <input
-                      type="text"
-                      name="phone"
-                      defaultValue={selectedStore.phone || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vergi/TC Kimlik No</label>
-                    <input
-                      type="text"
-                      name="taxId"
-                      defaultValue={selectedStore.taxId || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şirket Adı</label>
-                    <input
-                      type="text"
-                      name="companyName"
-                      defaultValue={selectedStore.companyName || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şirket Türü</label>
-                    <select
-                      name="corporateType"
-                      defaultValue={selectedStore.corporateType || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="PRIVATE">Şahıs</option>
-                      <option value="LIMITED">Limited</option>
-                      <option value="INCORPORATED">Anonim</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">IBAN</label>
-                    <input
-                      type="text"
-                      name="iban"
-                      defaultValue={selectedStore.iban || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mağaza Türü</label>
-                    <select
-                      name="storeType"
-                      defaultValue={selectedStore.storeType || ''}
-                      className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                    >
-                      <option value="esnaf">Esnaf</option>
-                      <option value="avm">AVM</option>
-                      <option value="marka">Marka</option>
-                    </select>
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Adres</label>
-                  <input
-                    type="text"
-                    name="address"
-                    defaultValue={selectedStore.address || ''}
-                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Açıklama</label>
-                  <textarea
-                    name="description"
-                    defaultValue={selectedStore.description || ''}
-                    rows={3}
-                    className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div className="border-t pt-4">
-                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Belgeler</h4>
-                  <div className="grid grid-cols-3 gap-4">
-                    {selectedStore.documents?.idCard && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Kimlik</label>
-                        <a href={selectedStore.documents.idCard} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">Görüntüle</a>
-                      </div>
-                    )}
-                    {selectedStore.documents?.driversLicense && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ehliyet</label>
-                        <a href={selectedStore.documents.driversLicense} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">Görüntüle</a>
-                      </div>
-                    )}
-                    {selectedStore.documents?.taxCertificate && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Vergi Levhası</label>
-                        <a href={selectedStore.documents.taxCertificate} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800">Görüntüle</a>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex justify-end space-x-2 mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
-                >
-                  İptal
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  Kaydet
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* Store Approval Modal */}
       {isApprovalModalOpen && selectedStore && (
         <StoreApprovalModal
@@ -397,17 +315,229 @@ export default function AdminStoresPage() {
           onClose={() => setIsApprovalModalOpen(false)}
           onApprove={handleApproveStore}
           onRequestCorrection={handleRequestCorrection}
+          onReject={handleRejectStore}
+          onEdit={() => {
+            // Artık ayrı modal açmıyoruz, modal içinde düzenleme modunu aktif hale getiriyoruz
+            // Bu fonksiyon artık kullanılmıyor ama interface için gerekli
+          }}
           categories={categories}
         />
+      )}
+
+      {/* Sales Modal */}
+      {isSalesModalOpen && selectedStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {selectedStore.name} - Satış Geçmişi
+              </h3>
+              <button
+                onClick={() => setIsSalesModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Sipariş ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Tarih
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Tutar
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Durum
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                  {storeOrders.map((order) => (
+                    <tr key={order.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {order.id}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {order.createdAt?.toDate?.()?.toLocaleDateString('tr-TR') || 'Bilinmiyor'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        ₺{order.totalAmount?.toFixed(2) || '0.00'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        {order.status === 'pending' ? 'Bekliyor' :
+                         order.status === 'confirmed' ? 'Onaylandı' :
+                         order.status === 'preparing' ? 'Hazırlanıyor' :
+                         order.status === 'ready' ? 'Hazır' :
+                         order.status === 'delivered' ? 'Teslim Edildi' :
+                         order.status === 'cancelled' ? 'İptal Edildi' : 'Bilinmiyor'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {storeOrders.length === 0 && (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  Henüz satış bulunmuyor.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Finance Modal */}
+      {isFinanceModalOpen && selectedStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                {selectedStore.name} - Finans Bilgileri
+              </h3>
+              <button
+                onClick={() => setIsFinanceModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-green-50 dark:bg-green-900 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-green-800 dark:text-green-200">Toplam Satış</h4>
+                <p className="text-2xl font-bold text-green-900 dark:text-green-100">
+                  ₺{storeFinance.totalSales?.toFixed(2) || '0.00'}
+                </p>
+              </div>
+              <div className="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">Toplam Sipariş</h4>
+                <p className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                  {storeFinance.totalOrders || 0}
+                </p>
+              </div>
+              <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-purple-800 dark:text-purple-200">Tamamlanan</h4>
+                <p className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+                  {storeFinance.completedOrders || 0}
+                </p>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-lg">
+                <h4 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">Bekleyen</h4>
+                <p className="text-2xl font-bold text-yellow-900 dark:text-yellow-100">
+                  {storeFinance.pendingOrders || 0}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Owner Modal */}
+      {isOwnerModalOpen && selectedStore && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                Mağaza Sahibi Bilgileri
+              </h3>
+              <button
+                onClick={() => setIsOwnerModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ad Soyad</label>
+                  <p className="text-gray-900 dark:text-white font-medium">
+                    {selectedStore.ownerName || 'Belirtilmemiş'}
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">E-posta</label>
+                  <p className="text-gray-900 dark:text-white">{selectedStore.email}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Telefon</label>
+                  <p className="text-gray-900 dark:text-white">{selectedStore.phone}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">IBAN</label>
+                  <p className="text-gray-900 dark:text-white font-mono">
+                    {selectedStore.iban || 'Belirtilmemiş'}
+                  </p>
+                </div>
+              </div>
+              {(selectedStore.companyName || selectedStore.taxId) && (
+                <div className="border-t pt-4">
+                  <h4 className="text-md font-medium text-gray-900 dark:text-white mb-3">Şirket Bilgileri</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {selectedStore.companyName && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şirket Adı</label>
+                        <p className="text-gray-900 dark:text-white">{selectedStore.companyName}</p>
+                      </div>
+                    )}
+                    {selectedStore.corporateType && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Şirket Türü</label>
+                        <p className="text-gray-900 dark:text-white">
+                          {selectedStore.corporateType === 'PRIVATE' ? 'Şahıs' :
+                           selectedStore.corporateType === 'LIMITED' ? 'Limited' :
+                           selectedStore.corporateType === 'INCORPORATED' ? 'Anonim' : selectedStore.corporateType}
+                        </p>
+                      </div>
+                    )}
+                    {selectedStore.taxId && (
+                      <div className="col-span-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                          {selectedStore.corporateType === 'PRIVATE' ? 'TC Kimlik No' : 'Vergi/TC Kimlik No'}
+                        </label>
+                        <p className="text-gray-900 dark:text-white font-mono">{selectedStore.taxId}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </AdminLayout>
   );
 }
 
-function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, categories }: StoreApprovalModalProps) {
+function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, onReject, onEdit, categories }: StoreApprovalModalProps) {
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [correctionDescription, setCorrectionDescription] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    name: store.name || '',
+    email: store.email || '',
+    phone: store.phone || '',
+    address: store.address || '',
+    description: store.description || '',
+    taxId: store.taxId || '',
+    companyName: store.companyName || '',
+    corporateType: store.corporateType || 'PRIVATE',
+    iban: store.iban || '',
+    storeType: store.storeType || 'esnaf',
+    location: {
+      latitude: store.location?.latitude || 0,
+      longitude: store.location?.longitude || 0,
+      province: store.location?.province || '',
+      district: store.location?.district || '',
+      neighborhood: store.location?.neighborhood || '',
+    },
+  });
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
   // Kategori ismini title case'e çeviren fonksiyon
   const toTitleCase = (str: string) => {
@@ -527,11 +657,91 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
     onClose();
   };
 
+  const handleEditMode = () => {
+    setIsEditMode(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      await updateDoc(doc(db, 'stores', store.id), editFormData);
+      toast.success('Mağaza bilgileri güncellendi');
+      setIsEditMode(false);
+      // onSnapshot sayesinde otomatik güncellenecek, sayfa yenilenmesine gerek yok
+    } catch (error) {
+      console.error('Mağaza güncellenirken hata:', error);
+      toast.error('Mağaza güncellenirken hata oluştu');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditFormData({
+      name: store.name || '',
+      email: store.email || '',
+      phone: store.phone || '',
+      address: store.address || '',
+      description: store.description || '',
+      taxId: store.taxId || '',
+      companyName: store.companyName || '',
+      corporateType: store.corporateType || 'PRIVATE',
+      iban: store.iban || '',
+      storeType: store.storeType || 'esnaf',
+      location: {
+        latitude: store.location?.latitude || 0,
+        longitude: store.location?.longitude || 0,
+        province: store.location?.province || '',
+        district: store.location?.district || '',
+        neighborhood: store.location?.neighborhood || '',
+      },
+    });
+    setIsEditMode(false);
+  };
+
+  const handleLocationChange = async (lat: number, lng: number) => {
+    setEditFormData(prev => ({
+      ...prev,
+      location: { ...prev.location, latitude: lat, longitude: lng }
+    }));
+
+    // Reverse geocoding ile il, ilçe, mahalle bilgilerini al
+    setIsReverseGeocoding(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1&accept-language=tr`
+      );
+      const data = await response.json();
+
+      if (data && data.address) {
+        const address = data.address;
+        const province = address.state || address.province || '';
+        const district = address.county || address.district || address.town || address.city_district || '';
+        const neighborhood = address.suburb || address.neighbourhood || address.village || address.hamlet || '';
+
+        setEditFormData(prev => ({
+          ...prev,
+          location: {
+            ...prev.location,
+            latitude: lat,
+            longitude: lng,
+            province: province,
+            district: district,
+            neighborhood: neighborhood
+          }
+        }));
+      }
+    } catch (error) {
+      console.error('Reverse geocoding hatası:', error);
+      toast.error('Konum bilgilerini alırken hata oluştu');
+      // Hata durumunda sadece koordinatları güncelle
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+        <div className="bg-linear-to-r from-blue-600 to-purple-600 text-white p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {store.logo && (
@@ -570,28 +780,69 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                 Kişisel Bilgiler
               </h3>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Ad Soyad</label>
-                    <p className="text-gray-900 dark:text-white font-medium">
-                      {store.ownerName || 'Belirtilmemiş'}
-                    </p>
+                {isEditMode ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Ad Soyad</label>
+                      <input
+                        type="text"
+                        value={editFormData.name}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">E-posta</label>
+                      <input
+                        type="email"
+                        value={editFormData.email}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Telefon</label>
+                      <input
+                        type="text"
+                        value={editFormData.phone}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">IBAN</label>
+                      <input
+                        type="text"
+                        value={editFormData.iban}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, iban: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono text-sm"
+                      />
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">E-posta</label>
-                    <p className="text-gray-900 dark:text-white">{store.email}</p>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Ad Soyad</label>
+                      <p className="text-gray-900 dark:text-white font-medium">
+                        {store.ownerName || 'Belirtilmemiş'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">E-posta</label>
+                      <p className="text-gray-900 dark:text-white">{store.email}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Telefon</label>
+                      <p className="text-gray-900 dark:text-white">{store.phone}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">IBAN</label>
+                      <p className="text-gray-900 dark:text-white font-mono text-sm">
+                        {store.iban || 'Belirtilmemiş'}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Telefon</label>
-                    <p className="text-gray-900 dark:text-white">{store.phone}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">IBAN</label>
-                    <p className="text-gray-900 dark:text-white font-mono text-sm">
-                      {store.iban || 'Belirtilmemiş'}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -605,32 +856,69 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                   Şirket Bilgileri
                 </h3>
                 <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {store.companyName && (
+                  {isEditMode ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Adı</label>
-                        <p className="text-gray-900 dark:text-white font-medium">{store.companyName}</p>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Adı</label>
+                        <input
+                          type="text"
+                          value={editFormData.companyName}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, companyName: e.target.value }))}
+                          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        />
                       </div>
-                    )}
-                    {store.corporateType && (
                       <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Türü</label>
-                        <p className="text-gray-900 dark:text-white">
-                          {store.corporateType === 'PRIVATE' ? 'Şahıs' :
-                           store.corporateType === 'LIMITED' ? 'Limited' :
-                           store.corporateType === 'INCORPORATED' ? 'Anonim' : store.corporateType}
-                        </p>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Türü</label>
+                        <select
+                          value={editFormData.corporateType}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, corporateType: e.target.value as 'PRIVATE' | 'LIMITED' | 'INCORPORATED' }))}
+                          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                        >
+                          <option value="PRIVATE">Şahıs</option>
+                          <option value="LIMITED">Limited</option>
+                          <option value="INCORPORATED">Anonim</option>
+                        </select>
                       </div>
-                    )}
-                    {store.taxId && (
                       <div className="md:col-span-2">
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                          {store.corporateType === 'PRIVATE' ? 'TC Kimlik No' : 'Vergi/TC Kimlik No'}
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">
+                          Vergi/TC Kimlik No
                         </label>
-                        <p className="text-gray-900 dark:text-white font-mono">{store.taxId}</p>
+                        <input
+                          type="text"
+                          value={editFormData.taxId}
+                          onChange={(e) => setEditFormData(prev => ({ ...prev, taxId: e.target.value }))}
+                          className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono"
+                        />
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {store.companyName && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Adı</label>
+                          <p className="text-gray-900 dark:text-white font-medium">{store.companyName}</p>
+                        </div>
+                      )}
+                      {store.corporateType && (
+                        <div>
+                          <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şirket Türü</label>
+                          <p className="text-gray-900 dark:text-white">
+                            {store.corporateType === 'PRIVATE' ? 'Şahıs' :
+                             store.corporateType === 'LIMITED' ? 'Limited' :
+                             store.corporateType === 'INCORPORATED' ? 'Anonim' : store.corporateType}
+                          </p>
+                        </div>
+                      )}
+                      {store.taxId && (
+                        <div className="md:col-span-2">
+                          <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                            {store.corporateType === 'PRIVATE' ? 'TC Kimlik No' : 'Vergi/TC Kimlik No'}
+                          </label>
+                          <p className="text-gray-900 dark:text-white font-mono">{store.taxId}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -644,28 +932,66 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                 Mağaza Bilgileri
               </h3>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Adı</label>
-                    <p className="text-gray-900 dark:text-white font-medium">{store.name}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Türü</label>
-                    <p className="text-gray-900 dark:text-white">{store.storeType}</p>
-                  </div>
-                  {store.branchCount && store.branchCount > 1 && (
+                {isEditMode ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şube Sayısı</label>
-                      <p className="text-gray-900 dark:text-white">{store.branchCount}</p>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Adı</label>
+                      <input
+                        type="text"
+                        value={editFormData.name}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
                     </div>
-                  )}
-                  {store.branchReferenceCode && (
                     <div>
-                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Cari ID</label>
-                      <p className="text-gray-900 dark:text-white font-mono">{store.branchReferenceCode}</p>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Türü</label>
+                      <select
+                        value={editFormData.storeType}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, storeType: e.target.value as 'esnaf' | 'avm' | 'marka' }))}
+                        className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      >
+                        <option value="esnaf">Esnaf</option>
+                        <option value="avm">AVM</option>
+                        <option value="marka">Marka</option>
+                      </select>
                     </div>
-                  )}
-                </div>
+                    {store.branchCount && store.branchCount > 1 && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şube Sayısı</label>
+                        <p className="text-gray-900 dark:text-white">{store.branchCount}</p>
+                      </div>
+                    )}
+                    {store.branchReferenceCode && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Cari ID</label>
+                        <p className="text-gray-900 dark:text-white font-mono">{store.branchReferenceCode}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Adı</label>
+                      <p className="text-gray-900 dark:text-white font-medium">{store.name}</p>
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Mağaza Türü</label>
+                      <p className="text-gray-900 dark:text-white">{store.storeType}</p>
+                    </div>
+                    {store.branchCount && store.branchCount > 1 && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Şube Sayısı</label>
+                        <p className="text-gray-900 dark:text-white">{store.branchCount}</p>
+                      </div>
+                    )}
+                    {store.branchReferenceCode && (
+                      <div>
+                        <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Cari ID</label>
+                        <p className="text-gray-900 dark:text-white font-mono">{store.branchReferenceCode}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {store.categories && store.categories.length > 0 && (
                   <div>
                     <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Ürün Kategorileri</label>
@@ -713,12 +1039,122 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                 Adres Bilgileri
               </h3>
               <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <p className="text-gray-900 dark:text-white mb-4">{store.address}</p>
-                {store.location && (
-                  <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-                    {store.location.province && <span>{store.location.province}, </span>}
-                    {store.location.district && <span>{store.location.district}, </span>}
-                    {store.location.neighborhood && <span>{store.location.neighborhood}</span>}
+                {isEditMode ? (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Adres</label>
+                      <textarea
+                        value={editFormData.address}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, address: e.target.value }))}
+                        rows={3}
+                        className="w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    
+                    {/* Konum Bilgileri */}
+                    <div className="border-t pt-4">
+                      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Konum Bilgileri</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Enlem (Latitude)</label>
+                          <input
+                            type="number"
+                            step="0.000001"
+                            value={editFormData.location.latitude || ''}
+                            onChange={(e) => setEditFormData(prev => ({
+                              ...prev,
+                              location: { ...prev.location, latitude: parseFloat(e.target.value) || 0 }
+                            }))}
+                            onBlur={(e) => {
+                              const lat = parseFloat(e.target.value);
+                              const lng = editFormData.location.longitude;
+                              if (!isNaN(lat) && !isNaN(lng)) {
+                                handleLocationChange(lat, lng);
+                              }
+                            }}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono"
+                            placeholder="örn: 41.0082"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">Boylam (Longitude)</label>
+                          <input
+                            type="number"
+                            step="0.000001"
+                            value={editFormData.location.longitude || ''}
+                            onChange={(e) => setEditFormData(prev => ({
+                              ...prev,
+                              location: { ...prev.location, longitude: parseFloat(e.target.value) || 0 }
+                            }))}
+                            onBlur={(e) => {
+                              const lat = editFormData.location.latitude;
+                              const lng = parseFloat(e.target.value);
+                              if (!isNaN(lat) && !isNaN(lng)) {
+                                handleLocationChange(lat, lng);
+                              }
+                            }}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white font-mono"
+                            placeholder="örn: 28.9784"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">
+                            İl {isReverseGeocoding && <span className="text-xs text-blue-500">(Güncelleniyor...)</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.location.province || ''}
+                            onChange={(e) => setEditFormData(prev => ({
+                              ...prev,
+                              location: { ...prev.location, province: e.target.value }
+                            }))}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            placeholder="örn: İstanbul"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">
+                            İlçe {isReverseGeocoding && <span className="text-xs text-blue-500">(Güncelleniyor...)</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.location.district || ''}
+                            onChange={(e) => setEditFormData(prev => ({
+                              ...prev,
+                              location: { ...prev.location, district: e.target.value }
+                            }))}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            placeholder="örn: Kadıköy"
+                          />
+                        </div>
+                        <div className="md:col-span-2">
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-300">
+                            Mahalle/Semt {isReverseGeocoding && <span className="text-xs text-blue-500">(Güncelleniyor...)</span>}
+                          </label>
+                          <input
+                            type="text"
+                            value={editFormData.location.neighborhood || ''}
+                            onChange={(e) => setEditFormData(prev => ({
+                              ...prev,
+                              location: { ...prev.location, neighborhood: e.target.value }
+                            }))}
+                            className="mt-1 block w-full border border-gray-300 dark:border-gray-600 rounded-md px-3 py-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                            placeholder="örn: Moda"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-gray-900 dark:text-white mb-4">{store.address}</p>
+                    {store.location && (
+                      <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+                        {store.location.province && <span>{store.location.province}, </span>}
+                        {store.location.district && <span>{store.location.district}, </span>}
+                        {store.location.neighborhood && <span>{store.location.neighborhood}</span>}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -726,16 +1162,20 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                 {store.location?.latitude && store.location?.longitude && (
                   <div className="mt-4">
                     <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Mağaza Konumu
+                      Mağaza Konumu {isEditMode && '(Haritada tıklayarak konumu değiştirebilirsiniz)'}
+                      {isReverseGeocoding && <span className="text-xs text-blue-500 ml-2">📍 Adres bilgileri güncelleniyor...</span>}
                     </h4>
                     <StoreLocationMap
-                      latitude={store.location.latitude}
-                      longitude={store.location.longitude}
+                      latitude={isEditMode ? editFormData.location.latitude : store.location.latitude}
+                      longitude={isEditMode ? editFormData.location.longitude : store.location.longitude}
                       storeName={store.name}
                       height="250px"
+                      editable={isEditMode}
+                      onLocationChange={handleLocationChange}
                     />
                     <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                      Enlem: {store.location.latitude.toFixed(6)}, Boylam: {store.location.longitude.toFixed(6)}
+                      Enlem: {(isEditMode ? editFormData.location.latitude : store.location.latitude).toFixed(6)}, 
+                      Boylam: {(isEditMode ? editFormData.location.longitude : store.location.longitude).toFixed(6)}
                     </div>
                   </div>
                 )}
@@ -863,6 +1303,7 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
                   { key: 'iban', label: 'IBAN' },
                   { key: 'storeType', label: 'Mağaza Türü' },
                   { key: 'address', label: 'Adres' },
+                  { key: 'location', label: 'Konum Bilgileri' },
                   { key: 'description', label: 'Açıklama' },
                   { key: 'documents', label: 'Belgeler' },
                   { key: 'authorizedPersons', label: 'Yetkili Kişiler' },
@@ -897,35 +1338,79 @@ function StoreApprovalModal({ store, onClose, onApprove, onRequestCorrection, ca
 
             {/* Action Buttons */}
             <div className="space-y-3">
-              <button
-                onClick={handleApprove}
-                disabled={!selectedCategory}
-                className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Onayla ve Yayınla
-              </button>
+              {isEditMode ? (
+                <>
+                  <button
+                    onClick={handleSaveEdit}
+                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Kaydet
+                  </button>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                  >
+                    İptal
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleApprove}
+                    disabled={!selectedCategory}
+                    className="w-full px-4 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Onayla ve Yayınla
+                  </button>
 
-              {selectedFields.length > 0 && (
-                <button
-                  onClick={handleRequestCorrection}
-                  className="w-full px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
-                >
-                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                  </svg>
-                  Düzeltme Talep Et
-                </button>
+                  <button
+                    onClick={handleEditMode}
+                    className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Düzenle
+                  </button>
+
+                  <button
+                    onClick={handleRequestCorrection}
+                    className="w-full px-4 py-3 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Düzeltme Talep Et
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Bu mağazayı reddetmek istediğinizden emin misiniz?')) {
+                        onReject(store.id);
+                        onClose();
+                      }
+                    }}
+                    className="w-full px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center justify-center"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Reddet
+                  </button>
+
+                  <button
+                    onClick={onClose}
+                    className="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
+                  >
+                    İptal
+                  </button>
+                </>
               )}
-
-              <button
-                onClick={onClose}
-                className="w-full px-4 py-3 bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300 rounded-lg font-medium transition-colors"
-              >
-                İptal
-              </button>
             </div>
           </div>
         </div>

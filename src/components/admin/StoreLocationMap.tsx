@@ -9,13 +9,17 @@ interface StoreLocationMapProps {
   longitude: number;
   storeName: string;
   height?: string;
+  editable?: boolean;
+  onLocationChange?: (lat: number, lng: number) => void;
 }
 
 export default function StoreLocationMap({
   latitude,
   longitude,
   storeName,
-  height = '300px'
+  height = '300px',
+  editable = false,
+  onLocationChange
 }: StoreLocationMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<L.Map | null>(null);
@@ -60,6 +64,39 @@ export default function StoreLocationMap({
       radius: 100, // 100 meters radius
     }).addTo(map);
 
+    // Add click handler for editable mode
+    if (editable && onLocationChange) {
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const { lat, lng } = e.latlng;
+        
+        // Update marker position
+        marker.setLatLng([lat, lng]);
+        marker.bindPopup(`
+          <div style="text-align: center;">
+            <strong>${storeName}</strong><br/>
+            <small>Enlem: ${lat.toFixed(6)}<br/>
+            Boylam: ${lng.toFixed(6)}</small>
+          </div>
+        `).openPopup();
+
+        // Update circle position
+        const circle = map.eachLayer((layer) => {
+          if (layer instanceof L.Circle) {
+            map.removeLayer(layer);
+          }
+        });
+        L.circle([lat, lng], {
+          color: '#3B82F6',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.1,
+          radius: 100,
+        }).addTo(map);
+
+        // Call the callback
+        onLocationChange(lat, lng);
+      });
+    }
+
     leafletMapRef.current = map;
 
     // Cleanup function
@@ -76,13 +113,14 @@ export default function StoreLocationMap({
     if (leafletMapRef.current) {
       leafletMapRef.current.setView([latitude, longitude], 15);
 
-      // Update marker position
-      const marker = leafletMapRef.current.eachLayer((layer) => {
-        if (layer instanceof L.Marker) {
+      // Remove existing markers and circles
+      leafletMapRef.current.eachLayer((layer) => {
+        if (layer instanceof L.Marker || layer instanceof L.Circle) {
           leafletMapRef.current?.removeLayer(layer);
         }
       });
 
+      // Add new marker
       const newMarker = L.marker([latitude, longitude]).addTo(leafletMapRef.current);
       newMarker.bindPopup(`
         <div style="text-align: center;">
@@ -91,8 +129,49 @@ export default function StoreLocationMap({
           Boylam: ${longitude.toFixed(6)}</small>
         </div>
       `).openPopup();
+
+      // Add circle
+      L.circle([latitude, longitude], {
+        color: '#3B82F6',
+        fillColor: '#3B82F6',
+        fillOpacity: 0.1,
+        radius: 100,
+      }).addTo(leafletMapRef.current);
+
+      // Re-add click handler for editable mode
+      if (editable && onLocationChange) {
+        leafletMapRef.current.on('click', (e: L.LeafletMouseEvent) => {
+          const { lat, lng } = e.latlng;
+          
+          // Update marker position
+          newMarker.setLatLng([lat, lng]);
+          newMarker.bindPopup(`
+            <div style="text-align: center;">
+              <strong>${storeName}</strong><br/>
+              <small>Enlem: ${lat.toFixed(6)}<br/>
+              Boylam: ${lng.toFixed(6)}</small>
+            </div>
+          `).openPopup();
+
+          // Update circle position
+          leafletMapRef.current?.eachLayer((layer) => {
+            if (layer instanceof L.Circle) {
+              leafletMapRef.current?.removeLayer(layer);
+            }
+          });
+          L.circle([lat, lng], {
+            color: '#3B82F6',
+            fillColor: '#3B82F6',
+            fillOpacity: 0.1,
+            radius: 100,
+          }).addTo(leafletMapRef.current!);
+
+          // Call the callback
+          onLocationChange(lat, lng);
+        });
+      }
     }
-  }, [latitude, longitude, storeName]);
+  }, [latitude, longitude, storeName, editable, onLocationChange]);
 
   return (
     <div
