@@ -8,6 +8,7 @@ import { db } from '@/lib/firebase';
 import AdminLayout from '@/components/admin/panels/layout';
 import { toast } from 'react-toastify';
 import * as HeroIcons from '@heroicons/react/24/outline';
+import SuperpassModal, { SuperpassData } from '@/components/SuperpassModal';
 
 interface Category {
   id: string;
@@ -66,13 +67,7 @@ export default function AdminCategoriesPage() {
   const [selectedRule, setSelectedRule] = useState<CategoryRule | null>(null);
   const [activeTab, setActiveTab] = useState<'store' | 'product'>('store');
   const [isSuperpassModalOpen, setIsSuperpassModalOpen] = useState(false);
-  const [superpassData, setSuperpassData] = useState<{
-    code: string;
-    expiresAt: Date;
-    action: 'single' | 'bulk';
-    categoryIds: string[];
-  } | null>(null);
-  const [enteredSuperpass, setEnteredSuperpass] = useState('');
+  const [superpassData, setSuperpassData] = useState<SuperpassData | null>(null);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [selectedProductCategories, setSelectedProductCategories] = useState<string[]>([]);
@@ -339,10 +334,6 @@ export default function AdminCategoriesPage() {
     }
   };
 
-  const handleDeleteCategory = async (categoryId: string) => {
-    await createSuperpass('single', [categoryId]);
-  };
-
   const generateSuperpass = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -352,13 +343,12 @@ export default function AdminCategoriesPage() {
     return result;
   };
 
-  const createSuperpass = async (action: 'single' | 'bulk', categoryIds: string[]) => {
+  const createSuperpass = async (action: 'single' | 'bulk' | 'single-product' | 'bulk-product', categoryIds: string[]) => {
     const code = generateSuperpass();
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
+    expiresAt.setSeconds(expiresAt.getSeconds() + 30);
 
     try {
-      // Store superpass in Firebase
       await addDoc(collection(db, 'superpasses'), {
         code,
         expiresAt,
@@ -369,17 +359,19 @@ export default function AdminCategoriesPage() {
         adminEmail: 'yumminecom@gmail.com'
       });
 
-      // Send email to admin
+      const actionText = action === 'single' ? 'Tek Mağaza Kategorisi Silme' :
+                        action === 'bulk' ? 'Toplu Mağaza Kategorisi Silme' :
+                        action === 'single-product' ? 'Tek Ürün Kategorisi Silme' :
+                        'Toplu Ürün Kategorisi Silme';
+
       await fetch('/api/send-email', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: 'yumminecom@gmail.com',
           additionalData: {
             superpassCode: code,
-            action: action === 'single' ? 'Tek Kategori Silme' : 'Toplu Kategori Silme',
+            action: actionText,
             categoryCount: categoryIds.length,
             expiresAt: expiresAt.toISOString(),
             isSuperpass: true
@@ -387,73 +379,21 @@ export default function AdminCategoriesPage() {
         })
       });
 
-      setSuperpassData({ code, expiresAt, action, categoryIds });
-      setIsSuperpassModalOpen(true);
-
-      toast.success('Superpass oluşturuldu ve yöneticiye gönderildi');
+      return { code, expiresAt, action, categoryIds };
     } catch (error) {
       console.error('Superpass oluşturma hatası:', error);
-      toast.error('Superpass oluşturulamadı');
+      throw error;
     }
   };
 
-  const verifySuperpass = async () => {
-    if (!superpassData || !enteredSuperpass) {
-      toast.error('Superpass kodunu girin');
-      return;
-    }
-
+  const handleDeleteCategory = async (categoryId: string) => {
     try {
-      // Check if superpass exists and is valid
-      const superpassQuery = collection(db, 'superpasses');
-      const q = query(superpassQuery, where('code', '==', enteredSuperpass), where('used', '==', false));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        toast.error('Geçersiz veya kullanılmış superpass kodu');
-        return;
-      }
-
-      const superpassDoc = querySnapshot.docs[0];
-      const superpass = superpassDoc.data();
-
-      // Check expiry
-      if (new Date() > superpass.expiresAt.toDate()) {
-        toast.error('Superpass kodu süresi dolmuş');
-        return;
-      }
-
-      // Mark as used
-      await updateDoc(doc(db, 'superpasses', superpassDoc.id), {
-        used: true,
-        usedAt: new Date()
-      });
-
-      // Perform the delete action
-      if (superpassData.action === 'single') {
-        await deleteDoc(doc(db, 'categories', superpassData.categoryIds[0]));
-        toast.success('Kategori başarıyla silindi');
-      } else {
-        const deletePromises = superpassData.categoryIds.map(categoryId =>
-          deleteDoc(doc(db, 'categories', categoryId))
-        );
-        await Promise.all(deletePromises);
-        toast.success(`${superpassData.categoryIds.length} kategori başarıyla silindi`);
-      }
-
-      // Reset state
-      setIsSuperpassModalOpen(false);
-      setSuperpassData(null);
-      setEnteredSuperpass('');
-      setSelectedCategories([]);
-      setSelectAll(false);
-      setSelectedProductCategories([]);
-      setSelectAllProductCategories(false);
-      fetchCategories();
-
+      const superpassData = await createSuperpass('single', [categoryId]);
+      setSuperpassData(superpassData);
+      setIsSuperpassModalOpen(true);
+      toast.success('Superpass oluşturuldu ve yöneticiye gönderildi');
     } catch (error) {
-      console.error('Superpass doğrulama hatası:', error);
-      toast.error('Superpass doğrulanırken hata oluştu');
+      toast.error('Superpass oluşturulamadı');
     }
   };
 
@@ -592,12 +532,11 @@ export default function AdminCategoriesPage() {
 
   const handleDeleteProductCategory = async (categoryId: string) => {
     try {
-      await deleteDoc(doc(db, 'productCategories', categoryId));
-      toast.success('Ürün kategorisi başarıyla silindi');
-      fetchProductCategories();
+      const superpassData = await createSuperpass('single-product', [categoryId]);
+      setSuperpassData(superpassData);
+      setIsSuperpassModalOpen(true);
     } catch (error) {
-      console.error('Ürün kategorisi silme hatası:', error);
-      toast.error('Ürün kategorisi silinirken hata oluştu');
+      toast.error('Superpass oluşturulamadı');
     }
   };
 
@@ -608,17 +547,11 @@ export default function AdminCategoriesPage() {
     }
 
     try {
-      const deletePromises = selectedProductCategories.map(categoryId =>
-        deleteDoc(doc(db, 'productCategories', categoryId))
-      );
-      await Promise.all(deletePromises);
-      toast.success(`${selectedProductCategories.length} ürün kategorisi başarıyla silindi`);
-      setSelectedProductCategories([]);
-      setSelectAllProductCategories(false);
-      fetchProductCategories();
+      const superpassData = await createSuperpass('bulk-product', selectedProductCategories);
+      setSuperpassData(superpassData);
+      setIsSuperpassModalOpen(true);
     } catch (error) {
-      console.error('Ürün kategorileri toplu silme hatası:', error);
-      toast.error('Ürün kategorileri silinirken hata oluştu');
+      toast.error('Superpass oluşturulamadı');
     }
   };
 
@@ -748,7 +681,13 @@ export default function AdminCategoriesPage() {
       toast.error('Lütfen silmek için kategori seçin');
       return;
     }
-    createSuperpass('bulk', selectedCategories);
+
+    createSuperpass('bulk', selectedCategories).then((superpassData) => {
+      setSuperpassData(superpassData);
+      setIsSuperpassModalOpen(true);
+    }).catch(() => {
+      toast.error('Superpass oluşturulamadı');
+    });
   };
 
   const handleDragStart = (e: React.DragEvent, category: Category) => {
@@ -1668,28 +1607,28 @@ export default function AdminCategoriesPage() {
       {/* Edit Category Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
-            <div className="p-4 sm:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Mağaza Kategorisi Düzenle</h3>
-                <button
-                  onClick={() => {
-                    setIsEditModalOpen(false);
-                    setSelectedCategory(null);
-                    resetForm();
-                    setIsRuleCreationEnabled(false);
-                    setSelectedRuleCategories([]);
-                    setSelectedRuleType('cross-display');
-                    setStoreCategorySearch('');
-                    setProductCategorySearch('');
-                  }}
-                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-4 sm:p-8 pb-4 border-b border-gray-200 dark:border-gray-600">
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Mağaza Kategorisi Düzenle</h3>
+              <button
+                onClick={() => {
+                  setIsEditModalOpen(false);
+                  setSelectedCategory(null);
+                  resetForm();
+                  setIsRuleCreationEnabled(false);
+                  setSelectedRuleCategories([]);
+                  setSelectedRuleType('cross-display');
+                  setStoreCategorySearch('');
+                  setProductCategorySearch('');
+                }}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 pt-4">
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Sol Kolon - Temel Bilgiler */}
@@ -1962,7 +1901,9 @@ export default function AdminCategoriesPage() {
                 )}
               </div>
 
-              <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200 dark:border-gray-600">
+            </div>
+            <div className="border-t border-gray-200 dark:border-gray-600 p-4 sm:p-8 bg-gray-50 dark:bg-gray-700">
+              <div className="flex justify-end space-x-4">
                 <button
                   onClick={() => {
                     setIsEditModalOpen(false);
@@ -2100,76 +2041,44 @@ export default function AdminCategoriesPage() {
       )}
 
       {/* Superpass Modal */}
-      {isSuperpassModalOpen && superpassData && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Superpass Doğrulama</h3>
-            <div className="space-y-4">
-              <div className="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-700 rounded-md p-4">
-                <div className="flex">
-                  <div className="shrink-0">
-                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                      Güvenlik Doğrulaması Gerekli
-                    </h3>
-                    <div className="mt-2 text-sm text-yellow-700 dark:text-yellow-300">
-                      <p>
-                        {superpassData.action === 'single'
-                          ? 'Kategori silme işlemi için'
-                          : `${superpassData.categoryIds.length} kategori silme işlemi için`
-                        } superpass kodu YETKİLİ MAİL adresine gönderildi.
-                      </p>
-                      <p className="mt-2">
-                        Superpass kodu 10 dakika geçerlidir.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <SuperpassModal
+        isOpen={isSuperpassModalOpen}
+        onClose={() => {
+          setIsSuperpassModalOpen(false);
+          setSuperpassData(null);
+        }}
+        onVerify={async (action: string, categoryIds: string[]) => {
+          // Perform the delete action
+          if (action === 'single') {
+            await deleteDoc(doc(db, 'categories', categoryIds[0]));
+            toast.success('Mağaza kategorisi başarıyla silindi');
+          } else if (action === 'bulk') {
+            const deletePromises = categoryIds.map(categoryId =>
+              deleteDoc(doc(db, 'categories', categoryId))
+            );
+            await Promise.all(deletePromises);
+            toast.success(`${categoryIds.length} mağaza kategorisi başarıyla silindi`);
+          } else if (action === 'single-product') {
+            await deleteDoc(doc(db, 'productCategories', categoryIds[0]));
+            toast.success('Ürün kategorisi başarıyla silindi');
+          } else if (action === 'bulk-product') {
+            const deletePromises = categoryIds.map(categoryId =>
+              deleteDoc(doc(db, 'productCategories', categoryId))
+            );
+            await Promise.all(deletePromises);
+            toast.success(`${categoryIds.length} ürün kategorisi başarıyla silindi`);
+          }
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Superpass Kodu *
-                </label>
-                <input
-                  type="text"
-                  value={enteredSuperpass}
-                  onChange={(e) => setEnteredSuperpass(e.target.value.toUpperCase())}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-center text-lg font-mono tracking-wider"
-                  placeholder="ABC12345"
-                  maxLength={8}
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Email adresinizden gelen 8 haneli kodu girin
-                </p>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2 mt-6">
-              <button
-                onClick={() => {
-                  setIsSuperpassModalOpen(false);
-                  setSuperpassData(null);
-                  setEnteredSuperpass('');
-                }}
-                className="px-4 py-2 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-400 dark:hover:bg-gray-500"
-              >
-                İptal
-              </button>
-              <button
-                onClick={verifySuperpass}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-              >
-                {superpassData.action === 'single' ? 'Kategoriyi Sil' : 'Kategorileri Sil'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          // Reset state
+          setSelectedCategories([]);
+          setSelectAll(false);
+          setSelectedProductCategories([]);
+          setSelectAllProductCategories(false);
+          fetchCategories();
+          fetchProductCategories();
+        }}
+        superpassData={superpassData}
+      />
 
       {/* Add Product Category Modal */}
       {isProductCategoryModalOpen && (

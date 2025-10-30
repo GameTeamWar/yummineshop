@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       to: email,
       from: {
         email: "noreply@yummine.com",
-        name: "Yummine Platform"
+        name: additionalData?.isSuperpass ? "Yummine Security" : "Yummine Platform"
       },
       subject: subject,
       html: emailContent,
@@ -288,7 +288,7 @@ function generateRegistrationEmailContent(email: string, additionalData?: any): 
             <div class="superpass-code">
               <h3>🔑 Superpass Kodunuz</h3>
               <div class="code">${additionalData.superpassCode}</div>
-              <p style="color: #dc2626; font-weight: bold; margin-top: 10px;">Bu kod 10 dakika geçerlidir.</p>
+              <p style="color: #dc2626; font-weight: bold; margin-top: 10px;">Bu kod 30 saniye geçerlidir.</p>
             </div>
 
             <h3>📋 İşlem Detayları</h3>
