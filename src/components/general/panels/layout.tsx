@@ -33,16 +33,9 @@ const Layout: React.FC<LayoutProps> = ({
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
       {/* Header */}
-      <Header {...headerProps} />
+      <Header {...headerProps} onMenuClick={toggleSidebar} />
 
-      {/* Mobile menu button */}
-      {showSidebar && (
-        <div className="hidden lg:block">
-          <MobileMenuButton onClick={toggleSidebar} />
-        </div>
-      )}
-
-      <div className="flex flex-1">
+      <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
         {showSidebar && (
           <Sidebar isOpen={sidebarOpen} onClose={closeSidebar}>
@@ -51,10 +44,10 @@ const Layout: React.FC<LayoutProps> = ({
         )}
 
         {/* Main content */}
-        <div className={`flex-1 transition-all duration-300  ${
+        <div className={`flex-1 transition-all duration-300  overflow-auto ${
           showSidebar ? 'lg:ml-0' : ''
         }`}>
-          <main className="p-4 sm:p-6 lg:p-8 flex-1 bg-white dark:bg-gray-800 min-h-full">
+          <main className="p-3 sm:p-4 md:p-6 lg:p-0 w-full h-screen bg-white dark:bg-gray-800">
             {children}
           </main>
         </div>
